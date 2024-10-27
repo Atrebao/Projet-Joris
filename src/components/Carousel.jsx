@@ -50,7 +50,7 @@ export default function Carousel() {
     };
 
     return (
-      <div className="relative w-full h-[700px] mb-10">
+      <div className="relative w-full h-[750px] md:h-[600px]">
         <div className="absolute inset-0 flex items-center justify-center">
           {images[currentIndex] && (
             <img
@@ -61,10 +61,10 @@ export default function Carousel() {
           )}
         </div>
         <div className="absolute w-full top-[40%] p-4 md:p-8">
-          <h1 className="text-3xl text-blue-400 font-bold md:text-5xl">
+          <h1 className="text-5xl text-blue-400 font-bold md:text-7xl">
             {titles[currentIndex] || "Titre non disponible"}
           </h1>
-          <p className="text-gray-100 text-md">{truncateString(overViews[currentIndex],150)}</p>
+          <p className="text-gray-100 truncate w-2/3 text-xl">{overViews[currentIndex]}</p>
         </div>
       </div>
     );

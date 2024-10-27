@@ -20,7 +20,7 @@ export default function Service({ item }) {
   return (
     <>
       <div
-        className="card bg-base-100 w-full sm:w-80 lg:w-96 shadow-xl py-10 hover:scale-105 duration-300 cursor-pointer"
+        className="card bg-base-100 w-full sm:w-80 lg:w-96 shadow-xl py-10 hover:scale-105 duration-300 "
         onClick={() => handleOpenModal(item)}
       >
         <figure className="px-10 pt-10">
@@ -39,6 +39,9 @@ export default function Service({ item }) {
               </div>
             ))}
           </div>
+        </div>
+        <div className=" flex justify-center items-center mt-2">
+          <button className="bg-blue-300 py-3 px-5 rounded-lg shadow-sm uppercase  text-slate-500">Acheter</button>
         </div>
       </div>
       {/* Modal */}
