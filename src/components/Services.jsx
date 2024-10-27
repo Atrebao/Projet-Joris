@@ -121,7 +121,7 @@ const Cards = ({ item }) => {
         {item.modalite.map((modal) => (
           <div className="stat">
             <div className="stat-title text-2xl">{modal.mois} mois</div>
-            <div className="stat-value">{modal.prix}$</div>
+            <div className="stat-value text-xl">{modal.prix} FCFA</div>
           </div>
         ))}
       </div>
