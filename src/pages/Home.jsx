@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import Catogories from '../components/Catogories'
-
+import Abonnement from "./Abonnement";
 import Carousel from "../components/Carousel";
 import Services from "../components/Services";
 export default function () {
@@ -12,6 +12,7 @@ export default function () {
         <Carousel />
         {/* <Catogories/>   */}
         <Services />
+       
       </div>
     </div>
   );

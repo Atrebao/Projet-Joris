@@ -45,10 +45,9 @@ export default function Services() {
           <i>ABONNEMENTS</i>
         </h1>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 px-4 sm:px-10 lg:pl-[100px] py-10">
+        <div className="container mx-auto px-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 py-10">
           {data.map((item, index) => (
-            // <Service key={index} item={item} />
-            <Cards item={item} />
+            <Cards key={index} item={item} />
           ))}
         </div>
       </div>
@@ -100,35 +99,36 @@ const Card = ({ item }) => {
 
 const Cards = ({ item }) => {
   return (
-    <div className="max-w-sm mx-auto bg-white rounded-3xl shadow-lg p-6 space-y-4">
-      {/* Header avec le logo Apple et badge Populaire */}
-      <div className="bg-slate-100 relative mb-8 rounded-xl">
-        {/* Logo Apple multicolore */}
-        <div className=" p-3  relative ">
+    <div className="bg-white rounded-3xl shadow-lg p-4 space-y-4 flex flex-col h-full">
+      {/* Header avec image */}
+      <div className="bg-slate-100 rounded-xl">
+        <div className="p-3">
           <img
-            className="bg-cover w-full rounded-xl max-h-[160px]"
+            className="w-full h-[120px] object-cover rounded-xl"
             src={item.image}
-            alt=""
+            alt={item.nom}
           />
         </div>
       </div>
 
-      {/* iTunes France */}
-      <div className="text-3xl font-bold text-orange-400 ">{item.nom}</div>
+      {/* Nom du service */}
+      <h2 className="text-2xl md:text-3xl font-bold text-orange-400">
+        {item.nom}
+      </h2>
 
       {/* Prix et détails */}
-      <div className="stats stats-horizontal">
-        {item.modalite.map((modal) => (
-          <div className="stat">
-            <div className="stat-title text-2xl">{modal.mois} mois</div>
-            <div className="stat-value text-xl">{modal.prix} FCFA</div>
+      <div className="grid grid-cols-2 gap-4 mt-auto">
+        {item.modalite.map((modal, index) => (
+          <div key={index} className="text-center p-2 bg-gray-50 rounded-lg">
+            <div className="text-lg font-medium">{modal.mois} mois</div>
+            <div className="text-xl font-bold">{modal.prix} FCFA</div>
           </div>
         ))}
       </div>
 
       {/* Bouton Acheter */}
-      <NavLink to={`/abonnement/${item.id}`}>
-        <button className="w-full bg-orange-400 text-white py-4 rounded-xl text-xl font-semibold hover:bg-orange-500 transition-colors">
+      <NavLink to={`/abonnement/${item.id}`} className="mt-4">
+        <button className="w-full bg-orange-400 text-white py-3 rounded-xl text-lg font-semibold hover:bg-orange-500 transition-colors">
           Acheter
         </button>
       </NavLink>

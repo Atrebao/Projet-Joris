@@ -1,5 +1,5 @@
 import React from "react";
-
+import { NavLink } from "react-router-dom";
 export default function Footer() {
   return (
     <footer className="footer  bg-neutral text-neutral-content items-center p-4">
@@ -19,6 +19,9 @@ export default function Footer() {
           Copyright © {new Date().getFullYear()} - All right reserved - Power by{" "}
           <i>BDAT</i>
         </p>
+        <NavLink to="/conditions" className="text-blue-400 hover:underline">
+          Conditions Générales d'Utilisation
+        </NavLink>
       </aside>
       <nav className="grid-flow-col gap-4 md:place-self-center md:justify-self-end">
         <a className="cursor-pointer">

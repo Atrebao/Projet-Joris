@@ -2,12 +2,13 @@ export const DATA = [
   {
     id: 1,
     nom: "Netflix",
-    
     image: "https://images.ctfassets.net/4cd45et68cgf/4nBnsuPq03diC5eHXnQYx/d48a4664cdc48b6065b0be2d0c7bc388/Netflix-Logo.jpg?w=2000",
     modalite: [{ id: 1, mois: 1, prix: 2000 }, { id:2, mois: 3, prix: 7000 }],
-    price : "3000",
-    description :"1 mois",
+    // price : "3000",
+    // description :"1 mois",
+    description : "Regardé plus de 90 millions de films sans publicité et en streaming haute qualité.",
     categorie : "Netflix",
+    icon :"Clapperboard",
     
   },
   {
@@ -18,6 +19,8 @@ export const DATA = [
     price : "3000",
     description :"2 mois",
     categorie: "Prime",
+    description : "Regardé plus de 90 millions de films sans publicité et en streaming haute qualité.",
+    icon :"Clapperboard",
   },
 
   {
@@ -28,6 +31,8 @@ export const DATA = [
     price : "3000",
     description :"1 mois",
     categorie: "Crunchyroll",
+    description : "Regardé plus de 90 millions d'animés sans publicité et en streaming haute qualité.",
+    icon :"Clapperboard",
   },
   {
     id: 4,
@@ -37,6 +42,8 @@ export const DATA = [
     price : "3000",
     description :"2 mois",
     categorie: "Disney",
+    description : "Regardé plus de 90 millions de fimls sans publicité et en streaming haute qualité.",
+    icon :"Clapperboard",
   },
   {
     id: 5,
@@ -46,6 +53,8 @@ export const DATA = [
     price : "3000",
     description :"1 mois",
     categorie: "Spotify",
+    description : "Écoutez plus de 90 millions de titres sans publicité et en streaming haute qualité.",
+    icon :"Music2"
   },
     {
     id: 6,
@@ -53,8 +62,9 @@ export const DATA = [
     image: "https://www.journaldugeek.com/app/uploads/2021/05/apple-music-hifi.jpg",
     modalite: [{ id: 1, mois: 1, prix: 2000 }, { id:2, mois: 3, prix: 7000 }],
     price : "3000",
-    description :"3 mois",
+    description : "Écoutez plus de 90 millions de titres sans publicité et en streaming haute qualité.",
     categorie: "Apple music",
+    icon :"Music2"
   },
 
 ];
