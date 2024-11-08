@@ -1,14 +1,16 @@
 import React, { useState, useEffect } from "react";
 import { Apple, Music2, Check, Clapperboard, ChevronDown } from "lucide-react";
 import { useParams } from "react-router-dom";
+import { NavLink } from "react-router-dom";
 import { DATA } from "../data/data";
+import PaymentPage from "./PaymentPage";
 export default function Abonnement() {
   const [formData, setFormData] = useState({
     nomPrenoms: "",
     numero: "",
     email: "",
     typeAbonnement: "",
-    conditonUtilisation: "",
+    conditonUtilisation: false,
   });
 
   const { id } = useParams();
@@ -43,7 +45,7 @@ export default function Abonnement() {
   return (
     <div className="min-h-screen py-[65px] bg-gradient-to-b from-gray-50 to-gray-100">
       {/* Main Content */}
-      <div className="max-w-7xl mx-auto px-4 py-12 grid grid-cols-1 lg:grid-cols-2 gap-12">
+      <div className="max-w-7xl mx-auto px-4 py-12 grid grid-cols-1 md:grid-cols-2  gap-12">
         {/* Left Column - Info */}
         <div className="space-y-8">
           <div className="bg-black p-8 rounded-2xl text-white">
@@ -52,16 +54,7 @@ export default function Abonnement() {
               <h1 className="text-3xl font-bold">{abonnement?.nom}</h1>
             </div>
             <p className="text-xl mb-6">{abonnement?.description}</p>
-            <div className="grid grid-cols-2 gap-4">
-              {/* {plans.map((plan) => (
-                <div key={plan.name} 
-                     className="bg-gray-900 p-4 rounded-xl cursor-pointer hover:bg-gray-800 transition"
-                     onClick={() => setPlanType(plan.name)}>
-                  <h3 className="text-lg font-semibold mb-2">{plan.name}</h3>
-                  <p className="text-blue-400 font-medium">{plan.price}</p>
-                </div>
-              ))} */}
-            </div>
+          
           </div>
 
           {/* Features */}
@@ -89,8 +82,8 @@ export default function Abonnement() {
 
         {/* Right Column - Form */}
         <div className="bg-white p-8 rounded-2xl shadow-sm">
-          <h2 className="text-2xl font-bold mb-6">
-            Commencez votre essai gratuit
+          <h2 className="text-2xl text-center font-bold mb-6">
+            Informations client
           </h2>
           <form onSubmit={handleSubmit}>
             <div className="form-control mb-4">
@@ -164,18 +157,24 @@ export default function Abonnement() {
             </div>
 
             <div className="form-control">
-              <label className="cursor-pointer label">
+              <label className="flex items-center gap-3 cursor-pointer py-2">
                 <input
                   type="checkbox"
-                  className="checkbox checkbox-primary"
+                  className="h-5 w-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                   required
-                  value={formData.conditonUtilisation}
+                  checked={formData.conditonUtilisation}
                   onChange={(e) =>
-                    handleUpdate("conditonUtilisation", e.target.value)
+                    handleUpdate("conditonUtilisation", e.target.checked)
                   }
                 />
-                <span className="label-text text-slate-600">
-                  J'accepte les conditions génerales d'utilisations
+                <span className="text-sm md:text-base text-slate-600">
+                  J'accepte les{" "}
+                  <NavLink
+                    to="/conditions"
+                    className="text-blue-600 hover:underline"
+                  >
+                    conditions générales d'utilisation
+                  </NavLink>
                 </span>
               </label>
             </div>
@@ -189,6 +188,7 @@ export default function Abonnement() {
           </form>
         </div>
       </div>
+      <PaymentPage formData={formData}/>
     </div>
   );
 }
