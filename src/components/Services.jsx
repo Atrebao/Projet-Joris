@@ -5,11 +5,30 @@ import { categories } from "../data/data";
 import services from "../assets/images/services.png";
 import Service from "./Service";
 import { NavLink } from "react-router-dom";
+import { getAbonnements } from "../services/AbonnementService";
+import AbonnementCard from "./AbonnementCard";
 export default function Services() {
   const [data, setData] = useState([]);
+  const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
-    setData(DATA);
+    setIsLoading(true);
+    try {
+      getAbonnements()
+        .then((response) => {
+          if (response.status === 200) {
+            setIsLoading(false);
+            setData(response.data);
+          }
+        })
+        .catch((err) => {
+          console.log(err.response.data);
+          //setIsLoading(false);
+        });
+    } catch (err) {
+      console.log(err);
+      //setIsLoading(false);
+    }
   }, []);
 
   const filterType = (cateogorie) => {
@@ -46,9 +65,14 @@ export default function Services() {
         </h1>
 
         <div className="container mx-auto px-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 py-10">
-          {data.map((item, index) => (
-            <Cards key={index} item={item} />
-          ))}
+          {isLoading
+            ? Array.from({ length: 4 }).map((_, index) => (
+                <div
+                  key={index}
+                  className="skeleton p-4 space-y-4 flex flex-col h-48"
+                ></div>
+              ))
+            : data.map((item, index) => <AbonnementCard key={index} item={item} />)}
         </div>
       </div>
     </div>
@@ -97,41 +121,3 @@ const Card = ({ item }) => {
   );
 };
 
-const Cards = ({ item }) => {
-  return (
-    <div className="bg-white rounded-3xl shadow-lg p-4 space-y-4 flex flex-col h-full">
-      {/* Header avec image */}
-      <div className="bg-slate-100 rounded-xl">
-        <div className="p-3">
-          <img
-            className="w-full h-[120px] object-cover rounded-xl"
-            src={item.image}
-            alt={item.nom}
-          />
-        </div>
-      </div>
-
-      {/* Nom du service */}
-      <h2 className="text-2xl md:text-3xl font-bold text-orange-400">
-        {item.nom}
-      </h2>
-
-      {/* Prix et détails */}
-      <div className="grid grid-cols-2 gap-4 mt-auto">
-        {item.modalite.map((modal, index) => (
-          <div key={index} className="text-center p-2 bg-gray-50 rounded-lg">
-            <div className="text-lg font-medium">{modal.mois} mois</div>
-            <div className="text-xl font-bold">{modal.prix} FCFA</div>
-          </div>
-        ))}
-      </div>
-
-      {/* Bouton Acheter */}
-      <NavLink to={`/abonnement/${item.id}`} className="mt-4">
-        <button className="w-full bg-orange-400 text-white py-3 rounded-xl text-lg font-semibold hover:bg-orange-500 transition-colors">
-          Acheter
-        </button>
-      </NavLink>
-    </div>
-  );
-};

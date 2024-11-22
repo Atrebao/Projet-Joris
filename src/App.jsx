@@ -1,11 +1,11 @@
 
 import { BrowserRouter  as Router, Route, Routes} from 'react-router-dom'
-import Navbar from './components/Navbar'
+import Navbar from './components/NavBar'
 import Home from './pages/Home'
-import Footer from './components/footer'
+import Footer from './components/Footer'
 import Conditions from './pages/Conditions'
-import AbonnementDetails from './pages/AbonnementDetails'
-import Abonnement from './pages/Abonnement'
+
+import Abonnement from './pages/AbonnementDetails'
 import PaymentPage from './pages/PaymentPage'
 function App() {
 

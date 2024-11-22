@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import Catogories from '../components/Catogories'
-import Abonnement from "./Abonnement";
+import Abonnement from "./AbonnementDetails";
 import Carousel from "../components/Carousel";
 import Services from "../components/Services";
 export default function () {
@@ -10,7 +10,6 @@ export default function () {
     <div className="w-full h-full md:py-[65px] bg-slate-100   ">
       <div className="w-full h-full">
         <Carousel />
-        {/* <Catogories/>   */}
         <Services />
        
       </div>
