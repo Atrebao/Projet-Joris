@@ -1,11 +1,15 @@
 import React from 'react'
 import { NavLink } from 'react-router-dom'
+import ButtonBack from '../components/ButtonBack'
 
 
 export default function Conditions() {
   return (
     <div className='min-h-screen bg-slate-100'>
       <div className='max-w-4xl mx-auto px-4 py-28 md:py-[100px]'>
+        <div className="md:hidden flex justify-start text-xl">
+          <ButtonBack title ={"Retour"}  textSize={"xl"}/>
+        </div>
         {/* Titre principal */}
         <h1 className="text-2xl md:text-3xl font-bold mb-6">
           Conditions Générales d'Utilisation

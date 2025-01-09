@@ -6,6 +6,6 @@ export const getSouscriptions = async ()=>{
     return axios.get(BASE_URL_SOUSCRIPTIONS);
 }
 
-export const getSouscription = async (id)=>{
+export const getSouscription = async (id)=>{ 
     return axios.get(`${BASE_URL_SOUSCRIPTIONS/{id}}`)
 }

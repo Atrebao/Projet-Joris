@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import ArrowBackIosNewIcon from "@mui/icons-material/ArrowBackIosNew";
 import toast from "react-hot-toast";
+import ButtonBack from "../components/ButtonBack";
 
 export default function Identifiants() {
   const [formData, setFormData] = useState({
@@ -45,15 +46,7 @@ export default function Identifiants() {
 
   return (
     <div className="w-11/12 h-full mx-auto pt-16">
-      <div
-        onClick={handleBack}
-        className="flex flex-col md:flex-row items-center cursor-pointer"
-      >
-        <div className="p-2 bg-white flex justify-center shadow-md rounded-md mr-4">
-          <ArrowBackIosNewIcon sx={{ fontSize: 10 }} />
-        </div>
-        <h1 className="text-3xl font-bold">Modifier vos identifiants</h1>
-      </div>
+      <ButtonBack title ={"Modifier vos identifiants"} textSize={"3xl"}/>
       <div className="w-full py-16 flex items-center justify-center">
         <div className="w-[450px] rounded-lg h-fit bg-white shadow-2xl p-5">
           <form onSubmit={handleSubmit}>

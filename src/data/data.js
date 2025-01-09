@@ -207,3 +207,12 @@ export const categories = [
     bgColor: "bg-[#ffffff]",
   },
 ];
+
+export const paiements = [
+  {
+    id:1,
+    datePaiement : "22-11-2024",
+    reference : "09529173-4c0c-4694-937a-a6ab6c7dbea5",
+    
+  }
+]

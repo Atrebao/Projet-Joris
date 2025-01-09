@@ -7,43 +7,31 @@ import Service from "./Service";
 import { NavLink } from "react-router-dom";
 import { getAbonnements } from "../services/AbonnementService";
 import AbonnementCard from "./AbonnementCard";
+import { useAbonnementStore } from "../store/abonnement";
 export default function Services() {
-  const [data, setData] = useState([]);
-  const [isLoading, setIsLoading] = useState(false);
+ 
+  const abonnementSotre = useAbonnementStore();
+  const isLoading = abonnementSotre.loading;
 
   useEffect(() => {
-    setIsLoading(true);
-    try {
-      getAbonnements()
-        .then((response) => {
-          if (response.status === 200) {
-            setIsLoading(false);
-            setData(response.data);
-          }
-        })
-        .catch((err) => {
-          console.log(err.response.data);
-          //setIsLoading(false);
-        });
-    } catch (err) {
-      console.log(err);
-      //setIsLoading(false);
-    }
+    
+    abonnementSotre.getAllData();
   }, []);
 
   const filterType = (cateogorie) => {
-    const service = DATA.filter((x) => x.categorie === cateogorie);
+    const service = abonnementSotre.abonnements.filter((x) => x.categorie === cateogorie);
     setData(service);
   };
+
 
   return (
     <div>
       {/* Categories */}
-      <div className=" w-full mx-auto my-[100px]">
-        <h1 className="text-blue-300  font-bold text-4xl text-center py-10 ">
-          NOS SERVICES
+      <div className=" w-full mx-auto my-[50px]">
+        <h1 className="text-blue-300  font-bold text-4xl text-center mt-28  ">
+          Nos services
         </h1>
-        <div className="w-11/12 lg:w-4/5 mx-auto  ">
+        <div className="w-11/12 lg:w-4/5 mx-auto mt-28 ">
           <img className="bg-cover w-full" src={services} alt="" />
         </div>
         {/* <div className="w-11/12 lg:w-4/5 mx-auto carousel  flex items-center justify-center space-x-[4px]  px-4 py-5   ">
@@ -60,8 +48,8 @@ export default function Services() {
       </div>
       {/* Services */}
       <div className="max-w-[1640px] mx-auto  px-4  ">
-        <h1 className="text-orange-400 font-bold text-4xl text-center">
-          <i>ABONNEMENTS</i>
+        <h1 className="text-orange-400 font-bold text-4xl text-center mb-10">
+         Abonnements
         </h1>
 
         <div className="container mx-auto px-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 py-10">
@@ -72,7 +60,7 @@ export default function Services() {
                   className="skeleton p-4 space-y-4 flex flex-col h-48"
                 ></div>
               ))
-            : data.map((item, index) => <AbonnementCard key={index} item={item} />)}
+            : abonnementSotre.data.map((item, index) => <AbonnementCard key={index} item={item} />)}
         </div>
       </div>
     </div>

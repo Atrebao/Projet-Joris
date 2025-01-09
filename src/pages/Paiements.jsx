@@ -1,27 +1,43 @@
-import React, { useEffect, useState } from "react";
+import React, { useState, useEffect } from "react";
 import SearchIcon from "@mui/icons-material/Search";
 import { ThreeDots, TailSpin } from "react-loader-spinner";
 import { Pagination, Skeleton } from "@mui/material";
+import { getPaiements } from "../services/PaiementsService";
+import EditPenIcon from "../assets/icons/pen.svg";
 import {
   PowerIcon,
   PowerOffIcon,
   Settings2Icon,
   UserRoundCogIcon,
 } from "lucide-react";
-import toast from "react-hot-toast";
-import EditPenIcon from "../assets/icons/pen.svg";
-import TrashIcon from "../assets/icons/trash.svg";
-import { useStoreUser } from "../store/user";
-import AjouterModifierUtilisateur from "../components/AjouterModifierUtilisateur";
 
-export default function Utilisateurs() {
+export default function Paiements() {
   const [searchLoading, setSearchLoading] = useState(false);
-  const users = useStoreUser();
-  const loading = users.loading;
+  const [loading, setLoading] = useState(false);
+  const [paiements, setPaiements] = useState([]);
+
+  useEffect(() => {
+    setLoading(true);
+    try {
+      getPaiements()
+        .then((response) => {
+          if (response.data) {
+            setLoading(false);
+            setPaiements(response.data);
+          }
+        })
+        .catch((err) => {
+          setLoading(false);
+          console.log(err.data);
+        });
+    } catch (err) {
+      setLoading(false);
+    }
+  }, []);
 
   const columns = [
     {
-      name: "Nom et prenoms",
+      name: "Nom & Prenoms client",
       selector: (row) =>
         loading ? (
           <Skeleton animation="wave" variant="text" width={80} />
@@ -31,22 +47,22 @@ export default function Utilisateurs() {
       sortable: true,
     },
     {
-      name: "Username",
+      name: "Montant",
       selector: (row) =>
         loading ? (
           <Skeleton animation="wave" variant="text" width={80} />
         ) : (
-          row.username
+          row.montant
         ),
       sortable: true,
     },
     {
-      name: "Email",
+      name: "Reference",
       selector: (row) =>
         loading ? (
           <Skeleton animation="wave" variant="text" width={80} />
         ) : (
-          row.email
+          row.reference
         ),
       sortable: true,
     },
@@ -59,6 +75,15 @@ export default function Utilisateurs() {
           row.numero
         ),
     },
+    {
+      name: "Date de paiement",
+      selector: (row) =>
+        loading ? (
+          <Skeleton animation="wave" variant="text" width={80} />
+        ) : (
+          row.datePaiement
+        ),
+    },
 
     {
       name: "Action",
@@ -67,47 +92,47 @@ export default function Utilisateurs() {
           <Skeleton animation="wave" variant="text" width={80} />
         ) : (
           <div className="flex items-center gap-x-3">
-            <div className="tooltip" data-tip="Modifier">
+            <div className="tooltip" data-tip="Details">
               <button
+                
                 onClick={() => {
-                  document.getElementById("add_user").showModal();
+                  document.getElementById("details_paiement").showModal();
                 }}
-                className="w-7 h-7 rounded-lg bg-main flex items-center justify-center"
+                className="w-7 h-7 rounded-lg bg-stone-700 flex items-center justify-center b"
               >
                 <img src={EditPenIcon} alt="icon" className="w-4" />
               </button>
             </div>
-            <div>
-              <button
-                onClick={() => {
-                  document.getElementById("disable").showModal();
-                }}
-                className="w-7 h-7 rounded-lg bg-red-100 flex items-center justify-center"
-              >
-                <img src={TrashIcon} alt="icon" className="w-4" />
-              </button>
-            </div>
-            <dialog id="disable" className="modal">
-              <div className="modal-box max-w-md rounded-lg">
-                <h3 className="font-extrabold text-xl text-red-600 ">
-                  Attention
-                </h3>
-                <p className="pt-2 text-black font-medium">
-                  Voulez vous vraiment effectuer cette action ?
-                </p>
+
+            <dialog id="details_paiement" className="modal">
+              <div className="modal-box w-10/12 max-w-2xl">
                 <div className="modal-action">
-                  <form
-                    method="dialog"
-                    className="w-full flex items-center justify-end gap-x-4"
-                  >
-                    <button className="bg-gray-100 text-gray-600 w-fit h-10 px-4 rounded-md flex items-center justify-center font-semibold">
-                      Annuler
-                    </button>
-                    <button className="bg-red-600 text-white w-fit h-10 px-4 rounded-md flex items-center justify-center font-semibold">
-                      Désactiver
+                  <h1 className="mr-auto text-2xl font-bold font-mtn mb-8">
+                    Details de paiement 
+                  </h1>
+                  <form method="dialog">
+                    <button className="w-8 h-8 flex items-center justify-center rounded-lg bg-red-100 hover:bg-red-200 text-red-600 font-semibold">
+                      ✕
                     </button>
                   </form>
                 </div>
+                <div className="bg-white p-3 rounded-lg border">
+                  <div className="divide-y divide-gray-100">
+                    <div className="px-4 py-3 grid grid-cols-3 gap-4">
+                      <div className="text-sm font-semibold text-gray-900">
+                        Date de paiement
+                      </div>
+                      <div className="mt-1 text-sm font-medium leading-6 text-blue-700 sm:col-span-2 sm:mt-0">{row.datePaiement}</div>
+                    </div>
+                    <div className="px-4 py-3 grid grid-cols-3 gap-4">
+                      <div className="text-sm font-semibold text-gray-900">
+                      Mode paiement
+                      </div>
+                      <div className="mt-1 text-sm font-medium leading-6 text-blue-700 sm:col-span-2 sm:mt-0">{row.modePaiement}</div>
+                    </div>
+                  </div>
+                </div>
+                {/* <AjouterModifierUtilisateur /> */}
               </div>
             </dialog>
           </div>
@@ -117,9 +142,9 @@ export default function Utilisateurs() {
 
   return (
     <div className="w-11/12 h-full mx-auto pt-14">
-      <h1 className="text-4xl font-bold">Utilisateurs</h1>
+      <h1 className="text-4xl font-bold">Paiements</h1>
       <div className="w-full p-5 bg-white rounded-md mt-10">
-        <div className="w-full pt-5 flex items-center justify-between">
+        <div className="w-full pt-5 flex items-center gap-x-2">
           <div className="flex items-center gap-x-2">
             <input
               type="text"
@@ -145,15 +170,8 @@ export default function Utilisateurs() {
               )}
             </button>
           </div>
-          <button
-            onClick={() => {
-              document.getElementById("add_user").showModal();
-            }}
-            className="p-3 rounded-lg shadow-sm bg-stone-700 hover:bg-stone-800 transition-all text-white "
-          >
-            Ajouter un utilisateur
-          </button>
         </div>
+
         <div className="overflow-x-auto border rounded-lg mt-16">
           <table className="custom-table table  table-zebra">
             {/* head */}
@@ -167,7 +185,7 @@ export default function Utilisateurs() {
               </tr>
             </thead>
             <tbody className="font-semibold">
-              {!users?.data?.users?.length ? (
+              {!paiements.length ? (
                 <tr>
                   <td colSpan={columns.length} className="text-center">
                     Aucune donnée
@@ -175,12 +193,21 @@ export default function Utilisateurs() {
                 </tr>
               ) : (
                 !loading &&
-                users.data.users.map((item, index) => (
+                paiements.map((item, index) => (
                   <tr key={index}>
-                    <td>{item.nom}</td>
-                    <td>{item.username}</td>
-                    <td>{item.email}</td>
-                    <td>{item.telephone}</td>
+                    <td>{item.souscription.client.nomPrenoms}</td>
+                    <td>
+                      {item.montant
+                        ? item.montant
+                        : item.souscription.modalite.prix}
+                    </td>
+                    <td>{item.reference}</td>
+                    <td>
+                      {item.numeroPaiement
+                        ? item.numeroPaiement
+                        : item.souscription.client.numero}
+                    </td>
+                    <td>{item.datePaiement}</td>
                   </tr>
                 ))
               )}
@@ -188,25 +215,6 @@ export default function Utilisateurs() {
           </table>
         </div>
       </div>
-
-      {/* Dialog pour ajouter un abonnement */}
-    
-        <dialog id="add_user" className="modal">
-          <div className="modal-box w-10/12 max-w-2xl">
-            <div className="modal-action">
-              <h1 className="mr-auto text-2xl font-bold font-mtn mb-8">
-                Enregistrer utilisateur
-              </h1>
-              <form method="dialog">
-                <button className="w-8 h-8 flex items-center justify-center rounded-lg bg-red-100 hover:bg-red-200 text-red-600 font-semibold">
-                  ✕
-                </button>
-              </form>
-            </div>
-            <AjouterModifierUtilisateur />
-          </div>
-        </dialog>
-    
     </div>
   );
 }

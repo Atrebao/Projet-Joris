@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from "react";
 
+
+
 export default function AjouterModifierUtilisateur({ user }) {
   const [formData, setFormData] = useState({
     nom: user ? user.nom : "",
@@ -9,6 +11,8 @@ export default function AjouterModifierUtilisateur({ user }) {
     numero: user ? user.numero : "",
     role: user ? user.role : "",
   });
+
+
 
   useEffect(() => {
     if (user) {
@@ -142,6 +146,8 @@ export default function AjouterModifierUtilisateur({ user }) {
           <option value="User">Utilisateur</option>
         </select>
       </div>
+
+
 
       <div className="col-span-2 modal-action mt-5">
         <button

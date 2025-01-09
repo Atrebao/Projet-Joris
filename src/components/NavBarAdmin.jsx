@@ -1,22 +1,31 @@
-import React,{useState} from "react";
+import React, { useState } from "react";
 import MenuIcon from "@mui/icons-material/Menu";
 import CloseIcon from "@mui/icons-material/Close";
 import PeopleIcon from "@mui/icons-material/People";
 import WidgetsIcon from "@mui/icons-material/Widgets";
+import MonetizationOnIcon from "@mui/icons-material/MonetizationOn";
 import LogoutIcon from "@mui/icons-material/Logout";
 import KeyIcon from "@mui/icons-material/Key";
 import QueryStatsIcon from "@mui/icons-material/QueryStats";
 import logo from "../assets/images/logo.png";
-import { NavLink } from "react-router-dom";
-import { HOMEADMIN } from "../Utils/Utils";
+import { NavLink, useNavigate } from "react-router-dom";
+import { HOMEADMIN, resetStorage } from "../Utils/Utils";
 import BusinessCenterIcon from "@mui/icons-material/BusinessCenter";
 import ManageAccountsIcon from "@mui/icons-material/ManageAccounts";
+import SettingsIcon from "@mui/icons-material/Settings";
 
 export default function NavBarAdmin() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
+  const navigate = useNavigate();
+
   const toggleMenu = () => {
     setIsMenuOpen(!isMenuOpen);
+  };
+
+  const exits = () => {
+    resetStorage();
+    navigate(`${HOMEADMIN}/login`);
   };
 
   return (
@@ -25,11 +34,7 @@ export default function NavBarAdmin() {
         {/* Logo */}
         <NavLink to={`${HOMEADMIN}/`}>
           <div className="flex items-center">
-            <img
-              className="w-[32px] md:w-[40px] mr-2"
-              src={logo}
-              alt="logo"
-            />
+            <img className="w-[32px] md:w-[40px] mr-2" src={logo} alt="logo" />
             <p className="text-lg md:text-2xl lg:text-3xl text-white font-bold">
               RICHESSES
               <span className="text-blue-300 pl-1">
@@ -56,7 +61,7 @@ export default function NavBarAdmin() {
           <NavLink
             to={`${HOMEADMIN}/stats`}
             className={({ isActive }) =>
-              isActive ? "font-bold text-blue-500" : "text-white"
+              isActive ? "font-bold text-blue-300" : "text-white"
             }
           >
             <button className="text-sm flex items-center gap-x-1">
@@ -67,7 +72,7 @@ export default function NavBarAdmin() {
           <NavLink
             to={`${HOMEADMIN}/abonnements`}
             className={({ isActive }) =>
-              isActive ? "font-bold text-blue-500" : "text-white"
+              isActive ? "font-bold text-blue-300" : "text-white"
             }
           >
             <button className="text-sm flex items-center gap-x-1">
@@ -78,7 +83,7 @@ export default function NavBarAdmin() {
           <NavLink
             to={`${HOMEADMIN}/souscriptions`}
             className={({ isActive }) =>
-              isActive ? "font-bold text-blue-500" : "text-white"
+              isActive ? "font-bold text-blue-300" : "text-white"
             }
           >
             <button className="text-sm flex items-center gap-x-1">
@@ -86,44 +91,79 @@ export default function NavBarAdmin() {
               <span>Souscriptions</span>
             </button>
           </NavLink>
-          <NavLink
-            to={`${HOMEADMIN}/clients`}
+          {/* <NavLink
+            to={`${HOMEADMIN}/paiements`}
             className={({ isActive }) =>
-              isActive ? "font-bold text-blue-500" : "text-white"
+              isActive ? "font-bold text-blue-300" : "text-white"
             }
           >
             <button className="text-sm flex items-center gap-x-1">
-              <PeopleIcon />
-              <span>Clients</span>
+              <MonetizationOnIcon />
+              <span>Paiements</span>
             </button>
-          </NavLink>
-          <NavLink
+          </NavLink> */}
+          {/* <NavLink
             to={`${HOMEADMIN}/utilisateurs`}
             className={({ isActive }) =>
-              isActive ? "font-bold text-blue-500" : "text-white"
+              isActive ? "font-bold text-blue-300" : "text-white"
             }
           >
             <button className="text-sm flex items-center gap-x-1">
               <ManageAccountsIcon />
               <span>Utilisateurs</span>
             </button>
-          </NavLink>
-          <NavLink
-            to={`${HOMEADMIN}/identifiants`}
-            className={({ isActive }) =>
-              isActive ? "font-bold text-blue-500" : "text-white"
-            }
+          </NavLink> */}
+          <div className="dropdown relative">
+            <SettingsIcon
+              tabIndex={0}
+              role="button"
+              aria-haspopup="true"
+              aria-expanded="false"
+              className="cursor-pointer text-white"
+            />
+            <span className="">Reglages</span>
+            <ul
+              tabIndex={0}
+              role="menu"
+              aria-label="Paramètres"
+              className="dropdown-content menu bg-base-100 rounded-box z-10 w-52 p-2 shadow"
+            >
+              <li>
+                <NavLink to={`${HOMEADMIN}/typeabonnements`} role="menuitem">
+                  <button className="text-sm flex items-center gap-x-1 w-full">
+                    <ManageAccountsIcon />
+                    <span>Type abonnements</span>
+                  </button>
+                </NavLink>
+              </li>
+              <li>
+                <NavLink to={`${HOMEADMIN}/utilisateurs`} role="menuitem">
+                  <button className="text-sm flex items-center gap-x-1 w-full">
+                    <ManageAccountsIcon />
+                    <span>Utilisateurs</span>
+                  </button>
+                </NavLink>
+              </li>
+              <li>
+                <NavLink to={`${HOMEADMIN}/identifiants`} role="menuitem">
+                  <button className="text-sm flex items-center gap-x-1 w-full">
+                    <KeyIcon />
+                    <span>Identifiants</span>
+                  </button>
+                </NavLink>
+              </li>
+            </ul>
+          </div>
+
+         
+        </div>
+        <button
+            onClick={exits}
+            className="bg-black text-white px-4 py-2 rounded-md text-sm font-medium flex items-center gap-x-2"
           >
-            <button className="text-sm flex items-center gap-x-1">
-              <KeyIcon />
-              <span>Identifiants</span>
-            </button>
-          </NavLink>
-          <button className="bg-black text-white px-4 py-2 rounded-md text-sm font-medium flex items-center gap-x-2">
             <LogoutIcon />
             <span>Déconnexion</span>
           </button>
-        </div>
       </div>
     </div>
   );

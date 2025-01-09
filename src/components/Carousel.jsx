@@ -19,7 +19,7 @@ export default function Carousel() {
         setImages(img);
         setTitles(titres);
         setOverViews(overs)
-        console.log(images);
+        
       });
     }, []);
 
@@ -51,6 +51,7 @@ export default function Carousel() {
 
     return (
       <div className="relative w-full h-[750px] md:h-[600px]">
+
         <div className="absolute inset-0 flex items-center justify-center">
           {images[currentIndex] && (
             <img

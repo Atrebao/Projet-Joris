@@ -9,7 +9,7 @@
         { "id": 2, "mois": 3, "prix": 7000 }
       ],
       "description": "Regardé plus de 90 millions de films sans publicité et en streaming haute qualité.",
-      "categorie": "Netflix",
+      "categorie": "Films_Series",
       "icon": "Clapperboard"
     },
     {
@@ -21,7 +21,7 @@
         { "id": 2, "mois": 3, "prix": 7000 }
       ],
 
-      "categorie": "Prime",
+      "categorie": "Musique",
       "description": "Regardé plus de 90 millions de films sans publicité et en streaming haute qualité.",
       "icon": "Clapperboard"
     },
@@ -34,7 +34,7 @@
         { "id": 1, "mois": 1, "prix": 2000 },
         { "id": 2, "mois": 3, "prix": 7000 }
       ],
-      "categorie": "Crunchyroll",
+      "categorie": "Films_Series",
       "description": "Regardé plus de 90 millions d'animés sans publicité et en streaming haute qualité.",
       "icon": "Clapperboard"
     },
@@ -60,7 +60,7 @@
         { "id": 2, "mois": 3, "prix": 7000 }
       ],
 
-      "categorie": "Spotify",
+      "categorie": "Musique",
       "description": "Écoutez plus de 90 millions de titres sans publicité et en streaming haute qualité.",
       "icon": "Music2"
     },
@@ -101,7 +101,7 @@
           { "id": 2, "mois": 3, "prix": 7000 }
         ],
         "description": "Écoutez plus de 90 millions de titres sans publicité et en streaming haute qualité.",
-        "categorie": "Apple music",
+        "categorie": "Musique",
         "icon": "Music2"
       },
       "modalite": { "id": 1, "mois": 1, "prix": 2000 }
@@ -127,7 +127,7 @@
           { "id": 1, "mois": 1, "prix": 2000 },
           { "id": 2, "mois": 3, "prix": 7000 }
         ],
-        "categorie": "Crunchyroll",
+        "categorie": "Films_Series",
         "description": "Regardé plus de 90 millions d'animés sans publicité et en streaming haute qualité.",
         "icon": "Clapperboard"
       },
@@ -138,5 +138,79 @@
   "modalites ": [
     { "id": 1, "mois": 1, "prix": 2000 },
     { "id": 2, "mois": 3, "prix": 7000 }
+  ],
+
+  "paiements": [
+    {
+      "id": 1,
+      "datePaiement": "22-11-2024",
+      "reference": "09529173-4c0c-4694-937a-a6ab6c7dbea5",
+      "montant" :"",
+      "numeroPaiement" :"",
+      "modePaiement" : "",
+      "souscription" :     {
+        "id": 1,
+        "dateCreation": "",
+        
+        "client": {
+          "id": 1,
+          "nomPrenoms": "Kouassi bob",
+          "numero": "0585747485",
+          "email": "boby@gmail.com",
+          "conditionsUtilisation": true,
+          "dateCreation": ""
+        },
+        "statut": "active",
+        "dateExpiration": "",
+        "abonnement": {
+          "id": 6,
+          "nom": "Apple music",
+          "image": "https://www.journaldugeek.com/app/uploads/2021/05/apple-music-hifi.jpg",
+          "modalite": [
+            { "id": 1, "mois": 1, "prix": 2000 },
+            { "id": 2, "mois": 3, "prix": 7000 }
+          ],
+          "description": "Écoutez plus de 90 millions de titres sans publicité et en streaming haute qualité.",
+          "categorie": "Apple music",
+          "icon": "Music2"
+        },
+        "modalite": { "id": 1, "mois": 1, "prix": 2000 }
+      }
+    },
+    {
+      "id": 2,
+      "datePaiement": "22-11-2024",
+      "reference": "09529173-58djv-8fjd-937a-a6ab6c7dbea5",
+      "montant" :"",
+      "numeroPaiement" :"",
+      "modePaiement" : "",
+      "souscription" :    {
+        "id": 2,
+        "dateCreation": "",
+        "client": {
+          "id": 1,
+          "nomPrenoms": "Obito Marui",
+          "numero": "0585747485",
+          "email": "obito@gmail.com",
+          "conditionsUtilisation": true,
+          "dateCreation": ""
+        },
+        "statut": "active",
+        "dateExpiration": "",
+        "abonnement": {
+          "id": 3,
+          "nom": "Crunchyroll",
+          "image": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTJyvBogK8_WGEsHammfstExKgA9ow-epf_1Q&s",
+          "modalite": [
+            { "id": 1, "mois": 1, "prix": 2000 },
+            { "id": 2, "mois": 3, "prix": 7000 }
+          ],
+          "categorie": "Crunchyroll",
+          "description": "Regardé plus de 90 millions d'animés sans publicité et en streaming haute qualité.",
+          "icon": "Clapperboard"
+        },
+        "modalite": { "id": 2, "mois": 3, "prix": 7000 }
+      }
+    }
   ]
 }
