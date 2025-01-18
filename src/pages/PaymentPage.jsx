@@ -3,10 +3,12 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { addOne, getAll } from "../services/service";
 import {
   CHECK_ORDER_APPROVAL,
+  ENVOYER_MAIL,
   PAYER,
   RECHERCHER_DETAILS,
   RECHERCHER_PAR_ID,
-  SOUSCRIRE
+  SOUSCRIRE,
+  VERIFIER_STATUT_SOUSCRIPTION,
 } from "../Utils/constant";
 import toast from "react-hot-toast";
 import { HOMECLIENT } from "../Utils/Utils";
@@ -18,7 +20,7 @@ const PaymentPage = () => {
   const [abonnement, setAbonnement] = useState();
   const [modalite, setModalite] = useState();
   const navigate = useNavigate();
-  
+
   useEffect(() => {
     getAll(`${RECHERCHER_DETAILS}/${data?.abonnementId}`)
       .then((res) => {
@@ -45,18 +47,21 @@ const PaymentPage = () => {
     {
       id: "wave",
       name: "Wave",
+      value : "WAVE",
       icon: "", // Vous pouvez remplacer par une vraie image
       color: "blue-500",
     },
     {
       id: "orange",
       name: "Orange Money",
+      value : "OM_MONEY",
       icon: "",
       color: "orange-500",
     },
     {
       id: "mtn",
       name: "MTN Money",
+      value : "MTN_MONEY",
       icon: "",
       color: "yellow-500",
     },
@@ -64,11 +69,76 @@ const PaymentPage = () => {
       id: "visa",
       name: "Carte Visa",
       icon: "",
+      value : "VISA",
       color: "bindigo-500",
     },
   ];
 
+  const verifierStatutPaiement = async (reference) => {
 
+    const interval = 5000; // Intervalle en millisecondes (5 secondes)
+    const timeout = 5 * 60 * 1000; // Durée maximale (5 minutes)
+
+    const startTime = Date.now();
+
+    const timer = setInterval(async () => {
+      if (Date.now() - startTime > timeout) {
+        clearInterval(timer);
+        console.log("Durée maximale atteinte. Arrêt du processus.");
+        toast.error(
+          "Paiement échoué: Durée maximale atteinte. Veuillez réessayer."
+        );
+        return;
+      }
+      getAll(`${VERIFIER_STATUT_SOUSCRIPTION}?reference=${reference}`)
+      .then((res) => {
+        if (res.data) {
+          const souscription = res.data;
+          if (res.data.statutPaiement === "SUCCES") {
+            
+            clearInterval(timer);
+            toast.success("Paiement effectué avec succès");
+            setIsLoading(false);
+            const dataMail = {
+              email: souscription.user.email,
+              username: souscription.user.nom + " " + souscription.user.prenoms,
+              abonnement:
+              souscription.abonnement.nom +
+                " " +
+                modalite.categorie,
+            };
+            envoyerMail(dataMail);
+            navigate("/");
+          } else if (res.data.statutPaiement === "ECHEC") {
+            clearInterval(timer);
+            toast.error("Paiement échoué. Veuillez réessayer.");
+            setIsLoading(false);
+          }
+        }
+      })
+      .catch((error) => {
+        console.error("Erreur lors du paiement:", error);
+        toast.error("Erreur lors du paiement:", error);
+        setIsLoading(false);
+      });
+      
+    }, interval);
+
+
+  };
+
+  const envoyerMail = (data) => {
+    addOne(ENVOYER_MAIL, "application/json", data)
+      .then((res) => {
+        if (res.data) {
+          console.log("=====REPONSE MAIL=============== ", res.data);
+        }
+      })
+      .catch((error) => {
+        console.error("Erreur lors de l'envoi du mail:", error);
+
+      });
+  };
 
   const handlePayment = async (method) => {
     setIsLoading(true);
@@ -83,48 +153,55 @@ const PaymentPage = () => {
       modePaiement: method,
       abonnementId: abonnement?.id,
       modaliteId: modalite?.id,
-      typeAppareil: data.typeAppareil
+      typeAppareil: data.typeAppareil,
     };
 
     console.log("=====DATA RETURN=============== ", dataReturn);
 
-    addOne(SOUSCRIRE,"application/json", dataReturn)
+    addOne(SOUSCRIRE, "application/json", dataReturn)
       .then((res) => {
         if (res.data) {
-       
           console.log("=====REPONSE SOUSCRITPION=============== ", res.data);
-          if(method === "visa"){
-           
-            if(modalite?.categorie === "STANDARD_PLUS"){
-              window.open("https://amaterasu241.lemonsqueezy.com/buy/96897b67-3672-4724-b804-3d7203e18f33", '_blank', 'noopener,noreferrer');
+          if (method === "VISA") {
+            if (modalite?.categorie === "STANDARD_PLUS") {
+              window.open(
+                "https://amaterasu241.lemonsqueezy.com/buy/96897b67-3672-4724-b804-3d7203e18f33",
+                "_blank",
+                "noopener,noreferrer"
+              );
+            } else if (modalite?.categorie === "PREMIUM") {
+              window.open(
+                "https://amaterasu241.lemonsqueezy.com/buy/96897b67-3672-4724-b804-3d7203e18f33",
+                "_blank",
+                "noopener,noreferrer"
+              );
+            } else {
+              window.open(
+                "https://amaterasu241.lemonsqueezy.com/buy/96897b67-3672-4724-b804-3d7203e18f33",
+                "_blank",
+                "noopener,noreferrer"
+              );
             }
+          } else {
+          
 
-            else if(modalite?.categorie === "PREMIUM"){
-              window.open("https://amaterasu241.lemonsqueezy.com/buy/96897b67-3672-4724-b804-3d7203e18f33", '_blank', 'noopener,noreferrer');
-            }
-            else{
-              window.open("https://amaterasu241.lemonsqueezy.com/buy/96897b67-3672-4724-b804-3d7203e18f33", '_blank', 'noopener,noreferrer');
-            }
-
-          }
-          else{
+            /*
             toast.success("Paiement effectué avec succès");
+           
             setIsLoading()
             navigate("/")
+            */
           }
- 
+
+          verifierStatutPaiement(res.data.reference);
         }
-       
       })
       .catch((error) => {
         console.error("Erreur lors du paiement:", error);
         toast.error("Erreur lors du paiement:", error);
+        setIsLoading(false);
       });
-    
-
-   
   };
-
 
   /*
   const handlePayment = async (method) => {
@@ -250,10 +327,10 @@ const PaymentPage = () => {
             {paymentMethods.map((method) => (
               <button
                 key={method.id}
-                onClick={() => setSelectedMethod(method.id)}
+                onClick={() => setSelectedMethod(method.value)}
                 className={`p-4 rounded-lg border-2 transition-all duration-200 flex items-center justify-between
                     ${
-                      selectedMethod === method.id
+                      selectedMethod === method.value
                         ? `border-indigo-300 bg-indigo-600/10`
                         : "border-gray-200 hover:border-gray-300"
                     }`}

@@ -1,9 +1,16 @@
 import React from 'react'
 import { NavLink } from 'react-router-dom'
 import ButtonBack from '../components/ButtonBack'
+import { MoveLeft } from "lucide-react";
 
 
 export default function Conditions() {
+
+  const handleBack = () => {
+    window.history.back();
+  };
+
+
   return (
     <div className='min-h-screen bg-slate-100'>
       <div className='max-w-4xl mx-auto px-4 py-28 md:py-[100px]'>
@@ -70,6 +77,10 @@ export default function Conditions() {
         <p className="text-xs md:text-sm text-gray-500 italic mt-8">
           Ces conditions générales peuvent être mises à jour de temps à autre. Nous vous encourageons à consulter cette page régulièrement pour rester informé de nos conditions d'utilisation actuelles.
         </p>
+       <div className='flex justify-center items-center mt-10 space-x-2 cursor-pointer'>
+       <MoveLeft />
+       <p onClick={() =>handleBack()} className='text-sm md:text-xl text-blue-400 hover:text-blue-500'> Retour à la page précédentes</p>
+       </div>
       </div>
     </div>
   )

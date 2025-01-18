@@ -35,3 +35,15 @@ export const CHECK_ORDER_APPROVAL = "/paypal/checkOrderApproval";
 export const SOUSCRIRE = "/souscription/souscrire" ;      
 export const RECHERCHER_LISTES_SOUSCRIPTION= "/souscription/rechercher-souscriptions" ;
 export const RECHERCHER_DETAILS_SOUSCRIPTION= "/souscription/rechercher-details" ;
+export const VERIFIER_STATUT_SOUSCRIPTION= "/souscription/verifier-statut-paiement-souscription" ;
+
+
+//=====================================UTILISATEURS=============================
+
+export const RECHERCHER_LISTES_USER = "/users/rechercher-users";
+export const AJOUTER_USER = "/users/enregistrer" ;  
+export const DESACTIVER_UTILISATEUR = "/users/desactiver" ;
+export const MODIFIER_IDENTIFIANT = "/users/modifier-identifiants" ;
+
+//=====================================MAIL=============================
+export const ENVOYER_MAIL = "/mail/envoyer-mail" ;

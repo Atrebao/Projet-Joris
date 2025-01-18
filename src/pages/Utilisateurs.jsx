@@ -13,11 +13,22 @@ import EditPenIcon from "../assets/icons/pen.svg";
 import TrashIcon from "../assets/icons/trash.svg";
 import { useStoreUser } from "../store/user";
 import AjouterModifierUtilisateur from "../components/AjouterModifierUtilisateur";
+import { getUserProfil, HOMEADMIN } from "../Utils/Utils";
 
 export default function Utilisateurs() {
   const [searchLoading, setSearchLoading] = useState(false);
-  const users = useStoreUser();
-  const loading = users.loading;
+  const usersStore = useStoreUser();
+  const loading = usersStore.loading;
+
+      useEffect(() => {
+        if (!getUserProfil()) {
+          navigate(`${HOMEADMIN}/login`);
+        }
+      }, []);
+
+        useEffect(() => {
+          usersStore.getAllData();
+        }, []);
 
   const columns = [
     {
@@ -167,7 +178,7 @@ export default function Utilisateurs() {
               </tr>
             </thead>
             <tbody className="font-semibold">
-              {!users?.data?.users?.length ? (
+              {!usersStore?.data?.length ? (
                 <tr>
                   <td colSpan={columns.length} className="text-center">
                     Aucune donnée
@@ -175,7 +186,7 @@ export default function Utilisateurs() {
                 </tr>
               ) : (
                 !loading &&
-                users.data.users.map((item, index) => (
+                usersStore.data.map((item, index) => (
                   <tr key={index}>
                     <td>{item.nom}</td>
                     <td>{item.username}</td>

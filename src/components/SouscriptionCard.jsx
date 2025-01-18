@@ -160,9 +160,9 @@ export default function SouscriptionCard({ subscription }) {
         {/* Dialog pour details */}
         <dialog
           id={`modal-details-souscription-${subscription?.id}`}
-          className="modal"
+          className="modal "
         >
-          <div className="modal-box">
+          <div className="modal-box ">
             <div className="modal-action">
               <h1 className="mr-auto text-2xl font-bold font-mtn mb-8">
                 Details souscription
@@ -176,7 +176,7 @@ export default function SouscriptionCard({ subscription }) {
                 </button>
               </form>
             </div>
-            <div className="p-5 border rounded-md">
+            <div className="p-5 border rounded-md ">
               <div className="">
                 <dl className="divide-y divide-gray-100">
                   <div className="px-4 py-3 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-0">
@@ -259,6 +259,15 @@ export default function SouscriptionCard({ subscription }) {
                     </dt>
                     <dd className="mt-1 text-sm font-medium leading-6 text-blue-700 sm:col-span-2 sm:mt-0">
                       {subscription?.productId ? subscription?.productId : "--"}
+                    </dd>
+                  </div>
+
+                  <div className="px-4 py-3 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-0">
+                    <dt className="text-sm font-semibold leading-6 text-gray-900">
+                      Reference  paiement
+                    </dt>
+                    <dd className="mt-1 text-sm font-medium leading-6 text-blue-700 sm:col-span-2 sm:mt-0">
+                      {subscription?.reference ? subscription?.reference : "--"}
                     </dd>
                   </div>
                 </dl>
