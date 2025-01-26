@@ -15,10 +15,8 @@ export default function FormsModalite({ item, handleCloseModal }) {
   } = useForm();
 
   const categories = [
-    { designation: "Standard", value: "STANDARD" },
-    { designation: "Standard +", value: "STANDARD_PLUS" },
-    { designation: "Premium", value: "PREMIUM" },
-    { designation: "Premium +", value: "PREMIM_PLUS" },
+    { designation: "Prive", value: "PRIVE" },
+    { designation: "Public", value: "PUBLIC" },
   ];
 
   const modalites = useStoreModalite();
@@ -129,9 +127,7 @@ export default function FormsModalite({ item, handleCloseModal }) {
           })}
           className="select select-bordered w-full"
         >
-          <option disabled defaultValue={`Selectionner une categorie`}>
-            
-          </option>
+          <option disabled defaultValue={`Selectionner une categorie`}></option>
           {categories.map((item, index) => (
             <option key={index} value={item.value}>
               {item.designation}

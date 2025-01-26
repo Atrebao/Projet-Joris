@@ -1,10 +1,21 @@
+/* eslint-disable react/prop-types */
+/* eslint-disable no-unused-vars */
 import React, { useEffect, useState } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
 import { useStoreModalite } from "../store/modalite";
+import { paymentMethods } from "../Utils/Utils";
+import { addOne, getAll } from "../services/service";
+import {
+  ENVOYER_MAIL,
+  SOUSCRIRE,
+  VERIFIER_STATUT_SOUSCRIPTION,
+} from "../Utils/constant";
+import toast from "react-hot-toast";
 
 export default function FormsClient({ abonnement, userProfile }) {
   const navigate = useNavigate();
   const modalitesStore = useStoreModalite();
+  const [isLoading, setIsLoading] = useState(false);
 
   const [formData, setFormData] = useState({
     nom: "",
@@ -14,12 +25,16 @@ export default function FormsClient({ abonnement, userProfile }) {
     typeAbonnement: {},
     conditonUtilisation: "",
     typeAppareil: "",
+    modePaiement: "",
+  });
+
+  const [modalite, setModalite] = useState({
+    categorie: "",
   });
 
   const typeAppareilListes = [
     { id: 1, libelle: "TELEPHONE", value: "Telephone" },
     { id: 2, libelle: "ORDINATEUR_TABLETTE", value: "Ordinateur/Tablette" },
- 
   ];
 
   const clearForms = () => {
@@ -45,13 +60,128 @@ export default function FormsClient({ abonnement, userProfile }) {
     modalitesStore.modalite();
   }, [abonnement, userProfile]);
 
+  const verifierStatutPaiement = async (reference) => {
+    const interval = 5000; // Intervalle en millisecondes (5 secondes)
+    const timeout = 5 * 60 * 1000; // Durée maximale (5 minutes)
+
+    const startTime = Date.now();
+
+    const timer = setInterval(async () => {
+      if (Date.now() - startTime > timeout) {
+        clearInterval(timer);
+        console.log("Durée maximale atteinte. Arrêt du processus.");
+        toast.error(
+          "Paiement échoué: Durée maximale atteinte. Veuillez réessayer."
+        );
+        return;
+      }
+      getAll(`${VERIFIER_STATUT_SOUSCRIPTION}?reference=${reference}`)
+        .then((res) => {
+          if (res.data) {
+            const souscription = res.data;
+            if (res.data.statutPaiement === "SUCCES") {
+              clearInterval(timer);
+              toast.success("Paiement effectué avec succès");
+              setIsLoading(false);
+              const dataMail = {
+                email: souscription.user.email,
+                username:
+                  souscription.user.nom + " " + souscription.user.prenoms,
+                abonnement:
+                  souscription.abonnement.nom + " " + modalite.categorie,
+              };
+              envoyerMail(dataMail);
+              navigate("/");
+              clearForms();
+            } else if (res.data.statutPaiement === "ECHEC") {
+              clearInterval(timer);
+              toast.error("Paiement échoué. Veuillez réessayer.");
+              setIsLoading(false);
+            }
+          }
+        })
+        .catch((error) => {
+          console.error("Erreur lors du paiement:", error);
+          toast.error("Erreur lors du paiement:", error);
+          setIsLoading(false);
+        });
+    }, interval);
+  };
+
+  const envoyerMail = (data) => {
+    addOne(ENVOYER_MAIL, "application/json", data)
+      .then((res) => {
+        if (res.data) {
+          console.log("=====REPONSE MAIL=============== ", res.data);
+        }
+      })
+      .catch((error) => {
+        console.error("Erreur lors de l'envoi du mail:", error);
+      });
+  };
+
+  const handlePayment = async (method) => {};
+
+  // const handleSubmit = (e) => {
+  //   e.preventDefault();
+  //   const data = abonnement
+  //     ? { ...formData, abonnementId: abonnement.id }
+  //     : { ...formData };
+  //   navigate(`/paiement`, {
+  //     state: { ...data, typeAppareil: formData.typeAppareil },
+  //   });
+  //   clearForms();
+  // };
+
   const handleSubmit = (e) => {
     e.preventDefault();
-    const data = abonnement
-      ? { ...formData, abonnementId: abonnement.id }
-      : { ...formData };
-    navigate(`/paiement`, { state: {...data, typeAppareil: formData.typeAppareil} });
-    clearForms();
+    setIsLoading(true);
+
+    const dataReturn = { ...formData };
+
+    console.log("=====DATA RETURN=============== ");
+
+    addOne(SOUSCRIRE, "application/json", dataReturn)
+      .then((res) => {
+        if (res.data) {
+          console.log("=====REPONSE SOUSCRITPION=============== ", res.data);
+          if (formData.modePaiement === "VISA") {
+            if (modalite?.categorie === "STANDARD_PLUS") {
+              window.open(
+                "https://amaterasu241.lemonsqueezy.com/buy/96897b67-3672-4724-b804-3d7203e18f33",
+                "_blank",
+                "noopener,noreferrer"
+              );
+            } else if (modalite?.categorie === "PREMIUM") {
+              window.open(
+                "https://amaterasu241.lemonsqueezy.com/buy/96897b67-3672-4724-b804-3d7203e18f33",
+                "_blank",
+                "noopener,noreferrer"
+              );
+            } else {
+              window.open(
+                "https://amaterasu241.lemonsqueezy.com/buy/96897b67-3672-4724-b804-3d7203e18f33",
+                "_blank",
+                "noopener,noreferrer"
+              );
+            }
+          } else {
+            /*
+            toast.success("Paiement effectué avec succès");
+           
+            setIsLoading()
+            navigate("/")
+            */
+          }
+
+          verifierStatutPaiement(res.data.reference);
+        }
+      })
+      .catch((error) => {
+        console.error("Erreur lors du paiement:", error);
+        toast.error("Erreur lors du paiement:", error);
+        setIsLoading(false);
+      });
   };
 
   return (
@@ -120,30 +250,28 @@ export default function FormsClient({ abonnement, userProfile }) {
           </div>
 
           <div className="form-control mb-4">
-              <label className="label">
-                <span className="label-text text-slate-600">
-                  Type d'appareil
-                </span>
-              </label>
-              <select
-                value={formData.typeAppareil}
-                name="typeAppareil"
-                onChange={(e) => handleUpdate("typeAppareil", e.target.value)}
-                className="select select-bordered w-full"
-                required
-              >
-                <option value="" disabled>
-                  Sélectionnez un type
+            <label className="label">
+              <span className="label-text text-slate-600">Type d'appareil</span>
+            </label>
+            <select
+              value={formData.typeAppareil}
+              name="typeAppareil"
+              onChange={(e) => handleUpdate("typeAppareil", e.target.value)}
+              className="select select-bordered w-full"
+              required
+            >
+              <option value="" disabled>
+                Sélectionnez un type
+              </option>
+              {typeAppareilListes.map((item, index) => (
+                <option key={index} value={item.libelle}>
+                  {item.value}
                 </option>
-               { typeAppareilListes.map((item, index) => (
-                  <option key={index} value={item.libelle}>
-                    {item.value}
-                  </option>
-                ))}
-              </select>
-            </div>
+              ))}
+            </select>
+          </div>
 
-          {abonnement && (
+          {/* {abonnement && (
             <div className="form-control mb-4">
               <label className="label">
                 <span className="label-text text-slate-600">
@@ -167,7 +295,31 @@ export default function FormsClient({ abonnement, userProfile }) {
                 ))}
               </select>
             </div>
-          )}
+          )} */}
+
+          <div className="form-control mb-4">
+            <label className="label">
+              <span className="label-text text-slate-600">
+                Mode de paiement
+              </span>
+            </label>
+            <select
+              value={formData.typeAbonnement}
+              name="typeAbonnement"
+              onChange={(e) => handleUpdate("typeAbonnement", e.target.value)}
+              className="select select-bordered w-full"
+              required
+            >
+              <option value="" disabled>
+                Sélectionnez un type
+              </option>
+              {paymentMethods.map((methode, index) => (
+                <option key={index} value={methode.id}>
+                  {methode.name}
+                </option>
+              ))}
+            </select>
+          </div>
         </div>
         <div className="form-control">
           <label className="flex items-center gap-3 cursor-pointer py-2">

@@ -1,42 +1,61 @@
-/* eslint-disable no-unused-vars */
-// eslint-disable-next-line no-unused-vars
-import React from "react";
-import FormsClient from "../components/FormsClient";
+import { useEffect, useState } from "react";
+import { useNavigate, useParams } from "react-router-dom";
 
-export default function Register() {
+export default function PricingPage() {
+  const navigate = useNavigate();
+  const { id } = useParams();
+  const [activeTab, setActiveTab] = useState("Public");
+
+  useEffect(() => {}, [activeTab]);
+
   return (
-    // <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100  grid grid-cols-1 md:grid-cols-2  gap-12 ">
-    //   <div className="hidden h-screen flex-col md:flex bg-green-400">
-    //     <img
-    //       className="h-screen object-cover"
-    //       src="https://cdn.lesnumeriques.com/optim/news/21/217269/1206e136-netflix-prime-video-canal-disney-quelle-est-la-meilleure-plateforme-de-streaming-en-janvier-2024__1200_900__0-0-1915-1079.jpg "
-    //       alt=""
-    //     />
-    //   </div>
-
-    //   <div className="flex flex-col items-center justify-center ">
-    //     <FormsClient />
-    //   </div>
-    // </div>
-
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-purple-100 to-white">
+    <div className="py-[65px] min-h-screen flex items-center justify-center bg-gradient-to-b from-purple-100 to-white">
       <div className="w-full max-w-6xl px-6 py-12">
         <h1 className="text-3xl font-bold text-center">
-          Choose your right plan!
+          Choisissez votre bon forfait !!
         </h1>
         <p className="text-center text-gray-600 mt-2">
-          Select from best plans, ensuring a perfect match. Need more or less?
-          Customize your subscription for a seamless fit!
+          Choisissez parmi les meilleurs plans, garantissant une correspondance
+          parfaite. Besoin de plus ou de moins ? Personnalisez votre abonnement
+          pour un ajustement parfait !
         </p>
-        {/* <div class="flex justify-center mt-6">
-          <button class="bg-purple-600 text-white px-6 py-2 rounded-full">
+        {/* Tab */}
+        <div
+          role="tablist"
+          className="tabs tabs-boxed flex mx-auto items-center justify-center mt-6 bg-white w-44"
+        >
+          <a
+            role="tab"
+            className={`tab ${
+              activeTab === "Public"
+                ? "bg-purple-600 text-white px-6  rounded-full"
+                : ""
+            }`}
+            onClick={() => setActiveTab("Public")}
+          >
+            Public
+          </a>
+          <a
+            role="tab"
+            className={`tab ${
+              activeTab === "Prive"
+                ? "bg-purple-600 text-white px-6  rounded-full"
+                : ""
+            }`}
+            onClick={() => setActiveTab("Prive")}
+          >
+            Prive
+          </a>
+        </div>
+        {/* <div className="flex justify-center mt-6">
+          <button className="bg-purple-600 text-white px-6 py-2 rounded-full">
             Monthly
           </button>
-          <button class="ml-4 border border-purple-600 text-purple-600 px-6 py-2 rounded-full">
+          <button className="ml-4 border border-purple-600 text-purple-600 px-6 py-2 rounded-full">
             Quarterly (save 10%)
           </button>
         </div> */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-12 ">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mt-12 ">
           <div className="border border-gray-200 rounded-2xl p-8 shadow-md hover:border hover:border-purple-400 duration-300 transition-all">
             <div className="p-2 bg-purple-500 w-12 h-8 rounded-md flex items-center justify-center">
               <h2 className="text-white">Pro</h2>
@@ -52,8 +71,8 @@ export default function Register() {
               <li>&#10003; 3-5 day turnaround</li>
               <li>&#10003; Native Development</li>
               <li>&#10003; Task delivered one-by-one</li>
-              <li>&#10003; Dedicated dashboard</li>
-              <li>&#10003; Updates via Dashboard & Slack</li>
+              {/* <li>&#10003; Dedicated dashboard</li>
+              <li>&#10003; Updates via Dashboard & Slack</li> */}
             </ul>
             <button className="w-full mt-6 bg-gray-800 text-white py-2 rounded-lg">
               Get started
@@ -76,11 +95,18 @@ export default function Register() {
               <li>&#10003; Monthly strategy call</li>
               <li>&#10003; Commercial license</li>
               <li>&#10003; Native Development</li>
-              <li>&#10003; Tasks delivered one-by-one</li>
+              {/* <li>&#10003; Tasks delivered one-by-one</li>
               <li>&#10003; Dedicated dashboard</li>
-              <li>&#10003; Updates via Dashboard & Slack</li>
+              <li>&#10003; Updates via Dashboard & Slack</li> */}
             </ul>
-            <button className="w-full mt-6 bg-gray-800 text-white py-2 rounded-lg">
+            <button
+              onClick={() => {
+                navigate(`/abonnement/${id}`, {
+                  state: {},
+                });
+              }}
+              className="w-full mt-6 bg-gray-800 text-white py-2 rounded-lg"
+            >
               Get started
             </button>
           </div>

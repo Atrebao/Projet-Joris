@@ -1,6 +1,7 @@
+/* eslint-disable no-unused-vars */
 import React, { useState, useEffect } from "react";
 import { Apple, Music2, Check, Clapperboard, ChevronDown } from "lucide-react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { NavLink } from "react-router-dom";
 import { DATA } from "../data/data";
 import PaymentPage from "./PaymentPage";
@@ -11,28 +12,23 @@ import { getAll } from "../services/service";
 import { RECHERCHER_DETAILS } from "../Utils/constant";
 
 export default function Abonnement() {
-
-  
   const { id } = useParams();
 
   const [abonnement, setAbonnement] = useState(null);
-  
-  const userProfile =getUserProfil();
-  
 
+  const userProfile = getUserProfil();
 
   const [formData, setFormData] = useState({
     nom: userProfile ? userProfile.nom : "",
     prenoms: userProfile ? userProfile.prenoms : "",
     numero: userProfile ? userProfile.numero : "",
     email: userProfile ? userProfile.email : "",
-    typeAbonnement:  "",
+    typeAbonnement: "",
     conditonUtilisation: userProfile ? userProfile.condition : "",
   });
 
   const [checkedIndex, setCheckedIndex] = useState(null);
   const [typeAbonnement, setTypeAbonnement] = useState();
-
 
   const handleCheckboxChange = (index, item) => {
     if (checkedIndex === index) {
@@ -44,9 +40,7 @@ export default function Abonnement() {
     }
     setTypeAbonnement(item);
     //setFormData((prev)=>({...prev, typeAbonnement:item}))
-   
   };
-
 
   const handleUpdate = (key, value) => {
     setFormData((prev) => ({
@@ -54,7 +48,6 @@ export default function Abonnement() {
       [key]: value,
     }));
   };
-
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -64,16 +57,15 @@ export default function Abonnement() {
   };
 
   useEffect(() => {
-   
     getAll(`${RECHERCHER_DETAILS}/${id}`)
-    .then((res) =>{
-      if(res.data){
-        setAbonnement(res.data);
-      }
-    })
-    .catch((error) =>{
-      console.log("Erreur ",error)
-    })
+      .then((res) => {
+        if (res.data) {
+          setAbonnement(res.data);
+        }
+      })
+      .catch((error) => {
+        console.log("Erreur ", error);
+      });
     /*
     const filteredData = DATA.filter((x) => x.id === Number(id));
     setAbonnement(filteredData[0] || null);
@@ -87,11 +79,13 @@ export default function Abonnement() {
 
   const [isDropdownOpen, setIsDropdownOpen] = useState(true);
   return (
-    <div className="min-h-screen py-[65px] bg-gradient-to-b from-gray-50 to-gray-100">
+    <div className="min-h-screen py-[65px] bg-gradient-to-b from-purple-100 to-white">
       {/* Main Content */}
       <div
         className={` max-w-7xl mx-auto px-4 py-12  ${
-          (userProfile && userProfile.role === "client") ? "" : "grid grid-cols-1 md:grid-cols-2  gap-12"
+          userProfile && userProfile.role === "client"
+            ? ""
+            : "grid grid-cols-1 md:grid-cols-2  gap-12"
         }`}
       >
         {/* Left Column - Info */}
@@ -126,7 +120,7 @@ export default function Abonnement() {
             </div>
           </div>
 
-          {(userProfile && userProfile.role === "client") && (
+          {userProfile && userProfile.role === "client" && (
             <div className="bg-white p-8 rounded-2xl shadow-sm">
               <h2 className="text-2xl font-bold mb-6">
                 Veuillez choisir le type d'abonnement
@@ -138,7 +132,6 @@ export default function Abonnement() {
                       <input
                         value={typeAbonnement}
                         type="checkbox"
-                        
                         className="h-5 w-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                         checked={checkedIndex === index}
                         onChange={(e) => handleCheckboxChange(index, item)}
@@ -156,7 +149,7 @@ export default function Abonnement() {
 
         {/* Right Column - Form */}
         {!(userProfile && userProfile.role === "client") && (
-            <FormsClient abonnement={ abonnement} userProfile={userProfile}/>
+          <FormsClient abonnement={abonnement} userProfile={userProfile} />
         )}
       </div>
       {/* <PaymentPage formData={formData} /> */}

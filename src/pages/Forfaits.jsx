@@ -1,17 +1,21 @@
+/* eslint-disable no-unused-vars */
 import React, { useState, useEffect } from "react";
 import SearchIcon from "@mui/icons-material/Search";
 import { ThreeDots, TailSpin } from "react-loader-spinner";
 import Pagination from "@mui/material/Pagination";
-import { MoreHorizontal,ArrowRight } from "lucide-react";
+import { MoreHorizontal, ArrowRight } from "lucide-react";
 import toast from "react-hot-toast";
 import FormsModalite from "../components/FormsModalite";
 
 import { getAll, deleteOne } from "../services/service";
 import { BASE_URLS } from "../Utils/Utils";
-import { RECHERCHER_LISTES_MODALITE, SUPPRIMER_MODALITE } from "../Utils/constant";
+import {
+  RECHERCHER_LISTES_MODALITE,
+  SUPPRIMER_MODALITE,
+} from "../Utils/constant";
 import { useStoreModalite } from "../store/modalite";
 
-export default function TypeAbonnements() {
+export default function Forfaits() {
   const [searchLoading, setSearchLoading] = useState(false);
   const [typeAbonnements, setTypeAbonnements] = useState([]);
   const [itemUpdate, setItemUpdate] = useState(null);
@@ -58,33 +62,28 @@ export default function TypeAbonnements() {
   const handleCloseModal = () => {
     document.getElementById("addModalite").close();
     document.getElementById("updateModalite").close();
-   
-   
   };
 
-  const handleDeleteModalite = (item)=>{
-
+  const handleDeleteModalite = (item) => {
     deleteOne(SUPPRIMER_MODALITE, item.id)
-    .then((res) =>{
-      if(res.data){
-        
-        document.getElementById("deleteModalite").close();
-        toast.success("Element supprimé avec succès");
-        modalites.modalite();
-      }
-    })
-    .catch((error) =>{
-      console.error("Erreur lors de la soumission:", error);
-      toast.error("Erreur lors de la soumission:", error);
-    })
-
-   
-
-  }
+      .then((res) => {
+        if (res.data) {
+          document.getElementById("deleteModalite").close();
+          toast.success("Element supprimé avec succès");
+          modalites.modalite();
+        }
+      })
+      .catch((error) => {
+        console.error("Erreur lors de la soumission:", error);
+        toast.error("Erreur lors de la soumission:", error);
+      });
+  };
 
   const indexOfLastItem = currentPage * itemsPerPage;
   const indexOfFirstItem = indexOfLastItem - itemsPerPage;
-  const currentData = Array.isArray(modalites.data) ? modalites.data.slice(indexOfFirstItem, indexOfLastItem) : [];
+  const currentData = Array.isArray(modalites.data)
+    ? modalites.data.slice(indexOfFirstItem, indexOfLastItem)
+    : [];
 
   const totalPages = Math.ceil(modalites.data.length / itemsPerPage);
 
@@ -199,7 +198,10 @@ export default function TypeAbonnements() {
                 </button>
               </form>
             </div>
-            <FormsModalite item={itemUpdate} handleCloseModal={handleCloseModal} />
+            <FormsModalite
+              item={itemUpdate}
+              handleCloseModal={handleCloseModal}
+            />
           </div>
         </dialog>
 
@@ -234,7 +236,7 @@ export default function TypeAbonnements() {
                 </button>
                 <button
                   onClick={() => {
-                    handleDeleteModalite(itemUpdate)
+                    handleDeleteModalite(itemUpdate);
                   }}
                   className="bg-red-600 text-white w-fit h-10 px-4 rounded-md flex items-center justify-center font-semibold"
                 >

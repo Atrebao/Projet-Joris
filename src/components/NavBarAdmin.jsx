@@ -129,10 +129,10 @@ export default function NavBarAdmin() {
               className="dropdown-content menu bg-base-100 rounded-box z-10 w-52 p-2 shadow"
             >
               <li>
-                <NavLink to={`${HOMEADMIN}/typeabonnements`} role="menuitem">
+                <NavLink to={`${HOMEADMIN}/forfaits`} role="menuitem">
                   <button className="text-sm flex items-center gap-x-1 w-full">
                     <ManageAccountsIcon />
-                    <span>Type abonnements</span>
+                    <span>Forfaits</span>
                   </button>
                 </NavLink>
               </li>
@@ -154,16 +154,14 @@ export default function NavBarAdmin() {
               </li>
             </ul>
           </div>
-
-         
         </div>
         <button
-            onClick={exits}
-            className="bg-black text-white px-4 py-2 rounded-md text-sm font-medium flex items-center gap-x-2"
-          >
-            <LogoutIcon />
-            <span>Déconnexion</span>
-          </button>
+          onClick={exits}
+          className="bg-black text-white px-4 py-2 rounded-md text-sm font-medium flex items-center gap-x-2"
+        >
+          <LogoutIcon />
+          <span>Déconnexion</span>
+        </button>
       </div>
     </div>
   );

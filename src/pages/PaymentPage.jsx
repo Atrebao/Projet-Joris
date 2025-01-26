@@ -1,3 +1,4 @@
+/* eslint-disable no-unused-vars */
 import React, { useEffect, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { addOne, getAll } from "../services/service";
@@ -11,6 +12,7 @@ import {
   VERIFIER_STATUT_SOUSCRIPTION,
 } from "../Utils/constant";
 import toast from "react-hot-toast";
+import logo from "../assets/images/logo.png";
 import { HOMECLIENT } from "../Utils/Utils";
 const PaymentPage = () => {
   const [selectedMethod, setSelectedMethod] = useState(null);
@@ -31,7 +33,9 @@ const PaymentPage = () => {
       .catch((err) => {
         console.log(err);
       });
+  }, []);
 
+  useEffect(() => {
     getAll(`${RECHERCHER_PAR_ID}/${data.typeAbonnement}`)
       .then((res) => {
         if (res.data) {
@@ -47,21 +51,21 @@ const PaymentPage = () => {
     {
       id: "wave",
       name: "Wave",
-      value : "WAVE",
+      value: "WAVE",
       icon: "", // Vous pouvez remplacer par une vraie image
       color: "blue-500",
     },
     {
       id: "orange",
       name: "Orange Money",
-      value : "OM_MONEY",
+      value: "OM_MONEY",
       icon: "",
       color: "orange-500",
     },
     {
       id: "mtn",
       name: "MTN Money",
-      value : "MTN_MONEY",
+      value: "MTN_MONEY",
       icon: "",
       color: "yellow-500",
     },
@@ -69,13 +73,12 @@ const PaymentPage = () => {
       id: "visa",
       name: "Carte Visa",
       icon: "",
-      value : "VISA",
+      value: "VISA",
       color: "bindigo-500",
     },
   ];
 
   const verifierStatutPaiement = async (reference) => {
-
     const interval = 5000; // Intervalle en millisecondes (5 secondes)
     const timeout = 5 * 60 * 1000; // Durée maximale (5 minutes)
 
@@ -91,40 +94,35 @@ const PaymentPage = () => {
         return;
       }
       getAll(`${VERIFIER_STATUT_SOUSCRIPTION}?reference=${reference}`)
-      .then((res) => {
-        if (res.data) {
-          const souscription = res.data;
-          if (res.data.statutPaiement === "SUCCES") {
-            
-            clearInterval(timer);
-            toast.success("Paiement effectué avec succès");
-            setIsLoading(false);
-            const dataMail = {
-              email: souscription.user.email,
-              username: souscription.user.nom + " " + souscription.user.prenoms,
-              abonnement:
-              souscription.abonnement.nom +
-                " " +
-                modalite.categorie,
-            };
-            envoyerMail(dataMail);
-            navigate("/");
-          } else if (res.data.statutPaiement === "ECHEC") {
-            clearInterval(timer);
-            toast.error("Paiement échoué. Veuillez réessayer.");
-            setIsLoading(false);
+        .then((res) => {
+          if (res.data) {
+            const souscription = res.data;
+            if (res.data.statutPaiement === "SUCCES") {
+              clearInterval(timer);
+              toast.success("Paiement effectué avec succès");
+              setIsLoading(false);
+              const dataMail = {
+                email: souscription.user.email,
+                username:
+                  souscription.user.nom + " " + souscription.user.prenoms,
+                abonnement:
+                  souscription.abonnement.nom + " " + modalite.categorie,
+              };
+              envoyerMail(dataMail);
+              navigate("/");
+            } else if (res.data.statutPaiement === "ECHEC") {
+              clearInterval(timer);
+              toast.error("Paiement échoué. Veuillez réessayer.");
+              setIsLoading(false);
+            }
           }
-        }
-      })
-      .catch((error) => {
-        console.error("Erreur lors du paiement:", error);
-        toast.error("Erreur lors du paiement:", error);
-        setIsLoading(false);
-      });
-      
+        })
+        .catch((error) => {
+          console.error("Erreur lors du paiement:", error);
+          toast.error("Erreur lors du paiement:", error);
+          setIsLoading(false);
+        });
     }, interval);
-
-
   };
 
   const envoyerMail = (data) => {
@@ -136,7 +134,6 @@ const PaymentPage = () => {
       })
       .catch((error) => {
         console.error("Erreur lors de l'envoi du mail:", error);
-
       });
   };
 
@@ -183,8 +180,6 @@ const PaymentPage = () => {
               );
             }
           } else {
-          
-
             /*
             toast.success("Paiement effectué avec succès");
            
@@ -284,7 +279,10 @@ const PaymentPage = () => {
    */
 
   return (
-    <div className="min-h-screen py-[65px] bg-gradient-to-b from-gray-50 to-gray-100">
+    <div className="min-h-screen py-[65px] bg-gradient-to-b from-purple-100 to-white grid grid-cols-2">
+      <div className="w-full h-full bg-gradient-to-b from-gray-100">
+        <img className="w-full object-cover" src={logo} alt="" />
+      </div>
       <div className="max-w-2xl mx-auto px-4 py-12">
         {/* Récapitulatif de la commande */}
         <div className="bg-white p-6 rounded-xl shadow-sm mb-8">

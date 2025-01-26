@@ -1,3 +1,4 @@
+/* eslint-disable no-unused-vars */
 import React, { useState, useEffect } from "react";
 import SearchIcon from "@mui/icons-material/Search";
 import { ThreeDots, TailSpin } from "react-loader-spinner";
@@ -19,12 +20,11 @@ export default function Abonnements() {
   const abonnementSotre = useAbonnementStore();
   const isLoading = abonnementSotre.loading;
 
-    useEffect(() => {
-      if (!getUserProfil()) {
-        navigate(`${HOMEADMIN}/login`);
-      }
-    }, []);
-
+  useEffect(() => {
+    if (!getUserProfil()) {
+      navigate(`${HOMEADMIN}/login`);
+    }
+  }, []);
 
   useEffect(() => {
     abonnementSotre.getAllData();
@@ -80,16 +80,13 @@ export default function Abonnements() {
   const showModalEdit = (item) => {
     document.getElementById("edit-abonnement").showModal();
     setCardNaturel(item);
-    
   };
 
   const showModalAdd = () => {
     document.getElementById("add-abonnement").showModal();
   };
 
-  const closeModal = (idName) => {
-   
-  };
+  const closeModal = (idName) => {};
 
   return (
     <div className="w-11/12 h-full mx-auto pt-14 ">
@@ -138,11 +135,7 @@ export default function Abonnements() {
                 ></div>
               ))
             : currentData.map((item, index) => (
-                <AbonnementCard
-                  key={index}
-                  item={item}
-                  
-                />
+                <AbonnementCard key={index} item={item} />
               ))}
         </div>
       </div>
@@ -170,8 +163,7 @@ export default function Abonnements() {
             </h1>
             <form method="dialog">
               <button
-                 id="fermer-modal-ajout-abonnement"
-               
+                id="fermer-modal-ajout-abonnement"
                 className="w-8 h-8 flex items-center justify-center rounded-lg bg-red-100 hover:bg-red-200 text-red-600 font-semibold"
               >
                 ✕
@@ -181,8 +173,6 @@ export default function Abonnements() {
           <AjouterModifierAbonnement />
         </div>
       </dialog>
-
-
     </div>
   );
 }
