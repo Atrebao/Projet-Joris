@@ -20,15 +20,16 @@ export default function Utilisateurs() {
   const usersStore = useStoreUser();
   const loading = usersStore.loading;
 
-      useEffect(() => {
-        if (!getUserProfil()) {
-          navigate(`${HOMEADMIN}/login`);
-        }
-      }, []);
+  useEffect(() => {
+    if (!getUserProfil()) {
+      navigate(`${HOMEADMIN}/login`);
+    }
+  }, []);
 
-        useEffect(() => {
-          usersStore.getAllData();
-        }, []);
+  useEffect(() => {
+    usersStore.getAllData();
+    console.log(usersStore.data);
+  }, []);
 
   const columns = [
     {
@@ -201,23 +202,24 @@ export default function Utilisateurs() {
       </div>
 
       {/* Dialog pour ajouter un abonnement */}
-    
-        <dialog id="add_user" className="modal">
-          <div className="modal-box w-10/12 max-w-2xl">
-            <div className="modal-action">
-              <h1 className="mr-auto text-2xl font-bold font-mtn mb-8">
-                Enregistrer utilisateur
-              </h1>
-              <form method="dialog">
-                <button className="w-8 h-8 flex items-center justify-center rounded-lg bg-red-100 hover:bg-red-200 text-red-600 font-semibold">
-                  ✕
-                </button>
-              </form>
-            </div>
-            <AjouterModifierUtilisateur />
+
+      <dialog id="add_user" className="modal">
+        <div className="modal-box w-10/12 max-w-2xl">
+          <div className="modal-action">
+            <h1 className="mr-auto text-2xl font-bold font-mtn mb-8">
+              Enregistrer utilisateur
+            </h1>
+            <form method="dialog">
+              <button 
+              id="fermer-modal-ajout-user"
+              className="w-8 h-8 flex items-center justify-center rounded-lg bg-red-100 hover:bg-red-200 text-red-600 font-semibold">
+                ✕
+              </button>
+            </form>
           </div>
-        </dialog>
-    
+          <AjouterModifierUtilisateur />
+        </div>
+      </dialog>
     </div>
   );
 }

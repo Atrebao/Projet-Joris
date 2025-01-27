@@ -13,11 +13,11 @@ export const useStoreUser = create((set) => ({
           });
       try{
 
-        const users = await getAll(`${RECHERCHER_LISTES_USER}`);
+        const dataUsers = await getAll(RECHERCHER_LISTES_USER);
         set({
             loading: false,
-            data: users.data,
-            users : users.data
+            data: dataUsers.data,
+            users : dataUsers.data
           });
 
       }catch(error){

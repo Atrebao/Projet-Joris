@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from "react";
+import { addOne } from "../services/service";
+import { AJOUTER_USER } from "../Utils/constant";
 
 
 
@@ -42,8 +44,27 @@ export default function AjouterModifierUtilisateur({ user }) {
     e.preventDefault();
     console.log("Formulaire soumis :", formData);
 
-    // Ajoutez votre logique de soumission ici
-    clearForm();
+    if(user){
+
+        // Ajoutez votre logique de soumission ici
+        clearForm();
+    }else{
+
+      addOne(AJOUTER_USER,"application/json", formData)
+      .then((res) =>{
+        toast.success("Utilsateur ajouté avec succès");
+          clearForm();
+          document.getElementById("fermer-modal-ajout-user").click();
+      })
+      .catch((err) =>{
+        console.error("Erreur lors de la soumission:", err);
+        toast.error("Erreur lors de la soumission:", err);
+      })
+    }
+
+  
+
+
   };
 
   const handleChange = (e) => {
