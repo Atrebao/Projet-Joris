@@ -12,6 +12,10 @@ export const editOne = async (url, id, ...data) => {
     return await clientAxios.post(`${url}/${id}`, ...data);
   };
 
+export const disable = async (url, id) =>{
+  return await clientAxios.post(`${url}/${id}`);
+}
+
 
   export const getAll = async (url) => {
     return await clientAxios.get(`${url}`);

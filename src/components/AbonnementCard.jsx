@@ -1,3 +1,4 @@
+/* eslint-disable react/prop-types */
 import React, { useState, useEffect } from "react";
 import { useLocation, NavLink } from "react-router-dom";
 import MoreHorizIcon from "@mui/icons-material/MoreHoriz";
@@ -8,10 +9,9 @@ import { SUPPRIMER_ABONNEMENT } from "../Utils/constant";
 import toast from "react-hot-toast";
 import AjouterModifierAbonnement from "./AjouterModifierAbonnement";
 
-export default function AbonnementCard({ item}) {
-  
+export default function AbonnementCard({ item }) {
   const location = useLocation();
-  const [data ,setData] = useState()
+  const [data, setData] = useState();
   const abonnementSotre = useAbonnementStore();
 
   const handleDelete = () => {
@@ -47,7 +47,13 @@ export default function AbonnementCard({ item}) {
             tabIndex={0}
             className="dropdown-content menu bg-base-100 rounded-box z-[1] w-52 p-2 shadow"
           >
-            <li onClick={() => {document.getElementById(`edit-abonnement-modal-${item?.id}`).showModal()}}>
+            <li
+              onClick={() => {
+                document
+                  .getElementById(`edit-abonnement-modal-${item?.id}`)
+                  .showModal();
+              }}
+            >
               <a className="text-lg font-bold cursor-pointer">Modifier</a>
             </li>
             <li>
@@ -102,18 +108,27 @@ export default function AbonnementCard({ item}) {
       </h2>
 
       {/* Prix et détails */}
-      <div className="grid grid-cols-2 gap-4 flex-grow">
+
+      {/* <div className="grid grid-cols-2 gap-4 flex-grow">
         {item.modalites.map((modal, index) => (
           <div key={index} className="text-center p-2 bg-gray-50 rounded-lg">
             <div className="text-lg font-medium">{modal.mois} mois</div>
             <div className="text-xl font-bold">{modal.prix} FCFA</div>
           </div>
         ))}
-      </div>
+      </div> */}
 
       {/* Bouton Acheter */}
-      {isHomePageClient && (
+      {/* {isHomePageClient && (
         <NavLink to={`/abonnement/${item.id}`} className="mt-4">
+          <button className="w-full bg-orange-400 text-white py-3 rounded-xl text-lg font-semibold hover:bg-orange-500 transition-colors">
+            Acheter
+          </button>
+        </NavLink>
+      )} */}
+
+      {isHomePageClient && (
+        <NavLink to={`/pricing/${item.id}`} className="mt-4">
           <button className="w-full bg-orange-400 text-white py-3 rounded-xl text-lg font-semibold hover:bg-orange-500 transition-colors">
             Acheter
           </button>

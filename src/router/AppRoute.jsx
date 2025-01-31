@@ -1,3 +1,4 @@
+/* eslint-disable no-unused-vars */
 import React from "react";
 import { createHashRouter } from "react-router-dom";
 import { HOMECLIENT } from "../Utils/Utils";
@@ -18,8 +19,10 @@ import Clients from "../pages/Clients";
 import Paiements from "../pages/Paiements";
 import Register from "../pages/Registrer";
 import NotFound from "../pages/NotFound";
-import TypeAbonnements from "../pages/TypeAbonnements";
+
 import PaymentPage from "../pages/PaymentPage";
+import PricingPage from "../pages/PricingPage";
+import Forfaits from "../pages/Forfaits";
 
 export const AppRoute = createHashRouter([
   // Routes pour les utilisateurs
@@ -43,6 +46,10 @@ export const AppRoute = createHashRouter([
       {
         path: "paiement",
         element: <PaymentPage />,
+      },
+      {
+        path: "pricing/:id",
+        element: <PricingPage />,
       },
     ],
   },
@@ -85,8 +92,8 @@ export const AppRoute = createHashRouter([
         element: <Identifiants />,
       },
       {
-        path: "typeabonnements",
-        element: <TypeAbonnements />,
+        path: "forfaits",
+        element: <Forfaits />,
       },
     ],
   },

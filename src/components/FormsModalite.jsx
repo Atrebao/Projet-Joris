@@ -6,6 +6,7 @@ import { addOne, editOne } from "../services/service";
 import { AJOUTER_MODALITE, MODIFIER_MODALITE } from "../Utils/constant";
 import { getAll } from "../services/service";
 import { useStoreModalite } from "../store/modalite";
+import { categoriesForfait, periodes } from "../Utils/Utils";
 export default function FormsModalite({ item, handleCloseModal }) {
   const {
     register,
@@ -14,12 +15,8 @@ export default function FormsModalite({ item, handleCloseModal }) {
     formState: { errors },
   } = useForm();
 
-  const categories = [
-    { designation: "Standard", value: "STANDARD" },
-    { designation: "Standard +", value: "STANDARD_PLUS" },
-    { designation: "Premium", value: "PREMIUM" },
-    { designation: "Premium +", value: "PREMIM_PLUS" },
-  ];
+
+
 
   const modalites = useStoreModalite();
 
@@ -77,23 +74,42 @@ export default function FormsModalite({ item, handleCloseModal }) {
   };
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="mt-10">
+    <form onSubmit={handleSubmit(onSubmit)} className="mt-5">
+            <div className="form-control mb-4">
+        <label className="label">
+          <span className="label-text text-slate-600">Periode</span>
+        </label>
+        <select
+          {...register("periode", {
+            required: "Le champ periode est obligatoire.",
+          })}
+          className="select select-bordered w-full"
+        >
+          <option disabled defaultValue={`Selectionner une periode`}></option>
+          {periodes.map((item, index) => (
+            <option key={index} value={item.value}>
+              {item.designation}
+            </option>
+          ))}
+        </select>
+       
+      </div>
       {/* Champ Mois */}
       <div className="form-control mb-4">
         <label className="label">
-          <span className="label-text text-slate-600">Mois</span>
+          <span className="label-text text-slate-600">Durée</span>
         </label>
         <input
-          name="mois"
+          name="duree"
           type="number"
-          placeholder="mois"
+          placeholder="duree"
           className="input input-bordered w-full"
-          {...register("mois", {
+          {...register("duree", {
             required: "Le champ Mois est obligatoire.",
           })}
         />
         {errors.mois && (
-          <span className="text-sm text-rose-600">{errors.mois.message}</span>
+          <span className="text-sm text-rose-600">{errors.duree.message}</span>
         )}
       </div>
 
@@ -129,21 +145,26 @@ export default function FormsModalite({ item, handleCloseModal }) {
           })}
           className="select select-bordered w-full"
         >
-          <option disabled defaultValue={`Selectionner une categorie`}>
-            
-          </option>
-          {categories.map((item, index) => (
+          <option disabled defaultValue={`Selectionner une categorie`}></option>
+          {categoriesForfait.map((item, index) => (
             <option key={index} value={item.value}>
               {item.designation}
             </option>
           ))}
         </select>
-        {/* {errors.categorie && (
-          <span className="text-sm text-rose-600">
-            {errors.categorie.message}
-          </span>
-        )} */}
+       
+      </div >
+
+      <div  className="form-control mb-4">
+      <label className="label">
+          <span className="label-text text-slate-600">Description</span>
+        </label>
+      <textarea  {...register("description", {
+            required: "Le champ description est obligatoire.",
+          })} className="textarea textarea-bordered" placeholder="description"></textarea>
       </div>
+
+      
 
       {/* Bouton de soumission */}
       <button

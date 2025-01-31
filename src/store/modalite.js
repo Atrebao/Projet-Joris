@@ -1,7 +1,7 @@
 import { create } from "zustand";
 import { getAll, deleteOne } from "../services/service";
 import { BASE_URLS } from "../Utils/Utils";
-import { RECHERCHER_LISTES_MODALITE } from "../Utils/constant";
+import { RECHERCHER_LISTES_FORFAIT, RECHERCHER_LISTES_MODALITE } from "../Utils/constant";
 
 export const useStoreModalite = create((set) => ({
   loading: false,
@@ -14,7 +14,7 @@ export const useStoreModalite = create((set) => ({
       typeAbonnements:[]
     });
     try {
-      const modalites = await getAll(`${BASE_URLS}${RECHERCHER_LISTES_MODALITE}`)
+      const modalites = await getAll(`${BASE_URLS}${RECHERCHER_LISTES_FORFAIT}`)
       set({
         loading: false,
         data: modalites.data,

@@ -14,11 +14,19 @@ import TrashIcon from "../assets/icons/trash.svg";
 import { useStoreUser } from "../store/user";
 import AjouterModifierUtilisateur from "../components/AjouterModifierUtilisateur";
 import { getUserProfil, HOMEADMIN } from "../Utils/Utils";
+import { disable, getAll } from "../services/service";
+import {
+  DESACTIVER_UTILISATEUR,
+  RECHERCHER_LISTES_USER,
+  RECHERCHER_USER_PAR_ROLE,
+} from "../Utils/constant";
 
 export default function Utilisateurs() {
   const [searchLoading, setSearchLoading] = useState(false);
   const usersStore = useStoreUser();
-  const loading = usersStore.loading;
+  const [loading, setLoading] = useState(true);
+  const [users, setUsers] = useState([]);
+  const [selectItem, setSelectItem] = useState(null);
 
   useEffect(() => {
     if (!getUserProfil()) {
@@ -27,8 +35,17 @@ export default function Utilisateurs() {
   }, []);
 
   useEffect(() => {
-    usersStore.getAllData();
-    console.log(usersStore.data);
+    // usersStore.getAllData();
+    getAll(RECHERCHER_LISTES_USER)
+      .then((res) => {
+        if (res.data) {
+          setLoading(false);
+          setUsers(res.data);
+        }
+      })
+      .catch((error) => {
+        console.log(error);
+      });
   }, []);
 
   const columns = [
@@ -63,13 +80,14 @@ export default function Utilisateurs() {
       sortable: true,
     },
     {
-      name: "Numero telephone",
+      name: "Telephone",
       selector: (row) =>
         loading ? (
           <Skeleton animation="wave" variant="text" width={80} />
         ) : (
           row.numero
         ),
+      sortable: true,
     },
 
     {
@@ -179,7 +197,7 @@ export default function Utilisateurs() {
               </tr>
             </thead>
             <tbody className="font-semibold">
-              {!usersStore?.data?.length ? (
+              {!users?.length ? (
                 <tr>
                   <td colSpan={columns.length} className="text-center">
                     Aucune donnée
@@ -187,12 +205,119 @@ export default function Utilisateurs() {
                 </tr>
               ) : (
                 !loading &&
-                usersStore.data.map((item, index) => (
+                users.map((item, index) => (
                   <tr key={index}>
                     <td>{item.nom}</td>
                     <td>{item.username}</td>
                     <td>{item.email}</td>
-                    <td>{item.telephone}</td>
+                    <td>{item.numero}</td>
+                    <td>
+                      <div className="flex items-center gap-x-3">
+                        <div
+                          className="tooltip font-mtn"
+                          data-tip="Modifier le mot de passe"
+                        >
+                          <button
+                            onClick={() => {
+                              setSelectItem(item);
+                              document
+                                .getElementById("edit_password")
+                                .showModal();
+                            }}
+                            className="w-7 h-7 rounded-lg bg-main flex items-center justify-center"
+                          >
+                            <UserRoundCogIcon size={15} />
+                          </button>
+                        </div>
+
+                        <div className="tooltip" data-tip="Modifier">
+                          <button
+                            onClick={() => {
+                              setSelectItem(item);
+                              document.getElementById("edit_user").showModal();
+                            }}
+                            className="w-7 h-7 rounded-lg bg-main flex items-center justify-center"
+                          >
+                            <img src={EditPenIcon} alt="icon" className="w-4" />
+                          </button>
+                        </div>
+                        <div   className="tooltip font-mtn"
+                          data-tip={item.enabled ? "desactiver" :"activer"}>
+                          <button
+                            onClick={() => {
+                              document.getElementById("disable").showModal();
+                              setSelectItem(item);
+                            }}
+                            className="w-7 h-7 rounded-lg bg-red-100 flex items-center justify-center"
+                          >
+                            {item?.enabled ? (
+                              <PowerOffIcon size={14} />
+                            ) : (
+                              <PowerIcon size={14} />
+                            )}
+                          </button>
+                        </div>
+
+                        {/* <div
+                          className="tooltip font-mtn"
+                          data-tip="Editer le profil"
+                        >
+                          <button
+                            onClick={() => {
+                              setSelectItem(item);
+                              document
+                                .getElementById("edit_profil")
+                                .showModal();
+                            }}
+                            className="w-7 h-7 rounded-lg bg-main flex items-center justify-center"
+                          >
+                            <Settings2Icon size={15} />
+                          </button>
+                        </div> */}
+
+                        <dialog id="disable" className="modal">
+                          <div className="modal-box max-w-md rounded-lg">
+                            <h3 className="font-extrabold text-xl text-red-600 ">
+                              Attention
+                            </h3>
+                            <p className="pt-2 text-black font-medium">
+                              Voulez vous vraiment effectuer cette action ?
+                            </p>
+                            <div className="modal-action">
+                              <form
+                                method="dialog"
+                                className="w-full flex items-center justify-end gap-x-4"
+                              >
+                                <button className="bg-gray-100 text-gray-600 w-fit h-10 px-4 rounded-md flex items-center justify-center font-semibold">
+                                  Annuler
+                                </button>
+                                <button
+                                  onClick={() => {
+                                    disable(DESACTIVER_UTILISATEUR, selectItem.id)
+                                      .then((res) => {
+                                        toast.success(
+                                          `Utilisateur ${
+                                            selectItem?.enabled
+                                              ? "Désactiver"
+                                              : "Activer"
+                                          }`
+                                        );
+                                        
+                                      })
+                                      .catch((err) => {});
+                                  }}
+                                  className="bg-black text-white w-fit h-10 px-4 rounded-md flex items-center justify-center font-semibold"
+                                >
+                                  {selectItem?.enabled
+                                    ? "Désactiver"
+                                    : "Activer"}
+                                </button>
+                              </form>
+                            </div>
+                          </div>
+                        </dialog>
+                      </div>
+                    </td>
                   </tr>
                 ))
               )}
@@ -210,14 +335,35 @@ export default function Utilisateurs() {
               Enregistrer utilisateur
             </h1>
             <form method="dialog">
-              <button 
-              id="fermer-modal-ajout-user"
-              className="w-8 h-8 flex items-center justify-center rounded-lg bg-red-100 hover:bg-red-200 text-red-600 font-semibold">
+              <button
+                id="fermer-modal-ajout-user"
+                className="w-8 h-8 flex items-center justify-center rounded-lg bg-red-100 hover:bg-red-200 text-red-600 font-semibold"
+              >
                 ✕
               </button>
             </form>
           </div>
-          <AjouterModifierUtilisateur />
+          <AjouterModifierUtilisateur  />
+        </div>
+      </dialog>
+
+
+      <dialog id="edit_user" className="modal">
+        <div className="modal-box w-10/12 max-w-2xl">
+          <div className="modal-action">
+            <h1 className="mr-auto text-2xl font-bold font-mtn mb-8">
+              Modifier utilisateur
+            </h1>
+            <form method="dialog">
+              <button
+                id="fermer-modal-ajout-user"
+                className="w-8 h-8 flex items-center justify-center rounded-lg bg-red-100 hover:bg-red-200 text-red-600 font-semibold"
+              >
+                ✕
+              </button>
+            </form>
+          </div>
+          <AjouterModifierUtilisateur user= {selectItem} />
         </div>
       </dialog>
     </div>

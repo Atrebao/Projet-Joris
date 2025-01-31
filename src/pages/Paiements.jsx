@@ -1,3 +1,4 @@
+/* eslint-disable no-unused-vars */
 import React, { useState, useEffect } from "react";
 import SearchIcon from "@mui/icons-material/Search";
 import { ThreeDots, TailSpin } from "react-loader-spinner";
@@ -94,7 +95,6 @@ export default function Paiements() {
           <div className="flex items-center gap-x-3">
             <div className="tooltip" data-tip="Details">
               <button
-                
                 onClick={() => {
                   document.getElementById("details_paiement").showModal();
                 }}
@@ -108,7 +108,7 @@ export default function Paiements() {
               <div className="modal-box w-10/12 max-w-2xl">
                 <div className="modal-action">
                   <h1 className="mr-auto text-2xl font-bold font-mtn mb-8">
-                    Details de paiement 
+                    Details de paiement
                   </h1>
                   <form method="dialog">
                     <button className="w-8 h-8 flex items-center justify-center rounded-lg bg-red-100 hover:bg-red-200 text-red-600 font-semibold">
@@ -122,13 +122,17 @@ export default function Paiements() {
                       <div className="text-sm font-semibold text-gray-900">
                         Date de paiement
                       </div>
-                      <div className="mt-1 text-sm font-medium leading-6 text-blue-700 sm:col-span-2 sm:mt-0">{row.datePaiement}</div>
+                      <div className="mt-1 text-sm font-medium leading-6 text-blue-700 sm:col-span-2 sm:mt-0">
+                        {row.datePaiement}
+                      </div>
                     </div>
                     <div className="px-4 py-3 grid grid-cols-3 gap-4">
                       <div className="text-sm font-semibold text-gray-900">
-                      Mode paiement
+                        Mode paiement
                       </div>
-                      <div className="mt-1 text-sm font-medium leading-6 text-blue-700 sm:col-span-2 sm:mt-0">{row.modePaiement}</div>
+                      <div className="mt-1 text-sm font-medium leading-6 text-blue-700 sm:col-span-2 sm:mt-0">
+                        {row.modePaiement}
+                      </div>
                     </div>
                   </div>
                 </div>
