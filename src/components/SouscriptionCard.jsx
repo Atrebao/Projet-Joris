@@ -287,7 +287,7 @@ export default function SouscriptionCard({ subscription }) {
           <div className="flex justify-between items-center">
             <span className="text-gray-600">Durée</span>
             <span className="font-semibold">
-              {subscription?.mois || 0} mois
+              {subscription?.duree || 0} mois
             </span>
           </div>
           <div className="flex justify-between items-center mt-2">

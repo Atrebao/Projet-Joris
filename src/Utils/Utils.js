@@ -52,20 +52,27 @@ export const paymentMethods = [
   {
     id: "orange",
     name: "Orange Money",
-    value: "OM_MONEY",
+    value: "OM_SKAN",
     icon: "",
     color: "orange-500",
   },
   {
     id: "mtn",
     name: "MTN Money",
-    value: "MTN_MONEY",
+    value: "MTN_SKAN",
+    icon: "",
+    color: "yellow-500",
+  },
+  {
+    id: "moov",
+    name: "Moov Money",
+    value: "MOOV_SKAN",
     icon: "",
     color: "yellow-500",
   },
   {
     id: "visa",
-    name: "Carte Visa",
+    name: "Visa",
     icon: "",
     value: "VISA",
     color: "bindigo-500",
@@ -91,3 +98,9 @@ export   const periodes = [
   { designation: "mois", value: "MOIS" },
   { designation: "annee", value: "ANNEE" },
 ];
+
+export const plans = [
+  { designation: "Standard", value: "STANDARD" },
+  { designation: "Standard +", value: "STANDARD_PLUS" },
+  { designation: "Premium", value: "PREMIUM_PLUS" },
+]

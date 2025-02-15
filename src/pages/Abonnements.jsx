@@ -89,90 +89,94 @@ export default function Abonnements() {
   const closeModal = (idName) => {};
 
   return (
-    <div className="w-11/12 h-full mx-auto pt-14 ">
-      <h1 className="text-4xl font-bold">Abonnements</h1>
-      <div className="w-full mt-10 flex flex-wrap  items-center sm:justify-between space-y-4 ">
-        <div className="flex items-center gap-x-2">
-          <input
-            type="text"
-            placeholder="Rechercher"
-            className="input input-bordered w-full max-w-xs"
-            value={inputs}
-            onChange={(e) => setInputs(e.target.value)}
-          />
-          <button
-            className="w-14 h-11 bg-stone-800 text-white rounded-md flex items-center justify-center"
-            onClick={() => filteredData(inputs)}
-          >
-            {!searchLoading ? (
-              <SearchIcon />
-            ) : (
-              <TailSpin
-                height="25"
-                width="25"
-                color="#fff"
-                ariaLabel="Recherche en cours"
-                visible={searchLoading}
-              />
-            )}
-          </button>
-        </div>
+    <div className="w-11/12 h-full mx-auto pt-16">
+    {/* Titre principal */}
+    <h1 className="text-5xl font-extrabold text-gray-900  mb-10">
+       Abonnements
+    </h1>
+  
+    {/* Barre de recherche & Bouton d'ajout */}
+    <div className="w-full flex flex-col sm:flex-row items-center justify-between gap-6">
+      {/* Champ de recherche */}
+      <div className=" w-full sm:w-auto flex items-center">
+        <input
+          type="text"
+          placeholder=" 🔍Rechercher un abonnement..."
+          className="w-full sm:w-96 px-4 py-3 rounded-lg border border-gray-300 shadow-sm focus:ring-2 focus:ring-purple-500 transition-all"
+          value={inputs}
+          onChange={(e) => setInputs(e.target.value)}
+        />
         <button
-          className="p-3 rounded-lg shadow-sm bg-stone-700 hover:bg-stone-800 transition-all text-white"
-          onClick={showModalAdd}
+          className=" bg-purple-600 hover:bg-purple-700 text-white p-2 rounded-md transition-all"
+          onClick={() => filteredData(inputs)}
         >
-          Ajouter un abonnement
+          {!searchLoading ? (
+            <SearchIcon className="w-5 h-5" />
+          ) : (
+            <TailSpin height="20" width="20" color="#fff" />
+          )}
         </button>
       </div>
-
-      <div className="w-full mt-10">
-        <div className="container mx-auto px-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 py-10">
-          {isLoading
-            ? Array.from({ length: 4 }).map((_, index) => (
-                <div
-                  key={index}
-                  className="skeleton p-4 space-y-4 flex flex-col h-48"
-                ></div>
-              ))
-            : currentData.map((item, index) => (
-                <AbonnementCard key={index} item={item} />
-              ))}
-        </div>
-      </div>
-
-      {/* Pagination avec Material-UI */}
-      <div className="flex justify-center py-5">
-        {abonnementSotre.data.length > 0 && (
-          <Pagination
-            count={totalPages}
-            page={currentPage}
-            onChange={handlePageChange}
-            variant="outlined"
-            color="primary"
-            shape="rounded"
-          />
-        )}
-      </div>
-
-      {/* Dialog pour ajouter un abonnement */}
-      <dialog id="add-abonnement" className="modal">
-        <div className="modal-box">
-          <div className="modal-action">
-            <h1 className="mr-auto text-2xl font-bold font-mtn mb-8">
-              Enregistrer abonnement
-            </h1>
-            <form method="dialog">
-              <button
-                id="fermer-modal-ajout-abonnement"
-                className="w-8 h-8 flex items-center justify-center rounded-lg bg-red-100 hover:bg-red-200 text-red-600 font-semibold"
-              >
-                ✕
-              </button>
-            </form>
-          </div>
-          <AjouterModifierAbonnement />
-        </div>
-      </dialog>
+  
+      {/* Bouton d'ajout */}
+      <button
+        className="px-6 py-3 bg-purple-700 hover:bg-purple-800 text-white font-bold rounded-lg shadow-md transition-all"
+        onClick={showModalAdd}
+      >
+        ➕ Ajouter un abonnement
+      </button>
     </div>
+  
+    {/* Liste des abonnements */}
+    <div className="w-full mt-12">
+      <div className="container mx-auto px-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8 py-10">
+        {isLoading
+          ? Array.from({ length: 4 }).map((_, index) => (
+              <div
+                key={index}
+                className="bg-gray-200 rounded-lg h-48 animate-pulse"
+              ></div>
+            ))
+          : currentData.map((item, index) => (
+              <AbonnementCard key={index} item={item} />
+            ))}
+      </div>
+    </div>
+  
+    {/* Pagination */}
+    <div className="flex justify-center py-8">
+      {abonnementSotre.data.length > 0 && (
+        <Pagination
+          count={totalPages}
+          page={currentPage}
+          onChange={handlePageChange}
+          variant="outlined"
+          color="primary"
+          shape="rounded"
+        />
+      )}
+    </div>
+  
+    {/* Modal d'ajout d'abonnement */}
+    <dialog id="add-abonnement" className="modal">
+      <div className="modal-box">
+        <div className="modal-action">
+          <h2 className="mr-auto text-3xl font-bold text-gray-900 mb-6">
+            📝 Enregistrer un abonnement
+          </h2>
+          <form method="dialog">
+            <button
+              id="fermer-modal-ajout-abonnement"
+              className="w-8 h-8 flex items-center justify-center rounded-lg bg-red-100 hover:bg-red-200 text-red-600 transition-all"
+            >
+              ✕
+            </button>
+          </form>
+        </div>
+        <AjouterModifierAbonnement />
+      </div>
+    </dialog>
+  </div>
+  
   );
 }

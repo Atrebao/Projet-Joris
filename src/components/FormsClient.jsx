@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
 import { useStoreModalite } from "../store/modalite";
-import { paymentMethods } from "../Utils/Utils";
+import { BASE_URL, BASE_URLS, paymentMethods } from "../Utils/Utils";
 import { addOne, getAll } from "../services/service";
 import {
   ENVOYER_MAIL,
@@ -12,7 +12,7 @@ import {
 } from "../Utils/constant";
 import toast from "react-hot-toast";
 
-export default function FormsClient({ abonnement, userProfile }) {
+export default function FormsClient({ abonnement, userProfile, forfait }) {
   const navigate = useNavigate();
   const modalitesStore = useStoreModalite();
   const [isLoading, setIsLoading] = useState(false);
@@ -22,10 +22,10 @@ export default function FormsClient({ abonnement, userProfile }) {
     prenoms: "",
     numero: "",
     email: "",
-    typeAbonnement: {},
-    conditonUtilisation: "",
-    typeAppareil: "",
-    modePaiement: "",
+    modePaiement: {},
+    conditionUtilisation: "",
+    typeAppareil: ""
+   
   });
 
   const [modalite, setModalite] = useState({
@@ -43,7 +43,7 @@ export default function FormsClient({ abonnement, userProfile }) {
       prenoms: "",
       numero: "",
       email: "",
-      typeAbonnement: {},
+      modePaiement: {},
       conditonUtilisation: "",
     };
     setFormData(data);
@@ -57,8 +57,8 @@ export default function FormsClient({ abonnement, userProfile }) {
   };
 
   useEffect(() => {
-    modalitesStore.modalite();
-  }, [abonnement, userProfile]);
+    
+  }, [abonnement, userProfile, forfait]);
 
   const verifierStatutPaiement = async (reference) => {
     const interval = 5000; // Intervalle en millisecondes (5 secondes)
@@ -88,7 +88,7 @@ export default function FormsClient({ abonnement, userProfile }) {
                 username:
                   souscription.user.nom + " " + souscription.user.prenoms,
                 abonnement:
-                  souscription.abonnement.nom + " " + modalite.categorie,
+                  souscription.abonnement.nom + " " + forfait.categorie,
               };
               envoyerMail(dataMail);
               navigate("/");
@@ -109,7 +109,7 @@ export default function FormsClient({ abonnement, userProfile }) {
   };
 
   const envoyerMail = (data) => {
-    addOne(ENVOYER_MAIL, "application/json", data)
+    addOne(`${BASE_URLS}${ENVOYER_MAIL}`, "application/json", data)
       .then((res) => {
         if (res.data) {
           console.log("=====REPONSE MAIL=============== ", res.data);
@@ -120,39 +120,28 @@ export default function FormsClient({ abonnement, userProfile }) {
       });
   };
 
-  const handlePayment = async (method) => {};
 
-  // const handleSubmit = (e) => {
-  //   e.preventDefault();
-  //   const data = abonnement
-  //     ? { ...formData, abonnementId: abonnement.id }
-  //     : { ...formData };
-  //   navigate(`/paiement`, {
-  //     state: { ...data, typeAppareil: formData.typeAppareil },
-  //   });
-  //   clearForms();
-  // };
 
   const handleSubmit = (e) => {
     e.preventDefault();
     setIsLoading(true);
 
-    const dataReturn = { ...formData };
+    const dataReturn = { ...formData, montant: forfait?.prix || 0, abonnementId: abonnement?.id || 0 , forfaitId: forfait?.id || 0};
 
-    console.log("=====DATA RETURN=============== ");
+    //console.log("=====DATA RETURN=============== ", dataReturn);
 
     addOne(SOUSCRIRE, "application/json", dataReturn)
       .then((res) => {
         if (res.data) {
           console.log("=====REPONSE SOUSCRITPION=============== ", res.data);
           if (formData.modePaiement === "VISA") {
-            if (modalite?.categorie === "STANDARD_PLUS") {
+            if (forfait?.categorie === "STANDARD_PLUS") {
               window.open(
                 "https://amaterasu241.lemonsqueezy.com/buy/96897b67-3672-4724-b804-3d7203e18f33",
                 "_blank",
                 "noopener,noreferrer"
               );
-            } else if (modalite?.categorie === "PREMIUM") {
+            } else if (forfait?.categorie === "PREMIUM") {
               window.open(
                 "https://amaterasu241.lemonsqueezy.com/buy/96897b67-3672-4724-b804-3d7203e18f33",
                 "_blank",
@@ -166,90 +155,67 @@ export default function FormsClient({ abonnement, userProfile }) {
               );
             }
           } else {
-            /*
+            
             toast.success("Paiement effectué avec succès");
            
             setIsLoading()
             navigate("/")
-            */
+            
           }
 
           verifierStatutPaiement(res.data.reference);
         }
+        
       })
       .catch((error) => {
         console.error("Erreur lors du paiement:", error);
         toast.error("Erreur lors du paiement:", error);
         setIsLoading(false);
       });
+      
   };
 
   return (
-    <div className=" lg:w-full  bg-white p-8 rounded-2xl shadow-sm ">
-      <h2 className="text-2xl text-center font-bold mb-4">
-        {abonnement ? "Informations client" : "S'inscrire"}
+    <div className="w-full max-w-3xl bg-white p-6 md:p-8 rounded-2xl  mx-auto">
+      <h2 className="text-2xl text-center font-bold mb-6">
+        {formData.abonnement ? "Informations client" : "S'inscrire"}
       </h2>
+      
+      {/* Détails du forfait */}
+      {forfait && (
+        <div className="bg-gray-100 text-gray-500 p-4 rounded-lg mb-6 text-sm md:text-base">
+          <p><strong>Prix:</strong> {forfait.prix} FCFA</p>
+          <p><strong>Durée:</strong> {forfait.duree} {forfait.periode.toLowerCase()}  </p>
+          {/* <p><strong>Période:</strong> {forfait.periode}</p> */}
+          <p><strong>Catégorie:</strong> {forfait.categorie}</p>
+        </div>
+      )}
+      
       <form onSubmit={handleSubmit}>
-        <div className="grid grid-cols-2 gap-x-5 ">
-          <div className="form-control mb-4">
-            <label className="label">
-              <span className="label-text text-slate-600">Nom</span>
-            </label>
-            <input
-              value={formData.nom}
-              name="nomPrenoms"
-              type="text"
-              placeholder="Votre nom"
-              className="input input-bordered w-full"
-              required
-              onChange={(e) => handleUpdate("nom", e.target.value)}
-            />
-          </div>
-          <div className="form-control mb-4">
-            <label className="label">
-              <span className="label-text text-slate-600">Prénoms</span>
-            </label>
-            <input
-              value={formData.prenoms}
-              name="prenoms"
-              type="text"
-              placeholder="Votre prénoms"
-              className="input input-bordered w-full"
-              required
-              onChange={(e) => handleUpdate("prenoms", e.target.value)}
-            />
-          </div>
-
-          <div className="form-control mb-4">
-            <label className="label">
-              <span className="label-text text-slate-600">Numéro WhatsApp</span>
-            </label>
-            <input
-              value={formData.numero}
-              name="numero"
-              type="text"
-              placeholder="+XX XXX XXX XXX"
-              className="input input-bordered w-full"
-              required
-              onChange={(e) => handleUpdate("numero", e.target.value)}
-            />
-          </div>
-
-          <div className="form-control mb-4">
-            <label className="label">
-              <span className="label-text text-slate-600">Email</span>
-            </label>
-            <input
-              value={formData.email}
-              name="email"
-              type="email"
-              placeholder="Votre email"
-              className="input input-bordered w-full"
-              onChange={(e) => handleUpdate("email", e.target.value)}
-            />
-          </div>
-
-          <div className="form-control mb-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {[
+            { label: "Nom", name: "nom", type: "text", placeholder: "Votre nom" },
+            { label: "Prénoms", name: "prenoms", type: "text", placeholder: "Votre prénom" },
+            { label: "Numéro WhatsApp", name: "numero", type: "text", placeholder: "+XX XXX XXX XXX" },
+            { label: "Email", name: "email", type: "email", placeholder: "Votre email" }
+          ].map(({ label, name, type, placeholder }) => (
+            <div key={name} className="form-control">
+              <label className="label">
+                <span className="label-text text-slate-600">{label}</span>
+              </label>
+              <input
+                value={formData[name]}
+                name={name}
+                type={type}
+                placeholder={placeholder}
+                className="input input-bordered w-full"
+                required
+                onChange={(e) => handleUpdate(name, e.target.value)}
+              />
+            </div>
+          ))}
+          
+          <div className="form-control">
             <label className="label">
               <span className="label-text text-slate-600">Type d'appareil</span>
             </label>
@@ -260,96 +226,65 @@ export default function FormsClient({ abonnement, userProfile }) {
               className="select select-bordered w-full"
               required
             >
-              <option value="" disabled>
-                Sélectionnez un type
-              </option>
+              <option value="" disabled>Sélectionnez un type</option>
               {typeAppareilListes.map((item, index) => (
-                <option key={index} value={item.libelle}>
-                  {item.value}
-                </option>
+                <option key={index} value={item.libelle}>{item.value}</option>
               ))}
             </select>
           </div>
-
-          {/* {abonnement && (
-            <div className="form-control mb-4">
-              <label className="label">
-                <span className="label-text text-slate-600">
-                  Type d'abonnement
-                </span>
-              </label>
-              <select
-                value={formData.typeAbonnement}
-                name="typeAbonnement"
-                onChange={(e) => handleUpdate("typeAbonnement", e.target.value)}
-                className="select select-bordered w-full"
-                required
-              >
-                <option value="" disabled>
-                  Sélectionnez un type
-                </option>
-                {modalitesStore.data?.map((modalite, index) => (
-                  <option key={index} value={modalite.id}>
-                    {modalite.mois} mois ({modalite.prix} FCFA)
-                  </option>
-                ))}
-              </select>
-            </div>
-          )} */}
-
-          <div className="form-control mb-4">
+          
+          <div className="form-control">
             <label className="label">
-              <span className="label-text text-slate-600">
-                Mode de paiement
-              </span>
+              <span className="label-text text-slate-600">Mode de paiement</span>
             </label>
             <select
-              value={formData.typeAbonnement}
-              name="typeAbonnement"
-              onChange={(e) => handleUpdate("typeAbonnement", e.target.value)}
+              value={formData.modePaiement}
+              name="modePaiement"
+              onChange={(e) => handleUpdate("modePaiement", e.target.value)}
               className="select select-bordered w-full"
               required
             >
-              <option value="" disabled>
-                Sélectionnez un type
-              </option>
+              <option value="" disabled>Sélectionnez un type</option>
               {paymentMethods.map((methode, index) => (
-                <option key={index} value={methode.id}>
-                  {methode.name}
-                </option>
+                <option key={index} value={methode.value}>{methode.name}</option>
               ))}
             </select>
           </div>
         </div>
-        <div className="form-control">
+
+        <div className="form-control mt-4">
           <label className="flex items-center gap-3 cursor-pointer py-2">
             <input
               type="checkbox"
               className="h-5 w-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
               required
-              checked={formData.conditonUtilisation}
-              onChange={(e) =>
-                handleUpdate("conditonUtilisation", e.target.checked)
-              }
+              checked={formData.conditionUtilisation}
+              onChange={(e) => handleUpdate("conditionUtilisation", e.target.checked)}
             />
             <span className="text-sm md:text-base text-slate-600">
-              J'accepte les{" "}
-              <NavLink
-                to="/conditions"
-                className="text-blue-600 hover:underline"
-              >
+              J'accepte les {" "}
+              <NavLink to="/conditions" className="text-blue-600 hover:underline">
                 conditions générales d'utilisation
               </NavLink>
             </span>
           </label>
         </div>
+  
 
         <button
-          type="submit"
-          className="w-full bg-blue-500 text-white py-2 rounded-xl text-lg font-semibold mt-4 hover:bg-blue-600 transition-colors"
-        >
-          Soumettre
-        </button>
+            type="submit"
+          
+            className="w-full bg-blue-500 text-white py-2 rounded-xl text-lg font-semibold mt-4 hover:bg-blue-600 transition-colors"
+          >
+            {isLoading ? (
+              <span className="flex items-center justify-center gap-2">
+                <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                Traitement en cours...
+              </span>
+            ) : (
+              "Soumettre"
+            )}
+          </button>
       </form>
     </div>
   );

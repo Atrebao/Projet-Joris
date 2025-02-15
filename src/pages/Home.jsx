@@ -8,13 +8,19 @@ export default function () {
 
 
   return (
-    <div className="w-full h-full md:py-[65px] bg-slate-100   ">
-      <div className="w-full h-full">
-        {/* <ScrollingTextWithStyles/> */}
-        <Carousel />
-        <Services />
-       
-      </div>
+<div className="w-full h-full bg-gradient-to-b from-slate-50 to-slate-200 py-10 md:py-[65px]">
+  <div className="w-full h-full">
+    {/* Carousel avec effet de transition fluide */}
+    <div className="overflow-hidden">
+      <Carousel />
     </div>
+
+    {/* Section Services avec animation */}
+    <div className="mt-16 animate-fade-in">
+      <Services />
+    </div>
+  </div>
+</div>
+
   );
 }

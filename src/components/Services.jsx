@@ -25,45 +25,36 @@ export default function Services() {
 
 
   return (
-    <div>
-      {/* Categories */}
-      <div className=" w-full mx-auto my-[50px]">
-        <h1 className="text-blue-300  font-bold text-4xl text-center mt-28  ">
-          Nos services
-        </h1>
-        <div className="w-11/12 lg:w-4/5 mx-auto mt-28 ">
-          <img className="bg-cover w-full" src={services} alt="" />
-        </div>
-        {/* <div className="w-11/12 lg:w-4/5 mx-auto carousel  flex items-center justify-center space-x-[4px]  px-4 py-5   ">
-          {categories.map((data, index) => (
-            <div className="carousel-item">
-              <div
-                className={`  ${data.bgColor}  w-[80px]  md:w-[140px] h-[250px] rounded-[30px]  shadow-[0_20px_13px_-10px_rgba(0,0,0,0.5)]  flex items-center justify-center cursor-pointer hover:scale-105 duration-300 '`}
-              >
-                <img src={data.image} className="w-24 rounded-full " alt="" />
-              </div>
-            </div>
-          ))}
-        </div> */}
-      </div>
-      {/* Services */}
-      <div className="max-w-[1640px] mx-auto  px-4  ">
-        <h1 className="text-orange-400 font-bold text-4xl text-center mb-10">
-         Abonnements
-        </h1>
+<div className="w-full mx-auto my-20">
+  {/* Section Services */}
+  <h1 className="text-4xl  md:text-5xl font-extrabold text-blue-500 text-center mt-20">
+    🌟 Nos Services
+  </h1>
+  <div className="w-11/12 lg:w-4/5 mx-auto mt-16">
+    <img className="w-full rounded-xl " src={services} alt="Services" />
+  </div>
 
-        <div className="container mx-auto px-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 py-10">
-          {isLoading
-            ? Array.from({ length: 4 }).map((_, index) => (
-                <div
-                  key={index}
-                  className="skeleton p-4 space-y-4 flex flex-col h-48"
-                ></div>
-              ))
-            : abonnementSotre.data.map((item, index) => <AbonnementCard key={index} item={item} />)}
-        </div>
-      </div>
+  {/* Section Abonnements */}
+  <div className="max-w-7xl mx-auto px-6 mt-24">
+    <h1 className="text-4xl  md:text-5xl font-extrabold text-orange-500 text-center mb-12">
+      🔥 Nos Abonnements
+    </h1>
+
+    {/* Grid des abonnements */}
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8 py-10">
+      {isLoading
+        ? Array.from({ length: 4 }).map((_, index) => (
+            <div
+              key={index}
+              className="bg-gray-200 rounded-lg h-48 animate-pulse"
+            ></div>
+          ))
+        : abonnementSotre.data.map((item, index) => (
+            <AbonnementCard key={index} item={item} />
+          ))}
     </div>
+  </div>
+</div>
   );
 }
 

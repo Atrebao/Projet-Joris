@@ -1,38 +1,54 @@
 import React, { useState, useEffect } from "react";
-import { Select, MenuItem, OutlinedInput, Chip, Box } from "@mui/material";
+import Select from "react-select";
+//import { Select, MenuItem, OutlinedInput, Chip, Box } from "@mui/material";
 import { Check, X, ChevronDown } from "lucide-react";
-import { useStoreModalite } from "../store/modalite";
+
 import { useAbonnementStore } from "../store/abonnement";
 import toast from "react-hot-toast";
-import { addOne, editOne } from "../services/service";
-import { AJOUTER_ABONNEMENT, MODIFIER_ABONNEMENT } from "../Utils/constant";
+import { addOne, editOne, getAll } from "../services/service";
+import { AJOUTER_ABONNEMENT, MODIFIER_ABONNEMENT, RECHERCHER_LISTES_FORFAIT } from "../Utils/constant";
+import { BASE_URLS } from "../Utils/Utils";
 
 export default function AjouterModifierAbonnement({ abonnement }) {
-  const modalitesStore = useStoreModalite();
-  const abonnementSotre = useAbonnementStore();
+  const abonnementStore = useAbonnementStore();
+  const listeForfait = [];
+  const [forfaits, setForfaits] = useState([]);
   const [formData, setFormData] = useState({
     nom: "",
     image: "",
     categorie: "",
+   
   });
 
   const [selected, setSelected] = useState([]);
 
   useEffect(() => {
-    modalitesStore.modalite();
+   
     if (abonnement) {
-     
       setFormData({
         nom: abonnement.nom || "",
         image: abonnement.image || "",
         categorie: abonnement.categorie || "",
       });
     }
-  }, [abonnement]);
+  }, [abonnement ]);
+
+  useEffect(() => {
+      getAll(`${BASE_URLS}${RECHERCHER_LISTES_FORFAIT}`)
+      .then((res) => {
+        if(res.data){
+          setForfaits(res.data);
+        }
+      })
+  }, []);
+
+  forfaits.map((forfait) => {
+    listeForfait.push({value: forfait.id, label: `${forfait.duree} ${forfait.periode.toLowerCase()} (${forfait.prix} FCFA) - ${forfait.categorie} `} );
+  });
 
   const clearForm = () => {
     setFormData({
-      libelle: "",
+      nom: "",
       image: "",
       categorie: "",
     });
@@ -41,27 +57,26 @@ export default function AjouterModifierAbonnement({ abonnement }) {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    const data = { ...formData, modalites: selected };
+    const data = { ...formData, forfaits: selected };
 
     if (abonnement) {
       editOne(MODIFIER_ABONNEMENT, abonnement.id, formData)
-      .then((res) =>{
-        if(res.data){
-          abonnementSotre.abonnement();
+        .then(() => {
+          abonnementStore.getAllData();
           toast.success("Element modifié avec succès");
           clearForm();
-          document.getElementById(`fermer-modal-edit-abonnement-${abonnement?.id}`).click();
-        }
-      })
-      .catch((err) =>{
-        console.error("Erreur lors de la soumission:", err);
-        toast.error("Erreur lors de la soumission:", err);
-      })
-      
+          document
+            .getElementById(`fermer-modal-edit-abonnement-${abonnement?.id}`)
+            .click();
+        })
+        .catch((err) => {
+          console.error("Erreur lors de la soumission:", err);
+          toast.error("Erreur lors de la soumission:", err);
+        });
     } else {
       addOne(AJOUTER_ABONNEMENT, "application/json", data)
-        .then((res) => {
-          abonnementSotre.abonnement();
+        .then(() => {
+          abonnementStore.getAllData();
           toast.success("Element ajouté avec succès");
           clearForm();
           document.getElementById("fermer-modal-ajout-abonnement").click();
@@ -80,14 +95,21 @@ export default function AjouterModifierAbonnement({ abonnement }) {
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleMultiSelectChange = ({ target: { name, value } }) => {
-    setSelected(Array.isArray(value) ? value : []);
+  const handleMultiSelectChange = (selectedOptions) => {
+    const selectedIds = selectedOptions.map(option => option.value);
+    setSelected(selectedOptions);
     setFormData((prev) => ({
       ...prev,
-      [name]: Array.isArray(value) ? value : [],
+      forfaits: selectedOptions,
     }));
   };
-
+/*
+  const options = [
+    { id :1, value: "chocolate", label: "Chocolate" },
+    { id :2,value: "strawberry", label: "Strawberry" },
+    { id :3,value: "vanilla", label: "Vanilla" },
+  ];
+*/
   return (
     <>
       <form onSubmit={handleSubmit}>
@@ -121,14 +143,29 @@ export default function AjouterModifierAbonnement({ abonnement }) {
             required
           />
         </div>
+
+        <div className="form-control mb-4">
+          <label className="label">
+            <span className="label-text text-slate-600">Forfaits</span>
+          </label>
+          <Select
+            isMulti
+            name="forfaits"
+            options={listeForfait}
+            className="basic-multi-select  select-bordered w-full"
+            classNamePrefix="select"
+            onChange={handleMultiSelectChange}
+            
+          />
+        </div>
         {/* Sélection multiple */}
-        <MultiSelect
+        {/* <MultiSelect
           label="Modalités"
           options={modalitesStore.data}
           value={selected}
           onChange={handleMultiSelectChange}
           name="modalites"
-        />
+        /> */}
         {/* Champ catégorie (si non mode édition) */}
         {!abonnement && (
           <div className="form-control mb-4">
@@ -150,8 +187,6 @@ export default function AjouterModifierAbonnement({ abonnement }) {
             </select>
           </div>
         )}
-        
-
 
         {/* Bouton de soumission */}
         <div className="modal-action mt-5">

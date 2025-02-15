@@ -13,7 +13,9 @@ import { RECHERCHER_DETAILS } from "../Utils/constant";
 
 export default function Abonnement() {
   const { id } = useParams();
-
+  const location = useLocation();
+  const [forfait, setForfait] = useState(null);
+  const forfaitItem = location.state;
   const [abonnement, setAbonnement] = useState(null);
 
   const userProfile = getUserProfil();
@@ -56,6 +58,8 @@ export default function Abonnement() {
     console.log("Form Data:", data);
   };
 
+  useEffect(() => {setForfait(forfaitItem.item)}, [forfaitItem]);
+
   useEffect(() => {
     getAll(`${RECHERCHER_DETAILS}/${id}`)
       .then((res) => {
@@ -79,80 +83,85 @@ export default function Abonnement() {
 
   const [isDropdownOpen, setIsDropdownOpen] = useState(true);
   return (
-    <div className="min-h-screen py-[65px] bg-gradient-to-b from-purple-100 to-white">
-      {/* Main Content */}
-      <div
-        className={` max-w-7xl mx-auto px-4 py-12  ${
-          userProfile && userProfile.role === "client"
-            ? ""
-            : "grid grid-cols-1 md:grid-cols-2  gap-12"
-        }`}
-      >
-        {/* Left Column - Info */}
-        <div className="space-y-8">
-          <div className="bg-black p-8 rounded-2xl text-white">
-            <div className="flex items-center space-x-3 mb-6">
-              {iconMap[abonnement?.icon]}
-              <h1 className="text-3xl font-bold">{abonnement?.nom}</h1>
-            </div>
-            <p className="text-xl mb-6">{abonnement?.description}</p>
-          </div>
-
-          {/* Features */}
-          <div className="bg-white p-8 rounded-2xl shadow-sm">
-            <h2 className="text-2xl font-bold mb-6">
-              Pourquoi choisir {abonnement?.nom} ?
-            </h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {[
-                "Son Spatial & Lossless",
-                "Paroles en temps réel",
-                "Mix personnalisés",
-                "Experts musicaux",
-                "Compatible tous appareils",
-                "Partage facile",
-              ].map((feature) => (
-                <div key={feature} className="flex items-center space-x-2">
-                  <Check className="h-5 w-5 text-green-500" />
-                  <span>{feature}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {userProfile && userProfile.role === "client" && (
-            <div className="bg-white p-8 rounded-2xl shadow-sm">
-              <h2 className="text-2xl font-bold mb-6">
-                Veuillez choisir le type d'abonnement
-              </h2>
-              <div>
-                {abonnement?.modalite?.map((item, index) => (
-                  <div key={index} className="form-control">
-                    <label className="flex items-center gap-3 cursor-pointer py-2">
-                      <input
-                        value={typeAbonnement}
-                        type="checkbox"
-                        className="h-5 w-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                        checked={checkedIndex === index}
-                        onChange={(e) => handleCheckboxChange(index, item)}
-                      />
-                      <span className="text-sm md:text-xl text-slate-600 font-semibold">
-                        {item.mois} mois - {item.prix} FCFA
-                      </span>
-                    </label>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
+    <div className="min-h-screen py-16 bg-gradient-to-b from-purple-200 via-white to-purple-50">
+  {/* Contenu principal */}
+  <div
+    className={`max-w-7xl mx-auto px-6 py-12 ${
+      userProfile && userProfile.role === "client"
+        ? ""
+        : "grid grid-cols-1 md:grid-cols-2 gap-12"
+    }`}
+  >
+    {/* Colonne gauche - Infos */}
+    <div className="space-y-8">
+      {/* Carte principale */}
+      <div className="bg-black p-10 rounded-3xl text-white shadow-xl hover:shadow-2xl transition-all duration-300">
+        <div className="flex items-center space-x-4 mb-6">
+          {iconMap[abonnement?.icon]}
+          <h1 className="text-4xl font-bold">{abonnement?.nom}</h1>
         </div>
-
-        {/* Right Column - Form */}
-        {!(userProfile && userProfile.role === "client") && (
-          <FormsClient abonnement={abonnement} userProfile={userProfile} />
-        )}
+        <p className="text-xl opacity-90">{abonnement?.description}</p>
       </div>
-      {/* <PaymentPage formData={formData} /> */}
+
+      {/* Avantages */}
+      <div className="bg-white p-10 rounded-3xl shadow-md hover:shadow-xl transition-all duration-300">
+        <h2 className="text-3xl font-bold text-gray-800 mb-6">
+          Pourquoi choisir {abonnement?.nom} ?
+        </h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {[
+            "Son Spatial & Lossless",
+            "Paroles en temps réel",
+            "Mix personnalisés",
+            "Experts musicaux",
+            "Compatible tous appareils",
+            "Partage facile",
+          ].map((feature, index) => (
+            <div key={index} className="flex items-center space-x-3">
+              <Check className="h-6 w-6 text-green-500" />
+              <span className="text-lg text-gray-700">{feature}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Sélection de l'abonnement */}
+      {userProfile && userProfile.role === "client" && (
+        <div className="bg-white p-10 rounded-3xl shadow-md hover:shadow-xl transition-all duration-300">
+          <h2 className="text-3xl font-bold text-gray-800 mb-6">
+            Choisissez votre abonnement
+          </h2>
+          <div className="space-y-4">
+            {abonnement?.modalite?.map((item, index) => (
+              <label
+                key={index}
+                className="flex items-center gap-4 cursor-pointer p-4 bg-gray-100 rounded-lg hover:bg-gray-200 transition-all"
+              >
+                <input
+                  value={typeAbonnement}
+                  type="checkbox"
+                  className="h-5 w-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                  checked={checkedIndex === index}
+                  onChange={() => handleCheckboxChange(index, item)}
+                />
+                <span className="text-lg font-semibold text-gray-700">
+                  {item.mois} mois - {item.prix} FCFA
+                </span>
+              </label>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
+
+    {/* Colonne droite - Formulaire */}
+    {!(userProfile && userProfile.role === "client") && (
+      <div className="bg-white p-10 rounded-3xl  hover:shadow-2xl transition-all duration-300">
+        <FormsClient abonnement={abonnement} userProfile={userProfile} forfait={forfait} />
+      </div>
+    )}
+  </div>
+</div>
+
   );
 }

@@ -8,13 +8,14 @@ export const RECHERCHER_LISTES_MODALITE= "/modalites/rechercher-modalites" ;
 export const SUPPRIMER_MODALITE = "/modalites/supprimer" ;
 export const RECHERCHER_PAR_ID = "/modalites/rechercher-par-id" ;
 
-//============================================================================================================
+//============================================FORFAIT============================================================
 
 
 export const AJOUTER_FORFAIT = "/forfaits/enregistrer" ;
 export const MODIFIER_FORFAIT = "/forfaits/modifier" ;
 export const RECHERCHER_LISTES_FORFAIT= "/forfaits/rechercher-forfaits" ;
 export const SUPPRIMER_FORFAIT = "/forfaits/supprimer" ;
+export const RECHERCHER_FORFAITS_ABONNEMENT= "/forfait-abonnement/rechercher-forfaits-abonnement" ;
 
 
 //===========================================ABONNEMENTS=======================================================

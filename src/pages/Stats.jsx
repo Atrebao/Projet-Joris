@@ -115,51 +115,43 @@ export default function Stats() {
   };
 
   return (
-    <div className="w-11/12 h-full mx-auto pt-14">
-      <div className="flex items-center justify-between">
-        <h1 className="text-4xl font-bold">Tableau de bord</h1>
-        <div className="bg-muted/50 gap-4 ">
-          <DateFilter filtrerChiffreAffaire={filterChiffreAffaireByParam} />
-        </div>
-      </div>
-      <div className="w-full py-14 grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="w-full  max-w-lg  p-5 bg-white rounded-xl  shadow-md flex items-center justify-between ">
-          <div className="">
-            <p className="text-gray-600 pb-3 font-semibold">Chiffre affaire</p>
-            <h2 className="text-3xl font-bold ">0 F CFA</h2>
-          </div>
-          <div className="p-3 rounded-full bg-stone-700 text-md text-white">
-            <AttachMoneyIcon />
-          </div>
-        </div>
-        <StatCard
-          designation={"Total souscription"}
-          total={0}
-          rappord={0}
-          icon={AttachMoneyIcon}
-        />
-        <div className="w-full  max-w-lg  p-5 bg-white rounded-xl  shadow-md flex items-center justify-between ">
-          <div className="">
-            <p className="text-gray-600 pb-3 font-semibold">Total client</p>
-            <h2 className="text-3xl font-bold ">0 </h2>
-            <p className="text-xs font-semibold text-orange-400">
-              Rapport jour 0
-            </p>
-          </div>
-          <div className="p-3 rounded-full bg-stone-700 text-md text-white">
-            <AttachMoneyIcon />
-          </div>
-        </div>
-      </div>
-      <div className="w-full  pt-7 rounded-sm shadow-md p-3 bg-white">
-        <h1 className="text-md font-semibold">Chiffre d'affaire</h1>
-        <Bar
-          className="mt-2 p-4"
-          height={90}
-          options={grapheChiffreAffaire.options}
-          data={grapheChiffreAffaire.data}
-        />
+    <div className="w-11/12 mx-auto pt-14">
+    {/* Header */}
+    <div className="flex flex-col md:flex-row items-center justify-between mb-6">
+      <h1 className="text-4xl font-bold text-gray-800">Tableau de bord</h1>
+      <div className="bg-muted/50 p-3 rounded-lg shadow-sm hover:shadow-md transition-all">
+        <DateFilter filtrerChiffreAffaire={filterChiffreAffaireByParam} />
       </div>
     </div>
+    
+    {/* Stats Section */}
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <StatCard
+        title="Chiffre d'affaires"
+        value="0 F CFA"
+        icon={<AttachMoneyIcon className="text-white" />}
+        bgColor="bg-green-600"
+      />
+      <StatCard
+        title="Total souscriptions"
+        value="0"
+        icon={<AttachMoneyIcon className="text-white" />}
+        bgColor="bg-blue-600"
+      />
+      <StatCard
+        title="Total clients"
+        value="0"
+        subtitle="Rapport jour 0"
+        icon={<AttachMoneyIcon className="text-white" />}
+        bgColor="bg-orange-600"
+      />
+    </div>
+    
+    {/* Graph Section */}
+    <div className="w-full mt-10 bg-white p-6 rounded-xl shadow-md hover:shadow-lg transition-all">
+      <h2 className="text-lg font-semibold text-gray-800 mb-4">Chiffre d'affaire</h2>
+      <Bar className="mt-2" height={90} options={grapheChiffreAffaire.options} data={grapheChiffreAffaire.data} />
+    </div>
+  </div>
   );
 }

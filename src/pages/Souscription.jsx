@@ -16,6 +16,8 @@ export default function Souscription() {
   const souscriptionStore = useSouscriptionStore();
   const isLoading = souscriptionStore.loading;
   const [searchLoading, setSearchLoading] = useState(false);
+  const [statut, setStatut] = useState("");
+  const [etat, setEtat] = useState("");
 
   useEffect(() => {
     if (!getUserProfil()) {
@@ -92,6 +94,15 @@ export default function Souscription() {
     { libelle: "Expiré", value: "EXPIRE" },
   ];
 
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    if (name === "statut") {
+      setStatut(value);
+    } else {
+      setEtat(value);
+    }
+  };
+
   return (
     <div className="w-11/12 h-full mx-auto pt-14">
       <h1 className="text-4xl font-bold">Souscriptions</h1>
@@ -108,7 +119,11 @@ export default function Souscription() {
           />
 
           <div className="w-full ">
-            <select className="select select-bordered w-full max-w-xs">
+            <select 
+            name="statut"
+            className="select select-bordered w-full max-w-xs"
+            onChange={handleChange}
+            >
               <option disabled selected>
                 Statut
               </option>
@@ -121,7 +136,10 @@ export default function Souscription() {
           </div>
 
           <div className="w-full ">
-            <select className="select select-bordered w-full max-w-xs">
+            <select className="select select-bordered w-full max-w-xs" 
+            name="etat"
+             onChange={handleChange}
+            >
               <option disabled selected>
                 Etat
               </option>
@@ -152,12 +170,7 @@ export default function Souscription() {
             </button>
           </div>
         </div>
-        {/* <button
-          className="p-3 rounded-lg shadow-sm bg-stone-700 hover:bg-stone-800 transition-all text-white"
-          onClick={showModalAdd}
-        >
-          Ajouter un abonnement
-        </button> */}
+
       </div>
 
       {/* Liste des souscriptions */}

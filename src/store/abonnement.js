@@ -2,6 +2,7 @@ import { create } from "zustand";
 
 import { getAll, deleteOne } from "../services/service";
 import { RECHERCHER_DETAILS, RECHERCHER_LISTES_ABONNEMENT } from "../Utils/constant";
+import { BASE_URLS } from "../Utils/Utils";
 
 export const useAbonnementStore = create((set) => ({
   loading: false,
@@ -16,7 +17,7 @@ export const useAbonnementStore = create((set) => ({
     });
 
     try {
-      const abonnements = await getAll(RECHERCHER_LISTES_ABONNEMENT);
+      const abonnements = await getAll(`${BASE_URLS}${RECHERCHER_LISTES_ABONNEMENT}`);
 
       setTimeout(() => {
         set({
@@ -34,7 +35,7 @@ export const useAbonnementStore = create((set) => ({
     }
   },
   getAbonnement : async (id)=>{
-    const abonnement = await getAll(`${RECHERCHER_DETAILS}/${id}`);
+    const abonnement = await getAll(`${BASE_URLS} ${RECHERCHER_DETAILS}/${id}`);
     set({
       loading: false,
       abonnement : abonnement
