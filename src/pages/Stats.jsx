@@ -4,7 +4,7 @@ import StatCard from "../components/StatCard";
 import { getUserProfil, HOMEADMIN, months } from "../Utils/Utils";
 import { DateFilter } from "../components/DateFilter";
 import { getGrapheChiffreAffaire } from "../services/StatsService";
-import {useNavigate} from 'react-router-dom'
+import { useNavigate } from "react-router-dom";
 import {
   BarElement,
   CategoryScale,
@@ -14,6 +14,7 @@ import {
   Tooltip,
 } from "chart.js";
 import { Bar } from "react-chartjs-2";
+import { RECHERCHER_CHIFFRE_AFFAIRE } from "../Utils/constant";
 ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip);
 export default function Stats() {
   const navigate = useNavigate();
@@ -59,7 +60,11 @@ export default function Stats() {
   });
 
   const recupereChiffreAffaire = (filterParam) => {
-    getGrapheChiffreAffaire("", "application/json", filterParam)
+    getGrapheChiffreAffaire(
+      RECHERCHER_CHIFFRE_AFFAIRE,
+      "application/json",
+      filterParam
+    )
       .then((res) => {
         setGrapheChiffreAffaire((prev) => ({
           ...prev,
@@ -77,15 +82,17 @@ export default function Stats() {
             ],
           },
         }));
+
+        console.log(res.data);
       })
       .catch((err) => {});
   };
 
   useEffect(() => {
     if (!getUserProfil()) {
-      navigate(`${HOMEADMIN}/login`)
+      navigate(`${HOMEADMIN}/login`);
     }
-  }, [])
+  }, []);
 
   useEffect(() => {
     const date = new Date();
@@ -96,10 +103,9 @@ export default function Stats() {
       annee: date.getFullYear(),
       dateDebut: "",
       dateFin: "",
-      status: "",
     };
 
-    //recupereChiffreAffaire(filterParam);
+    recupereChiffreAffaire(filterParam);
   }, []);
 
   const filterChiffreAffaireByParam = (filter) => {
@@ -109,49 +115,55 @@ export default function Stats() {
       annee: filter.annee,
       dateDebut: filter.debut,
       dateFin: filter.fin,
-      status: filter.status,
     };
     recupereChiffreAffaire(filterParam);
   };
 
   return (
     <div className="w-11/12 mx-auto pt-14">
-    {/* Header */}
-    <div className="flex flex-col md:flex-row items-center justify-between mb-6">
-      <h1 className="text-4xl font-bold text-gray-800">Tableau de bord</h1>
-      <div className="bg-muted/50 p-3 rounded-lg shadow-sm hover:shadow-md transition-all">
-        <DateFilter filtrerChiffreAffaire={filterChiffreAffaireByParam} />
+      {/* Header */}
+      <div className="flex flex-col md:flex-row items-center justify-between mb-6">
+        <h1 className="text-4xl font-bold text-gray-800">Tableau de bord</h1>
+        <div className="bg-muted/50 p-3 rounded-lg shadow-sm hover:shadow-md transition-all">
+          <DateFilter filtrerChiffreAffaire={filterChiffreAffaireByParam} />
+        </div>
+      </div>
+
+      {/* Stats Section */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <StatCard
+          title="Chiffre d'affaires"
+          value="0 F CFA"
+          icon={<AttachMoneyIcon className="text-white" />}
+          bgColor="bg-green-600"
+        />
+        <StatCard
+          title="Total souscriptions"
+          value="0"
+          icon={<AttachMoneyIcon className="text-white" />}
+          bgColor="bg-blue-600"
+        />
+        <StatCard
+          title="Total clients"
+          value="0"
+          subtitle="Rapport jour 0"
+          icon={<AttachMoneyIcon className="text-white" />}
+          bgColor="bg-orange-600"
+        />
+      </div>
+
+      {/* Graph Section */}
+      <div className="w-full mt-10 bg-white p-6 rounded-xl shadow-md hover:shadow-lg transition-all">
+        <h2 className="text-lg font-semibold text-gray-800 mb-4">
+          Chiffre d'affaire
+        </h2>
+        <Bar
+          className="mt-2"
+          height={90}
+          options={grapheChiffreAffaire.options}
+          data={grapheChiffreAffaire.data}
+        />
       </div>
     </div>
-    
-    {/* Stats Section */}
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-      <StatCard
-        title="Chiffre d'affaires"
-        value="0 F CFA"
-        icon={<AttachMoneyIcon className="text-white" />}
-        bgColor="bg-green-600"
-      />
-      <StatCard
-        title="Total souscriptions"
-        value="0"
-        icon={<AttachMoneyIcon className="text-white" />}
-        bgColor="bg-blue-600"
-      />
-      <StatCard
-        title="Total clients"
-        value="0"
-        subtitle="Rapport jour 0"
-        icon={<AttachMoneyIcon className="text-white" />}
-        bgColor="bg-orange-600"
-      />
-    </div>
-    
-    {/* Graph Section */}
-    <div className="w-full mt-10 bg-white p-6 rounded-xl shadow-md hover:shadow-lg transition-all">
-      <h2 className="text-lg font-semibold text-gray-800 mb-4">Chiffre d'affaire</h2>
-      <Bar className="mt-2" height={90} options={grapheChiffreAffaire.options} data={grapheChiffreAffaire.data} />
-    </div>
-  </div>
   );
 }

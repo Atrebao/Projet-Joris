@@ -91,9 +91,9 @@ export const years = [
 export const categoriesForfait = [
   { designation: "Prive", value: "PRIVE" },
   { designation: "Public", value: "PUBLIC" },
-]
+];
 
-export   const periodes = [
+export const periodes = [
   { designation: "jours", value: "JOURS" },
   { designation: "mois", value: "MOIS" },
   { designation: "annee", value: "ANNEE" },
@@ -103,4 +103,16 @@ export const plans = [
   { designation: "Standard", value: "STANDARD" },
   { designation: "Standard +", value: "STANDARD_PLUS" },
   { designation: "Premium", value: "PREMIUM_PLUS" },
-]
+];
+
+export const statutPaiementsListe = [
+  { libelle: "Succès", value: "SUCCES" },
+  { libelle: "Echec", value: "ECHEC" },
+  { libelle: "En attente de paiement", value: "EN_ATTENTE_DE_PAIEMENT" },
+];
+
+export const etatSouscriptionsListe = [
+  { libelle: "Actif", value: "ACTIF" },
+  { libelle: "Inactif", value: "INACTIF" },
+  { libelle: "Expiré", value: "EXPIRE" },
+];

@@ -5,7 +5,12 @@ import { ThreeDots, TailSpin } from "react-loader-spinner";
 import Pagination from "@mui/material/Pagination";
 import SouscriptionCard from "../components/SouscriptionCard";
 import { useSouscriptionStore } from "../store/souscription";
-import { getUserProfil, HOMEADMIN } from "../Utils/Utils";
+import {
+  etatSouscriptionsListe,
+  getUserProfil,
+  HOMEADMIN,
+  statutPaiementsListe,
+} from "../Utils/Utils";
 export default function Souscription() {
   const [data, setData] = useState([]);
   //const [souscriptions, setSouscriptions] = useState([]);
@@ -26,7 +31,7 @@ export default function Souscription() {
   }, []);
 
   useEffect(() => {
-    souscriptionStore.getAllData("");
+    souscriptionStore.getAllData();
   }, []);
 
   /*
@@ -53,18 +58,20 @@ export default function Souscription() {
   }, []);
   */
 
-  const filteredData = (inputValue) => {
-    const filter = souscriptionStore.souscriptions.filter((x) =>
-      x.name.toLowerCase().startsWith((inputValue || "").toLowerCase())
-    );
+  // const filteredData = (inputValue) => {
+  //   console.log(inputValue);
+  //   const filter = souscriptionStore.souscriptions.filter((x) =>
+  //     x.name.toLowerCase().startsWith((inputValue || "").toLowerCase())
+  //   );
+  //   setData(filter);
+  //   setCurrentPage(1); // Réinitialiser à la première page après un filtre
+  // };
+
+  const filteredData = () => {
+    souscriptionStore.getAllData(statut, etat);
+    const filter = souscriptionStore.souscriptions;
     setData(filter);
     setCurrentPage(1); // Réinitialiser à la première page après un filtre
-  };
-
-  const handleInputChange = (e) => {
-    const value = e.target.value;
-    setInputs(value);
-    filteredData(value);
   };
 
   // Calcul des items affichés pour la page actuelle
@@ -82,18 +89,6 @@ export default function Souscription() {
     setCurrentPage(page);
   };
 
-  const statutPaiementsListe = [
-    { libelle: "Succès", value: "SUCCES" },
-    { libelle: "Echec", value: "ECHEC" },
-    { libelle: "En attente de paiement", value: "EN_ATTENTE_DE_PAIEMENT" },
-  ];
-
-  const etatSouscriptionsListe = [
-    { libelle: "Actif", value: "ACTIF" },
-    { libelle: "Inactif", value: "INACTIF" },
-    { libelle: "Expiré", value: "EXPIRE" },
-  ];
-
   const handleChange = (e) => {
     const { name, value } = e.target;
     if (name === "statut") {
@@ -110,19 +105,19 @@ export default function Souscription() {
       {/* Barre de recherche */}
       <div className="w-full mt-10 flex flex-wrap  items-center sm:justify-between space-y-4 ">
         <div className="flex items-center gap-x-2">
-          <input
+          {/* <input
             type="text"
             placeholder="Rechercher"
             className="input input-bordered w-full max-w-xs"
             value={inputs}
             onChange={(e) => setInputs(e.target.value)}
-          />
+          /> */}
 
           <div className="w-full ">
-            <select 
-            name="statut"
-            className="select select-bordered w-full max-w-xs"
-            onChange={handleChange}
+            <select
+              name="statut"
+              className="select select-bordered w-full max-w-xs"
+              onChange={handleChange}
             >
               <option disabled selected>
                 Statut
@@ -136,9 +131,10 @@ export default function Souscription() {
           </div>
 
           <div className="w-full ">
-            <select className="select select-bordered w-full max-w-xs" 
-            name="etat"
-             onChange={handleChange}
+            <select
+              className="select select-bordered w-full max-w-xs"
+              name="etat"
+              onChange={handleChange}
             >
               <option disabled selected>
                 Etat
@@ -170,7 +166,6 @@ export default function Souscription() {
             </button>
           </div>
         </div>
-
       </div>
 
       {/* Liste des souscriptions */}
