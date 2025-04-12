@@ -10,7 +10,7 @@ export const useSouscriptionStore = create((set) => ({
   data: [],
   sosucriptions: [],
   souscription: {},
-  getAllData: async (statut, etat) => {
+  getAllData: async (statut, etat, param) => {
     set({
       loading: true,
       data: [],
@@ -18,7 +18,7 @@ export const useSouscriptionStore = create((set) => ({
     });
     try {
       const souscriptions = await getAll(
-        `${RECHERCHER_LISTES_SOUSCRIPTION}?statut=${statut}&etat=${etat}`
+        `${RECHERCHER_LISTES_SOUSCRIPTION}?statut=${statut}&etat=${etat}&param=${param}`
       );
       setTimeout(() => {
         set({

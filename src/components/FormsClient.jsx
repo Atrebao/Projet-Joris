@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
 import { useStoreModalite } from "../store/modalite";
-import { BASE_URL, BASE_URLS, paymentMethods } from "../Utils/Utils";
+import { BASE_URL, BASE_URLS, paymentMethods, savePaiement } from "../Utils/Utils";
 import { addOne, getAll } from "../services/service";
 import {
   ENVOYER_MAIL,
@@ -155,15 +155,15 @@ export default function FormsClient({ abonnement, userProfile, forfait }) {
               );
             }
           } else {
-            
-            toast.success("Paiement effectué avec succès");
-           
-            setIsLoading()
-            navigate("/")
-            
-          }
+            window.open(
+              "https://pay.djamo.com/biq9v",
+              "_blank",
+              "noopener,noreferrer"
+            );
 
-          verifierStatutPaiement(res.data.reference);
+          }
+          savePaiement(res.data);
+          verifierStatutPaiement(res.data);
         }
         
       })

@@ -105,13 +105,13 @@ export default function Souscription() {
       {/* Barre de recherche */}
       <div className="w-full mt-10 flex flex-wrap  items-center sm:justify-between space-y-4 ">
         <div className="flex items-center gap-x-2">
-          {/* <input
+          <input
             type="text"
             placeholder="Rechercher"
             className="input input-bordered w-full max-w-xs"
             value={inputs}
             onChange={(e) => setInputs(e.target.value)}
-          /> */}
+          />
 
           <div className="w-full ">
             <select

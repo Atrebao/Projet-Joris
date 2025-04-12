@@ -40,6 +40,11 @@ export const RECHERCHER_DETAILS_SOUSCRIPTION =
   "/souscription/rechercher-details";
 export const VERIFIER_STATUT_SOUSCRIPTION =
   "/souscription/verifier-statut-paiement-souscription";
+export const MODIFIER_STATUT_SOUSCRIPTION =
+  "/souscription/modifier-statut-souscription";
+
+export const MODIFIER_ETAT_SOUSCRIPTION = 
+  "/souscription/modifier-etat"
 
 //=====================================UTILISATEURS=============================
 

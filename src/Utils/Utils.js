@@ -16,6 +16,25 @@ export const saveToken = (token) => {
   return localStorage.setItem("accessToken", JSON.stringify(token));
 };
 
+export const savePaiement = (paiement) => {
+
+  const p = getPaiement();
+  if(p){
+    if(p.status === "SUCCES" || p.status === "ECHEC"){
+     
+      localStorage.removeItem("p");
+
+      return localStorage.setItem("paiement", JSON.stringify(paiement));
+    } 
+   
+  }
+  
+};
+
+export const getPaiement = () => {
+  return JSON.parse(localStorage.getItem("paiement"));
+}
+
 export const getUserProfil = () => {
   return JSON.parse(localStorage.getItem("infoUser"));
 };
@@ -41,43 +60,66 @@ export const months = [
   { code: 12, name: "Décembre" },
 ];
 
+
+// export const paymentMethods = [
+//   {
+//     id: "wave",
+//     name: "Wave",
+//     value: "WAVE",
+//     icon: "", // Vous pouvez remplacer par une vraie image
+//     color: "blue-500",
+//   },
+//   {
+//     id: "orange",
+//     name: "Orange Money",
+//     value: "OM_SKAN",
+//     icon: "",
+//     color: "orange-500",
+//   },
+//   {
+//     id: "mtn",
+//     name: "MTN Money",
+//     value: "MTN_SKAN",
+//     icon: "",
+//     color: "yellow-500",
+//   },
+//   {
+//     id: "moov",
+//     name: "Moov Money",
+//     value: "MOOV_SKAN",
+//     icon: "",
+//     color: "yellow-500",
+//   },
+//   {
+//     id: "visa",
+//     name: "Visa",
+//     icon: "",
+//     value: "VISA",
+//     color: "bindigo-500",
+//   },
+// ];
+
+
 export const paymentMethods = [
-  {
-    id: "wave",
-    name: "Wave",
-    value: "WAVE",
-    icon: "", // Vous pouvez remplacer par une vraie image
-    color: "blue-500",
-  },
-  {
-    id: "orange",
-    name: "Orange Money",
-    value: "OM_SKAN",
-    icon: "",
-    color: "orange-500",
-  },
-  {
-    id: "mtn",
-    name: "MTN Money",
-    value: "MTN_SKAN",
-    icon: "",
-    color: "yellow-500",
-  },
-  {
-    id: "moov",
-    name: "Moov Money",
-    value: "MOOV_SKAN",
-    icon: "",
-    color: "yellow-500",
-  },
-  {
+     {
     id: "visa",
     name: "Visa",
     icon: "",
     value: "VISA",
     color: "bindigo-500",
   },
-];
+  {
+    id: "mobile_money",
+    name: "Mobile money",
+    icon: "",
+    value: "MOBILE_MONEY",
+    color: "bindigo-500",
+  },
+
+]
+
+
+
 
 export const years = [
   { name: "2027" },

@@ -18,6 +18,11 @@ import {
   Mail,
   Phone,
 } from "lucide-react";
+import { addOne } from "../services/service";
+import toast from "react-hot-toast";
+import { MODIFIER_ETAT_SOUSCRIPTION } from "../Utils/constant";
+import { BASE_URLS } from "../Utils/Utils";
+import { useSouscriptionStore } from "../store/souscription";
 
 const defaultSubscription = {
   id: "",
@@ -42,6 +47,10 @@ const defaultSubscription = {
 
 export default function SouscriptionCard({ subscription }) {
   const location = useLocation();
+
+  const [etat, setEtat] = useState("");
+
+  const souscriptionStore = useSouscriptionStore();
 
   // Formatter la date avec vérification
 
@@ -88,6 +97,40 @@ export default function SouscriptionCard({ subscription }) {
         return "bg-gray-500";
     }
   };
+
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setEtat(value);
+  };
+
+  const handleModifierEtat = () => {
+    addOne(
+      `${MODIFIER_ETAT_SOUSCRIPTION}/${subscription.id}`,
+      "application/json",
+      "ACTIF"
+    )
+      .then((res) => {
+        if (res.data) {
+          toast.success("Souscription activée avec succès");
+          souscriptionStore.getAllData("", "");
+        }
+      })
+      .catch((error) => {
+        console.error("Erreur lors de l'activation de la souscription:", error);
+        toast.error("Erreur lors de l'activation de la souscription:", error);
+      });
+  };
+
+  const statutPaiementsListe = [
+    { value: "SUCCES", libelle: "Succès" },
+    { value: "ECHEC", libelle: "Echec" },
+  ];
+
+  const etatSouscriptionsListe = [
+    { value: "ACTIF", libelle: "Actif" },
+    { value: "EXPIRE", libelle: "Expire" },
+    { value: "INACTIF", libelle: "Inactif" },
+  ];
 
   const getStatusPaiement = (statut) => {
     switch (statut) {
@@ -140,142 +183,73 @@ export default function SouscriptionCard({ subscription }) {
                 </Badge>
               </div>
             </div>
-            <Tooltip title="Details">
+
+            {/* <div className="dropdown dropdown-bottom dropdown-end">
               <MoreHorizIcon
-                onClick={() => {
-                  document
-                    .getElementById(
-                      `modal-details-souscription-${subscription?.id}`
-                    )
-                    .showModal();
-                }}
                 tabIndex={0}
                 role="button"
                 className="cursor-pointer bg-slate-50 rounded-lg"
               />
-            </Tooltip>
+
+              <ul
+                tabIndex={0}
+                className="dropdown-content menu bg-base-100 rounded-box z-[1] w-52 p-2 shadow"
+              >
+                <li
+                  onClick={() => {
+                    document
+                      .getElementById(
+                        `modal-details-souscription-${subscription?.id}`
+                      )
+                      .showModal();
+                  }}
+                >
+                  <a className="text-lg font-bold cursor-pointer">Details</a>
+                </li>
+                <li>
+                  <a
+                    onClick={() => {
+                      document
+                        .getElementById(
+                          `modifier-statut-etat-${subscription?.id}`
+                        )
+                        .showModal();
+                    }}
+                    className="text-lg font-bold cursor-pointer"
+                  >
+                    Modifier
+                  </a>
+                </li>
+              </ul>
+            </div> */}
+            <div className="flex items-center flex-col space-y-1">
+              <Tooltip title="Details">
+                <MoreHorizIcon
+                  onClick={() => {
+                    document
+                      .getElementById(
+                        `modal-details-souscription-${subscription?.id}`
+                      )
+                      .showModal();
+                  }}
+                  tabIndex={0}
+                  role="button"
+                  className="cursor-pointer bg-slate-50 rounded-lg"
+                />
+              </Tooltip>
+
+              {subscription &&
+                subscription?.statutPaiement === "EN_ATTENTE_DE_PAIEMENT" && (
+                  <button
+                    onClick={handleModifierEtat}
+                    className="p-1 bg-orange-400 hover:bg-orange-500 rounded-lg shadow-md "
+                  >
+                    Modifier etat
+                  </button>
+                )}
+            </div>
           </div>
         </div>
-
-        {/* Dialog pour details */}
-        <dialog
-          id={`modal-details-souscription-${subscription?.id}`}
-          className="modal "
-        >
-          <div className="modal-box ">
-            <div className="modal-action">
-              <h1 className="mr-auto text-2xl font-bold font-mtn mb-8">
-                Details souscription
-              </h1>
-              <form method="dialog">
-                <button
-                  id={`fermer-modal-details-souscription-${subscription?.id}`}
-                  className="w-8 h-8 flex items-center justify-center rounded-lg bg-red-100 hover:bg-red-200 text-red-600 font-semibold"
-                >
-                  ✕
-                </button>
-              </form>
-            </div>
-            <div className="p-5 border rounded-md ">
-              <div className="">
-                <dl className="divide-y divide-gray-100">
-                  <div className="px-4 py-3 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-0">
-                    <dt className="text-sm font-semibold text-gray-900">
-                      Date de creation
-                    </dt>
-                    <dd className="mt-1 text-sm font-medium leading-6 text-blue-700 sm:col-span-2 sm:mt-0">
-                      {subscription?.dateCreation
-                        ? new Date(subscription?.dateCreation).toLocaleString()
-                        : "--"}
-                    </dd>
-                  </div>
-
-                  <div className="px-4 py-3 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-0">
-                    <dt className="text-sm font-semibold text-gray-900">
-                      Date paiement
-                    </dt>
-                    <dd className="mt-1 text-sm font-medium leading-6 text-blue-700 sm:col-span-2 sm:mt-0">
-                      {subscription?.datePaiement
-                        ? new Date(subscription?.datePaiement).toLocaleString()
-                        : "--"}
-                    </dd>
-                  </div>
-
-                  <div className="px-4 py-3 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-0">
-                    <dt className="text-sm font-semibold leading-6 text-gray-900">
-                      Mode paiement
-                    </dt>
-                    <dd className="mt-1 text-sm font-medium leading-6 text-blue-700 sm:col-span-2 sm:mt-0">
-                      {subscription?.modePaiement}
-                    </dd>
-                  </div>
-
-                  <div className="px-4 py-3 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-0">
-                    <dt className="text-sm font-semibold text-gray-900">
-                      SubscriptionId
-                    </dt>
-                    <dd className="mt-1 text-sm font-medium leading-6 text-blue-700 sm:col-span-2 sm:mt-0">
-                      {subscription?.subscriptionId
-                        ? subscription?.subscriptionId
-                        : "--"}
-                    </dd>
-                  </div>
-                  <div className="px-4 py-3 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-0">
-                    <dt className="text-sm font-semibold text-gray-900">
-                      ProductName
-                    </dt>
-                    <dd className="mt-1 text-sm font-medium leading-6 text-blue-700 sm:col-span-2 sm:mt-0">
-                      {subscription?.productName
-                        ? subscription?.productName
-                        : "--"}
-                    </dd>
-                  </div>
-
-                  <div className="px-4 py-3 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-0">
-                    <dt className="text-sm font-semibold text-gray-900">
-                      CustomerId
-                    </dt>
-                    <dd className="mt-1 text-sm font-medium leading-6 text-blue-700 sm:col-span-2 sm:mt-0">
-                      {subscription?.customerId
-                        ? subscription?.customerId
-                        : "--"}
-                    </dd>
-                  </div>
-
-                  <div className="px-4 py-3 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-0">
-                    <dt className="text-sm font-semibold text-gray-900">
-                      CardLastFour
-                    </dt>
-                    <dd className="mt-1 text-sm font-medium leading-6 text-blue-700 sm:col-span-2 sm:mt-0">
-                      {subscription?.cardLastFour
-                        ? subscription?.cardLastFour
-                        : "--"}
-                    </dd>
-                  </div>
-
-                  <div className="px-4 py-3 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-0">
-                    <dt className="text-sm font-semibold leading-6 text-gray-900">
-                      ProductId
-                    </dt>
-                    <dd className="mt-1 text-sm font-medium leading-6 text-blue-700 sm:col-span-2 sm:mt-0">
-                      {subscription?.productId ? subscription?.productId : "--"}
-                    </dd>
-                  </div>
-
-                  <div className="px-4 py-3 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-0">
-                    <dt className="text-sm font-semibold leading-6 text-gray-900">
-                      Reference  paiement
-                    </dt>
-                    <dd className="mt-1 text-sm font-medium leading-6 text-blue-700 sm:col-span-2 sm:mt-0">
-                      {subscription?.reference ? subscription?.reference : "--"}
-                    </dd>
-                  </div>
-                </dl>
-              </div>
-            </div>
-            {/* <AjouterModifierAbonnement abonnement={item} /> */}
-          </div>
-        </dialog>
 
         {/* Description de l'abonnement */}
         {/* <p className="text-gray-600 text-sm">
@@ -358,6 +332,197 @@ export default function SouscriptionCard({ subscription }) {
           </div>
         </div>
       </CardContent>
+
+      {/* Dialofg modification status et etat souscription */}
+
+      <dialog
+        id={`modifier-statut-etat-${subscription?.id}`}
+        className="modal "
+      >
+        <div className="modal-box w-[400px] ">
+          <div className="modal-action">
+            <h1 className="mr-auto text-2xl font-bold font-mtn mb-5">
+              Modifier statut et etat
+            </h1>
+            <form method="dialog">
+              <button
+                id={`fermer-modal-edit-abonnement-${subscription?.id}`}
+                className="w-8 h-8 flex items-center justify-center rounded-lg bg-red-100 hover:bg-red-200 text-red-600 font-semibold"
+              >
+                ✕
+              </button>
+            </form>
+          </div>
+          <div className="p-5  ">
+            <div className="flex flex-col ">
+              {/* <div className="form-control mb-4">
+                <label className="label">
+                  <span className="label-text text-slate-600">Statut</span>
+                </label>
+                <select
+                  name="status"
+                  className="select select-bordered w-full"
+                  onChange={handleChange}
+                  required
+                >
+                  <option value="" disabled>
+                    Sélectionnez un statut
+                  </option>
+                  {statutPaiementsListe.map((item, index) => (
+                    <option key={index} value={item.value}>
+                      {item.libelle}
+                    </option>
+                  ))}
+                </select>
+              </div> */}
+
+              <div className="form-control mb-4">
+                <label className="label">
+                  <span className="label-text text-slate-600">Etat</span>
+                </label>
+                <select
+                  name={etat}
+                  className="select select-bordered w-full"
+                  onChange={handleChange}
+                  required
+                >
+                  <option value="" disabled>
+                    Sélectionnez un etat
+                  </option>
+                  {etatSouscriptionsListe.map((item, index) => (
+                    <option key={index} value={item.value}>
+                      {item.libelle}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="mt-2 flex justify-end">
+                <button className="p-2  bg-blue-500 hover:bg-blue-600 transition text-white rounded-md flex items-center justify-center">
+                  Enregistrer
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </dialog>
+
+      {/* Dialog pour details */}
+      <dialog
+        id={`modal-details-souscription-${subscription?.id}`}
+        className="modal "
+      >
+        <div className="modal-box ">
+          <div className="modal-action">
+            <h1 className="mr-auto text-2xl font-bold font-mtn mb-8">
+              Details souscription
+            </h1>
+            <form method="dialog">
+              <button
+                id={`fermer-modal-details-souscription-${subscription?.id}`}
+                className="w-8 h-8 flex items-center justify-center rounded-lg bg-red-100 hover:bg-red-200 text-red-600 font-semibold"
+              >
+                ✕
+              </button>
+            </form>
+          </div>
+          <div className="p-5 border rounded-md ">
+            <div className="">
+              <dl className="divide-y divide-gray-100">
+                <div className="px-4 py-3 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-0">
+                  <dt className="text-sm font-semibold text-gray-900">
+                    Date de creation
+                  </dt>
+                  <dd className="mt-1 text-sm font-medium leading-6 text-blue-700 sm:col-span-2 sm:mt-0">
+                    {subscription?.dateCreation
+                      ? new Date(subscription?.dateCreation).toLocaleString()
+                      : "--"}
+                  </dd>
+                </div>
+
+                <div className="px-4 py-3 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-0">
+                  <dt className="text-sm font-semibold text-gray-900">
+                    Date paiement
+                  </dt>
+                  <dd className="mt-1 text-sm font-medium leading-6 text-blue-700 sm:col-span-2 sm:mt-0">
+                    {subscription?.datePaiement
+                      ? new Date(subscription?.datePaiement).toLocaleString()
+                      : "--"}
+                  </dd>
+                </div>
+
+                <div className="px-4 py-3 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-0">
+                  <dt className="text-sm font-semibold leading-6 text-gray-900">
+                    Mode paiement
+                  </dt>
+                  <dd className="mt-1 text-sm font-medium leading-6 text-blue-700 sm:col-span-2 sm:mt-0">
+                    {subscription?.modePaiement}
+                  </dd>
+                </div>
+
+                <div className="px-4 py-3 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-0">
+                  <dt className="text-sm font-semibold text-gray-900">
+                    SubscriptionId
+                  </dt>
+                  <dd className="mt-1 text-sm font-medium leading-6 text-blue-700 sm:col-span-2 sm:mt-0">
+                    {subscription?.subscriptionId
+                      ? subscription?.subscriptionId
+                      : "--"}
+                  </dd>
+                </div>
+                <div className="px-4 py-3 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-0">
+                  <dt className="text-sm font-semibold text-gray-900">
+                    ProductName
+                  </dt>
+                  <dd className="mt-1 text-sm font-medium leading-6 text-blue-700 sm:col-span-2 sm:mt-0">
+                    {subscription?.productName
+                      ? subscription?.productName
+                      : "--"}
+                  </dd>
+                </div>
+
+                <div className="px-4 py-3 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-0">
+                  <dt className="text-sm font-semibold text-gray-900">
+                    CustomerId
+                  </dt>
+                  <dd className="mt-1 text-sm font-medium leading-6 text-blue-700 sm:col-span-2 sm:mt-0">
+                    {subscription?.customerId ? subscription?.customerId : "--"}
+                  </dd>
+                </div>
+
+                <div className="px-4 py-3 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-0">
+                  <dt className="text-sm font-semibold text-gray-900">
+                    CardLastFour
+                  </dt>
+                  <dd className="mt-1 text-sm font-medium leading-6 text-blue-700 sm:col-span-2 sm:mt-0">
+                    {subscription?.cardLastFour
+                      ? subscription?.cardLastFour
+                      : "--"}
+                  </dd>
+                </div>
+
+                <div className="px-4 py-3 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-0">
+                  <dt className="text-sm font-semibold leading-6 text-gray-900">
+                    ProductId
+                  </dt>
+                  <dd className="mt-1 text-sm font-medium leading-6 text-blue-700 sm:col-span-2 sm:mt-0">
+                    {subscription?.productId ? subscription?.productId : "--"}
+                  </dd>
+                </div>
+
+                <div className="px-4 py-3 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-0">
+                  <dt className="text-sm font-semibold leading-6 text-gray-900">
+                    Reference paiement
+                  </dt>
+                  <dd className="mt-1 text-sm font-medium leading-6 text-blue-700 sm:col-span-2 sm:mt-0">
+                    {subscription?.reference ? subscription?.reference : "--"}
+                  </dd>
+                </div>
+              </dl>
+            </div>
+          </div>
+        </div>
+      </dialog>
     </Card>
   );
 }
