@@ -31,7 +31,7 @@ export default function Souscription() {
   }, []);
 
   useEffect(() => {
-    souscriptionStore.getAllData();
+    souscriptionStore.getAllData("", "", "");
   }, []);
 
   /*
@@ -68,7 +68,7 @@ export default function Souscription() {
   // };
 
   const filteredData = () => {
-    souscriptionStore.getAllData(statut, etat);
+    souscriptionStore.getAllData(statut, etat, inputs);
     const filter = souscriptionStore.souscriptions;
     setData(filter);
     setCurrentPage(1); // Réinitialiser à la première page après un filtre
