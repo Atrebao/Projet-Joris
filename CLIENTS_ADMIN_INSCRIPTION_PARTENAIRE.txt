@@ -1,0 +1,335 @@
+╔════════════════════════════════════════════════════════════╗
+║    ✅ PAGE CLIENTS ADMIN + INSCRIPTION PARTENAIRE ✅       ║
+╠════════════════════════════════════════════════════════════╣
+║                                                            ║
+║  🚀 REDÉMARREZ LE SERVEUR:                                 ║
+║                                                            ║
+║  Ctrl + C                                                  ║
+║  npm run dev                                               ║
+║                                                            ║
+╠════════════════════════════════════════════════════════════╣
+║                                                            ║
+║  👥 1. PAGE CLIENTS ADMIN                                  ║
+║                                                            ║
+║  📍 URLS:                                                  ║
+║  http://localhost:5173/#/backoffice/clients                ║
+║  http://localhost:5173/#/admin/clients                     ║
+║                                                            ║
+║  ✨ DESIGN:                                                ║
+║                                                            ║
+║  EN-TÊTE:                                                  ║
+║  • Titre "Gestion des Clients" avec icône Users           ║
+║  • Bouton "Exporter CSV" (Download icon)                   ║
+║  • Compteur total clients                                  ║
+║                                                            ║
+║  5 KPIS HORIZONTAUX:                                       ║
+║  ┌──────┬──────┬──────┬──────┬──────┐                     ║
+║  │ 👥 5 │ ✓ 2  │ ⭐ 2 │ ✗ 1  │ 💰   │                     ║
+║  │Total │Actifs│ VIP  │Inact │Revenu│                     ║
+║  │INDIGO│GREEN │YELLOW│GRAY  │PURPLE│                     ║
+║  └──────┴──────┴──────┴──────┴──────┘                     ║
+║                                                            ║
+║  FILTRES:                                                  ║
+║  • Barre recherche (nom ou email)                          ║
+║  • Select filtre statut (Tous/Actifs/VIP/Inactifs)        ║
+║                                                            ║
+║  TABLEAU COMPLET:                                          ║
+║  ┌────────────────────────────────────────────┐            ║
+║  │ Header gradient indigo-purple:             │            ║
+║  │ Client | Contact | Ville | Inscription     │            ║
+║  │ Achats | Dépensé | Dernière Act. | Statut  │            ║
+║  ├────────────────────────────────────────────┤            ║
+║  │ [KJ] Kouassi Jean-Baptiste                 │            ║
+║  │      ID: 1                                 │            ║
+║  │ ✉️ jean.kouassi@example.ci                 │            ║
+║  │ ☎️ +225 07 12 34 56 78                     │            ║
+║  │ Abidjan | 15/01/2025                       │            ║
+║  │ 18 achats | 126,000 F | 18/11/2025         │            ║
+║  │ [ACTIF] [👁️ Voir]                          │            ║
+║  └────────────────────────────────────────────┘            ║
+║                                                            ║
+║  • Avatars avec initiales (gradient indigo-purple)         ║
+║  • Hover indigo clair sur lignes                           ║
+║  • Badges statut colorés                                   ║
+║  • Icônes mail et phone                                    ║
+║                                                            ║
+╠════════════════════════════════════════════════════════════╣
+║                                                            ║
+║  🤝 2. INSCRIPTION PARTENAIRE                              ║
+║                                                            ║
+║  📍 URL:                                                   ║
+║  http://localhost:5173/#/register-partenaire               ║
+║                                                            ║
+║  ✨ DESIGN EN 3 ÉTAPES:                                    ║
+║                                                            ║
+║  HEADER:                                                   ║
+║  • Logo "R" dans cercle gradient purple-pink               ║
+║  • Titre "Devenir Partenaire"                              ║
+║  • Sous-titre "Rejoignez notre réseau"                     ║
+║  • Fond gradient purple-rose léger                         ║
+║                                                            ║
+║  STEPPER VISUEL:                                           ║
+║  ┌──────────────────────────────────────────┐              ║
+║  │  [1]━━━━[2]━━━━[3]                      │              ║
+║  │   👤     🏢     🔒                       │              ║
+║  │  Infos  Bout.  Sécu.                    │              ║
+║  └──────────────────────────────────────────┘              ║
+║                                                            ║
+║  • Étape active = cercle gradient + blanc                  ║
+║  • Étape validée = CheckCircle                             ║
+║  • Barre de progression gradient                           ║
+║                                                            ║
+╠════════════════════════════════════════════════════════════╣
+║                                                            ║
+║  📝 ÉTAPE 1: INFORMATIONS PERSONNELLES                     ║
+║                                                            ║
+║  ┌────────────────────────────────────────┐                ║
+║  │ Informations personnelles              │                ║
+║  ├────────────────────────────────────────┤                ║
+║  │ 👤 Nom *         👤 Prénoms *          │                ║
+║  │ [_________]      [_________]           │                ║
+║  │                                        │                ║
+║  │ ✉️ Email professionnel *               │                ║
+║  │ [exemple@domaine.ci________________]   │                ║
+║  │                                        │                ║
+║  │ ☎️ Téléphone *                         │                ║
+║  │ [+225 XX XX XX XX XX_______________]   │                ║
+║  │                                        │                ║
+║  │ 📍 Ville *                             │                ║
+║  │ [Ex: Abidjan___________________]       │                ║
+║  │                                        │                ║
+║  │              [Continuer →]             │                ║
+║  └────────────────────────────────────────┘                ║
+║                                                            ║
+╠════════════════════════════════════════════════════════════╣
+║                                                            ║
+║  📝 ÉTAPE 2: INFORMATIONS BOUTIQUE                         ║
+║                                                            ║
+║  ┌────────────────────────────────────────┐                ║
+║  │ Informations de votre boutique        │                ║
+║  ├────────────────────────────────────────┤                ║
+║  │ 🏢 Nom de la boutique *                │                ║
+║  │ [Ex: StreamPro CI______________]       │                ║
+║  │                                        │                ║
+║  │ 📄 Description de votre activité *     │                ║
+║  │ [_______________________________]      │                ║
+║  │ [_______________________________]      │                ║
+║  │ [_______________________________]      │                ║
+║  │                                        │                ║
+║  │ 📷 Logo de la boutique                 │                ║
+║  │ [Image]  [📤 Télécharger un logo]     │                ║
+║  │ Format: PNG ou JPG, max 2MB            │                ║
+║  │                                        │                ║
+║  │ 📍 Adresse physique                    │                ║
+║  │ [Adresse complète______________]       │                ║
+║  │                                        │                ║
+║  │ [← Retour]       [Continuer →]        │                ║
+║  └────────────────────────────────────────┘                ║
+║                                                            ║
+║  • Upload logo avec preview                                ║
+║  • Validation taille fichier                               ║
+║                                                            ║
+╠════════════════════════════════════════════════════════════╣
+║                                                            ║
+║  📝 ÉTAPE 3: SÉCURITÉ                                      ║
+║                                                            ║
+║  ┌────────────────────────────────────────┐                ║
+║  │ Sécurité de votre compte               │                ║
+║  ├────────────────────────────────────────┤                ║
+║  │ 👤 Nom d'utilisateur *                 │                ║
+║  │ [Choisissez un nom unique______]       │                ║
+║  │                                        │                ║
+║  │ 🔒 Mot de passe *                [👁️]  │                ║
+║  │ [Minimum 8 caractères__________]       │                ║
+║  │                                        │                ║
+║  │ 🔒 Confirmer le mot de passe *  [👁️]  │                ║
+║  │ [Confirmer votre mot de passe__]       │                ║
+║  │                                        │                ║
+║  │ ┌────────────────────────────────┐     │                ║
+║  │ │ ☑ J'accepte les conditions    │     │                ║
+║  │ │   d'utilisation et la politique│     │                ║
+║  │ │   de confidentialité           │     │                ║
+║  │ └────────────────────────────────┘     │                ║
+║  │                                        │                ║
+║  │ [← Retour]  [✨ Créer mon compte]     │                ║
+║  └────────────────────────────────────────┘                ║
+║                                                            ║
+║  • Toggle visibilité mot de passe                          ║
+║  • Validation correspondance mots de passe                 ║
+║  • Checkbox conditions obligatoire                         ║
+║  • Loader pendant création                                 ║
+║                                                            ║
+╠════════════════════════════════════════════════════════════╣
+║                                                            ║
+║  📁 FICHIERS CRÉÉS:                                        ║
+║                                                            ║
+║  • src/pages/admin/ClientsAdminPage.jsx (240 lignes)       ║
+║  • src/pages/RegisterPartenaire.jsx (470 lignes)           ║
+║                                                            ║
+║  ROUTES MODIFIÉES:                                         ║
+║  • src/router/AppRoute.jsx                                 ║
+║    - /backoffice/clients → ClientsAdminPage                ║
+║    - /admin/clients → ClientsAdminPage                     ║
+║    - /register-partenaire → RegisterPartenaire             ║
+║                                                            ║
+║  PAGE LOGIN MODIFIÉE:                                      ║
+║  • src/pages/LoginModerne.jsx                              ║
+║    - 2 boutons: [Compte Client] [Devenir Partenaire]      ║
+║                                                            ║
+╠════════════════════════════════════════════════════════════╣
+║                                                            ║
+║  ✨ CARACTÉRISTIQUES CLIENTS ADMIN:                        ║
+║                                                            ║
+║  ✓ 5 KPIs en gradient (total, actifs, VIP, inactifs)      ║
+║  ✓ Recherche en temps réel                                 ║
+║  ✓ Filtre par statut                                       ║
+║  ✓ Tableau complet avec header gradient                    ║
+║  ✓ Avatars avec initiales                                  ║
+║  ✓ Icônes pour email et téléphone                          ║
+║  ✓ Badges statut colorés                                   ║
+║  ✓ Hover effect indigo sur lignes                          ║
+║  ✓ Bouton "Voir" pour chaque client                        ║
+║  ✓ Bouton "Exporter CSV"                                   ║
+║  ✓ Responsive (grid adaptatif)                             ║
+║  ✓ Message "Aucun client trouvé" si vide                   ║
+║                                                            ║
+╠════════════════════════════════════════════════════════════╣
+║                                                            ║
+║  🤝 CARACTÉRISTIQUES INSCRIPTION PARTENAIRE:               ║
+║                                                            ║
+║  ✓ Formulaire en 3 étapes (multi-step)                     ║
+║  ✓ Stepper visuel avec progression                         ║
+║  ✓ Validation react-hook-form                              ║
+║  ✓ Messages d'erreur personnalisés                         ║
+║  ✓ Icônes lucide-react pour tous les champs                ║
+║  ✓ Upload logo avec preview                                ║
+║  ✓ Toggle visibilité mot de passe                          ║
+║  ✓ Validation correspondance mots de passe                 ║
+║  ✓ Checkbox conditions obligatoire                         ║
+║  ✓ Loader animé pendant soumission                         ║
+║  ✓ Toast success après inscription                         ║
+║  ✓ Redirection auto vers login                             ║
+║  ✓ Navigation entre étapes fluide                          ║
+║  ✓ Boutons Retour/Continuer                                ║
+║  ✓ Design gradient magnifique                              ║
+║  ✓ Responsive parfait                                      ║
+║                                                            ║
+╠════════════════════════════════════════════════════════════╣
+║                                                            ║
+║  📊 DONNÉES MOCKÉES (Clients Admin):                       ║
+║                                                            ║
+║  5 clients avec:                                           ║
+║  • Nom complet                                             ║
+║  • Email et téléphone                                      ║
+║  • Ville et date inscription                               ║
+║  • Nombre achats et total dépensé                          ║
+║  • Dernière activité                                       ║
+║  • Statut (ACTIF, VIP, INACTIF)                            ║
+║                                                            ║
+║  Stats calculées:                                          ║
+║  • Total clients: 5                                        ║
+║  • Actifs: 2                                               ║
+║  • VIP: 2                                                  ║
+║  • Inactifs: 1                                             ║
+║  • Revenu total: 595K F                                    ║
+║                                                            ║
+╠════════════════════════════════════════════════════════════╣
+║                                                            ║
+║  🎯 TESTER MAINTENANT:                                     ║
+║                                                            ║
+║  1. npm run dev                                            ║
+║                                                            ║
+║  2. PAGE CLIENTS ADMIN:                                    ║
+║     http://localhost:5173/#/admin/clients                  ║
+║                                                            ║
+║     • Admirez les 5 KPIs en gradient                       ║
+║     • Testez la recherche par nom                          ║
+║     • Filtrez par statut                                   ║
+║     • Hover sur les lignes du tableau                      ║
+║     • Regardez les avatars avec initiales                  ║
+║     • Cliquez sur "Voir" (alert pour l'instant)            ║
+║                                                            ║
+║  3. INSCRIPTION PARTENAIRE:                                ║
+║     http://localhost:5173/#/register-partenaire            ║
+║                                                            ║
+║     • Admirez le stepper en haut                           ║
+║     • Remplissez l'étape 1 (infos perso)                   ║
+║     • Cliquez "Continuer"                                  ║
+║     • Remplissez l'étape 2 (boutique)                      ║
+║     • Uploadez un logo (optionnel)                         ║
+║     • Cliquez "Continuer"                                  ║
+║     • Remplissez l'étape 3 (sécurité)                      ║
+║     • Testez toggle mot de passe (œil)                     ║
+║     • Cochez la checkbox conditions                        ║
+║     • Cliquez "Créer mon compte"                           ║
+║     • Regardez le loader + toast success                   ║
+║                                                            ║
+║  4. DEPUIS LA PAGE LOGIN:                                  ║
+║     http://localhost:5173/#/backoffice/login               ║
+║                                                            ║
+║     • Scrollez en bas                                      ║
+║     • Voyez 2 boutons:                                     ║
+║       [Compte Client] [Devenir Partenaire]                 ║
+║     • Cliquez sur "Devenir Partenaire"                     ║
+║     • Arrivée sur formulaire inscription                   ║
+║                                                            ║
+╠════════════════════════════════════════════════════════════╣
+║                                                            ║
+║  💡 FLUX COMPLET PARTENAIRE:                               ║
+║                                                            ║
+║  1. Accès page login admin                                 ║
+║  2. Clic "Devenir Partenaire"                              ║
+║  3. Remplir formulaire 3 étapes                            ║
+║  4. Soumission → Toast success                             ║
+║  5. Redirection auto vers login                            ║
+║  6. Connexion (après validation admin)                     ║
+║  7. Accès dashboard partenaire                             ║
+║                                                            ║
+╠════════════════════════════════════════════════════════════╣
+║                                                            ║
+║  🔗 INTÉGRATION API (À FAIRE):                             ║
+║                                                            ║
+║  CLIENTS ADMIN:                                            ║
+║  • GET /api/admin/clients (liste)                          ║
+║  • GET /api/admin/clients/:id (détail)                     ║
+║  • GET /api/admin/clients/export (CSV)                     ║
+║                                                            ║
+║  INSCRIPTION PARTENAIRE:                                   ║
+║  • POST /api/partenaires/register                          ║
+║    Body: {                                                 ║
+║      nom, prenoms, email, telephone, ville,                ║
+║      nomBoutique, description, logo, adresse,              ║
+║      username, password                                    ║
+║    }                                                       ║
+║  • Réponse: { success, message, partenaireId }             ║
+║  • Statut initial: EN_ATTENTE_VALIDATION                   ║
+║                                                            ║
+╠════════════════════════════════════════════════════════════╣
+║                                                            ║
+║  🎨 DESIGN COHÉRENT:                                       ║
+║                                                            ║
+║  • Même palette couleurs (purple-pink gradient)            ║
+║  • Icônes lucide-react partout                             ║
+║  • Ombres douces et subtiles                               ║
+║  • Transitions fluides                                     ║
+║  • Responsive sur tous appareils                           ║
+║  • Typography claire et lisible                            ║
+║  • Espacement harmonieux                                   ║
+║                                                            ║
+╠════════════════════════════════════════════════════════════╣
+║                                                            ║
+║  🐛 DÉPANNAGE:                                             ║
+║                                                            ║
+║  Page 404?                                                 ║
+║  → Redémarrez: Ctrl+C puis npm run dev                     ║
+║                                                            ║
+║  Formulaire ne se soumet pas?                              ║
+║  → Vérifiez tous les champs requis (*)                     ║
+║                                                            ║
+║  Logo ne s'affiche pas?                                    ║
+║  → Utilisez une image < 2MB                                ║
+║                                                            ║
+╚════════════════════════════════════════════════════════════╝
+
+🎉 CLIENTS ADMIN + INSCRIPTION PARTENAIRE PRÊTS !
+🚀 TESTEZ MAINTENANT !
