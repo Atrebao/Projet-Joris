@@ -1,10 +1,10 @@
 import { useState, useEffect } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
-import { 
-  CreditCard, 
-  Smartphone, 
-  Shield, 
-  CheckCircle, 
+import {
+  CreditCard,
+  Smartphone,
+  Shield,
+  CheckCircle,
   ArrowLeft,
   Lock,
   Clock,
@@ -14,10 +14,10 @@ import {
 export default function PaiementNouveau() {
   const location = useLocation()
   const navigate = useNavigate()
-  
+
   // Récupérer les données de l'offre depuis la navigation
   const { offre, quantity, montantTotal, email, telephone } = location.state || {}
-  
+
   const [selectedMethod, setSelectedMethod] = useState('')
   const [phoneNumber, setPhoneNumber] = useState(telephone || '')
   const [isProcessing, setIsProcessing] = useState(false)
@@ -31,6 +31,13 @@ export default function PaiementNouveau() {
   }, [offre, navigate])
 
   const paymentMethods = [
+    {
+      id: 'stripe',
+      name: 'Carte Bancaire',
+      logo: '💳',
+      color: 'bg-indigo-600',
+      description: 'Visa, Mastercard (Stripe)'
+    },
     {
       id: 'orange',
       name: 'Orange Money',
@@ -69,6 +76,33 @@ export default function PaiementNouveau() {
       return
     }
 
+    // ========== PAIEMENT STRIPE (CARTE BANCAIRE) ==========
+    if (selectedMethod === 'stripe') {
+      setIsProcessing(true)
+
+      try {
+        const StripeService = (await import('../services/StripeService')).default
+
+        const { url } = await StripeService.createSession({
+          reference: 'REF-' + Date.now(),
+          montant: montantTotal,
+          email: email,
+          description: `${offre.nom} - ${offre.duree || 1} mois`,
+          successUrl: window.location.origin + '/#/confirmation',
+          cancelUrl: window.location.origin + '/#/paiement'
+        })
+
+        window.location.href = url
+        return
+      } catch (error) {
+        console.error('Erreur Stripe:', error)
+        alert('Erreur lors de la création du paiement Stripe')
+        setIsProcessing(false)
+        return
+      }
+    }
+
+    // ========== PAIEMENT MOBILE MONEY (CinetPay) ==========
     if (!phoneNumber) {
       alert('Veuillez entrer votre numéro de téléphone')
       return
@@ -92,7 +126,7 @@ export default function PaiementNouveau() {
 
       // Simuler succès
       setPaymentSuccess(true)
-      
+
       // Rediriger après 3 secondes
       setTimeout(() => {
         navigate('/confirmation', {
@@ -169,18 +203,17 @@ export default function PaiementNouveau() {
                     <CreditCard className="h-6 w-6 text-indigo-600" />
                     Mode de paiement
                   </h2>
-                  
+
                   <div className="grid sm:grid-cols-2 gap-4">
                     {paymentMethods.map((method) => (
                       <button
                         key={method.id}
                         type="button"
                         onClick={() => setSelectedMethod(method.id)}
-                        className={`p-4 rounded-xl border-2 transition-all text-left ${
-                          selectedMethod === method.id
+                        className={`p-4 rounded-xl border-2 transition-all text-left ${selectedMethod === method.id
                             ? 'border-indigo-500 bg-indigo-50 shadow-lg'
                             : 'border-gray-200 hover:border-gray-300'
-                        }`}
+                          }`}
                       >
                         <div className="flex items-center gap-3">
                           <div className="text-3xl">{method.logo}</div>
@@ -203,7 +236,7 @@ export default function PaiementNouveau() {
                     <Smartphone className="h-6 w-6 text-indigo-600" />
                     Numéro de téléphone
                   </h2>
-                  
+
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
                       Numéro Mobile Money *
@@ -243,11 +276,10 @@ export default function PaiementNouveau() {
                 <button
                   type="submit"
                   disabled={isProcessing || !selectedMethod}
-                  className={`w-full py-4 rounded-xl font-bold text-lg transition-all shadow-lg ${
-                    isProcessing || !selectedMethod
+                  className={`w-full py-4 rounded-xl font-bold text-lg transition-all shadow-lg ${isProcessing || !selectedMethod
                       ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
                       : 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white hover:from-indigo-700 hover:to-purple-700 transform hover:scale-105'
-                  }`}
+                    }`}
                 >
                   {isProcessing ? (
                     <div className="flex items-center justify-center gap-2">
@@ -265,7 +297,7 @@ export default function PaiementNouveau() {
             <div className="lg:col-span-1">
               <div className="bg-white rounded-2xl border-2 border-gray-200 p-6 sticky top-8">
                 <h2 className="text-xl font-bold mb-6">Récapitulatif</h2>
-                
+
                 {/* Offre */}
                 <div className="mb-6 pb-6 border-b">
                   <div className="flex items-start gap-3 mb-3">

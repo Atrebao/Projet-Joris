@@ -6,30 +6,27 @@ import { HOMEADMIN } from "../Utils/Utils";
 import LayoutClient from "../layout/LayoutClient";
 import LayoutAdmin from "../layout/LayoutAdmin";
 import LayoutPartenaire from "../layout/LayoutPartenaire";
-import Home from "../pages/Home";
 import HomeNouvelle from "../pages/HomeNouvelle";
 import Catalogue from "../pages/Catalogue";
 import DetailOffre from "../pages/DetailOffre";
 import Abonnement from "../pages/AbonnementDetails";
 import Conditions from "../pages/Conditions";
-import Login from "../pages/Login";
 import LoginModerne from "../pages/LoginModerne";
 import StatsModerne from "../pages/StatsModerne";
 import HomeAdmin from "../pages/HomeAdmin";
 import Abonnements from "../pages/Abonnements";
 import Utilisateurs from "../pages/Utilisateurs";
-import Stats from "../pages/Stats";
 import Identifiants from "../pages/Identifiants";
 import Souscription from "../pages/Souscription";
-import Clients from "../pages/Clients";
-import Paiements from "../pages/Paiements";
+
 import Register from "../pages/Registrer";
 import NotFound from "../pages/NotFound";
+import ConfirmationPage from "../pages/ConfirmationPage";
+import MesAbonnements from "../pages/MesAbonnements";
 
-import PaymentPage from "../pages/PaymentPage";
 import PaiementNouveau from "../pages/PaiementNouveau";
-import PricingPage from "../pages/PricingPage";
-import Forfaits from "../pages/Forfaits";
+
+
 
 // Nouvelles pages modernes
 import DashboardAdminNouveau from "../pages/admin/DashboardAdminNouveau";
@@ -42,6 +39,7 @@ import NouvelleOffrePage from "../pages/partenaire/NouvelleOffrePage";
 import EditerOffrePage from "../pages/partenaire/EditerOffrePage";
 import ClientsPage from "../pages/partenaire/ClientsPage";
 import StatsPage from "../pages/partenaire/StatsPage";
+import CommandesPartenairePage from "../pages/partenaire/CommandesPartenairePage";
 import EnConstruction from "../pages/EnConstruction";
 
 export const AppRoute = createHashRouter([
@@ -51,12 +49,8 @@ export const AppRoute = createHashRouter([
     element: <LayoutClient />,
     children: [
       {
-        index: true, // Définit la route par défaut
+        index: true,
         element: <HomeNouvelle />,
-      },
-      {
-        path: "home-ancienne",
-        element: <Home />,
       },
       {
         path: "catalogue",
@@ -74,18 +68,18 @@ export const AppRoute = createHashRouter([
         path: "conditions",
         element: <Conditions />,
       },
-
       {
         path: "paiement",
         element: <PaiementNouveau />,
       },
+
       {
-        path: "paiement-ancienne",
-        element: <PaymentPage />,
+        path: "confirmation",
+        element: <ConfirmationPage />,
       },
       {
-        path: "pricing/:id",
-        element: <PricingPage />,
+        path: "mes-abonnements",
+        element: <MesAbonnements />,
       },
     ],
   },
@@ -116,10 +110,6 @@ export const AppRoute = createHashRouter([
         element: <StatsModerne />,
       },
       {
-        path: "stats-ancienne",
-        element: <Stats />,
-      },
-      {
         path: "abonnements",
         element: <Abonnements />,
       },
@@ -131,14 +121,7 @@ export const AppRoute = createHashRouter([
         path: "clients",
         element: <ClientsAdminPage />,
       },
-      {
-        path: "clients-ancienne",
-        element: <Clients />,
-      },
-      {
-        path: "paiements",
-        element: <Paiements />,
-      },
+
       {
         path: "utilisateurs",
         element: <Utilisateurs />,
@@ -147,50 +130,7 @@ export const AppRoute = createHashRouter([
         path: "identifiants",
         element: <Identifiants />,
       },
-      {
-        path: "forfaits",
-        element: <Forfaits />,
-      },
-    ],
-  },
 
-  // Routes admin (alias de /backoffice)
-  {
-    path: "/admin",
-    element: <LayoutAdmin />,
-    children: [
-      {
-        index: true,
-        element: <DashboardAdminNouveau />,
-      },
-      {
-        path: "dashboard",
-        element: <DashboardAdminNouveau />,
-      },
-      {
-        path: "partenaires",
-        element: <PartenairesPage />,
-      },
-      {
-        path: "offres",
-        element: <OffresPage />,
-      },
-      {
-        path: "stats",
-        element: <StatsModerne />,
-      },
-      {
-        path: "stats-ancienne",
-        element: <Stats />,
-      },
-      {
-        path: "clients",
-        element: <ClientsAdminPage />,
-      },
-      {
-        path: "abonnements",
-        element: <Abonnements />,
-      },
     ],
   },
 
@@ -206,6 +146,10 @@ export const AppRoute = createHashRouter([
       {
         path: "dashboard",
         element: <DashboardPartenaireNouveau />,
+      },
+      {
+        path: "commandes",
+        element: <CommandesPartenairePage />,
       },
       {
         path: "offres/nouvelle",
@@ -232,10 +176,6 @@ export const AppRoute = createHashRouter([
     element: <LoginModerne />,
   },
   {
-    path: `${HOMEADMIN}/login-ancienne`,
-    element: <Login />,
-  },
-  {
     path: "/register",
     element: <Register />,
   },
@@ -247,6 +187,6 @@ export const AppRoute = createHashRouter([
   // Route pour les pages inexistantes
   {
     path: "*",
-    element: <NotFound />, // Page 404
+    element: <NotFound />,
   },
 ]);

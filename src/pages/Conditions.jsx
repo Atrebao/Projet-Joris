@@ -1,112 +1,259 @@
-import React from "react";
-import { NavLink } from "react-router-dom";
-import ButtonBack from "../components/ButtonBack";
-import { MoveLeft } from "lucide-react";
+import { useState } from 'react'
+import { ChevronDown, ChevronUp, FileText, Shield, CreditCard, RefreshCw, Lock, Mail, Phone } from 'lucide-react'
 
 export default function Conditions() {
-  const handleBack = () => {
-    window.history.back();
-  };
+  const [openSection, setOpenSection] = useState(0)
+
+  const sections = [
+    {
+      id: 0,
+      title: '1. Introduction et Acceptation',
+      icon: FileText,
+      content: `En accédant et en utilisant la plateforme Richesses Streaming, vous acceptez d'être lié par les présentes Conditions Générales d'Utilisation. Si vous n'acceptez pas ces conditions, veuillez ne pas utiliser notre service.
+
+Notre plateforme met en relation des clients avec des partenaires proposant des abonnements de streaming (Netflix, Spotify, Disney+, etc.) à prix réduits.`
+    },
+    {
+      id: 1,
+      title: '2. Services Proposés',
+      icon: Shield,
+      content: `Richesses Streaming est une plateforme de mise en relation permettant :
+      
+• La consultation d'offres d'abonnements streaming proposées par nos partenaires
+• La comparaison des prix et des formules
+• La souscription en ligne avec paiement sécurisé
+• L'accès aux identifiants d'abonnement après paiement
+• Le suivi de vos abonnements actifs
+
+Nous agissons en tant qu'intermédiaire et ne sommes pas responsables du contenu des services de streaming tiers.`
+    },
+    {
+      id: 2,
+      title: '3. Paiement et Facturation',
+      icon: CreditCard,
+      content: `Modes de paiement acceptés :
+      
+• Carte bancaire (Visa, Mastercard) via Stripe
+• Mobile Money (Orange Money, MTN, Moov, Wave) via CinetPay
+
+Après validation du paiement :
+• Vous recevez vos identifiants par email sous 5 minutes maximum
+• Votre abonnement est activé immédiatement
+• Vous pouvez accéder à vos identifiants depuis votre compte
+
+Toutes les transactions sont sécurisées et cryptées selon les standards PCI-DSS.`
+    },
+    {
+      id: 3,
+      title: '4. Politique de Remboursement',
+      icon: RefreshCw,
+      content: `Conditions de remboursement :
+
+✅ Remboursement possible dans les 24h suivant l'achat SI :
+• Les identifiants fournis ne fonctionnent pas
+• Le service n'est pas conforme à la description
+• L'abonnement n'a pas été activé
+
+❌ Aucun remboursement après :
+• Utilisation des identifiants pendant plus de 24h
+• Modification des identifiants par le client
+• Partage non autorisé des identifiants
+
+Pour demander un remboursement, contactez notre support avec votre référence de commande.`
+    },
+    {
+      id: 4,
+      title: '5. Protection des Données',
+      icon: Lock,
+      content: `Nous nous engageons à protéger vos données personnelles conformément au RGPD :
+
+Données collectées :
+• Email
+• Numéro de téléphone
+• Historique des transactions
+• Préférences d'abonnement
+
+Utilisation :
+• Traitement de vos commandes
+• Communication sur vos abonnements
+• Amélioration de nos services
+
+Vos données ne sont JAMAIS vendues à des tiers. Vous pouvez demander leur suppression à tout moment.`
+    },
+    {
+      id: 5,
+      title: '6. Politique de Cookies',
+      icon: Shield,
+      content: `Nous utilisons des cookies pour :
+
+✓ Mémoriser vos préférences
+✓ Analyser le trafic du site  
+✓ Personnaliser votre expérience
+✓ Sécuriser votre session
+
+Types de cookies :
+• Cookies essentiels (nécessaires au fonctionnement)
+• Cookies analytiques (Google Analytics)
+• Cookies de préférence
+
+Vous pouvez désactiver les cookies non essentiels depuis les paramètres de votre navigateur.`
+    },
+    {
+      id: 6,
+      title: '7. Responsabilités',
+      icon: Shield,
+      content: `Vos responsabilités :
+• Fournir des informations exactes
+• Protéger vos identifiants
+• Ne pas partager vos accès
+• Signaler tout problème rapidement
+
+Nos responsabilités :
+• Fournir des identifiants valides
+• Assurer la sécurité des paiements
+• Traiter les réclamations sous 48h
+• Respecter la confidentialité de vos données
+
+Nous ne sommes pas responsables des interruptions de service causées par les plateformes de streaming tierces.`
+    },
+    {
+      id: 7,
+      title: '8. Modification des Conditions',
+      icon: RefreshCw,
+      content: `Nous nous réservons le droit de modifier ces conditions à tout moment.
+
+En cas de modification :
+• Vous serez informé par email
+• Les changements prendront effet 7 jours après notification
+• Continuer à utiliser le service implique l'acceptation des nouvelles conditions
+
+Date de dernière mise à jour : ${new Date().toLocaleDateString('fr-FR')}`
+    }
+  ]
+
+  const toggleSection = (id) => {
+    setOpenSection(openSection === id ? null : id)
+  }
 
   return (
-    <div className="min-h-screen bg-slate-100">
-      <div className="max-w-4xl mx-auto px-4 py-28 md:py-[100px]">
-        <div className="md:hidden flex justify-start text-xl">
-          <ButtonBack title={"Retour"} textSize={"xl"} />
-        </div>
-        {/* Titre principal */}
-        <h1 className="text-2xl md:text-3xl font-bold mb-6">
-          Conditions Générales d'Utilisation
-        </h1>
-
-        {/* Introduction */}
-        <p className="text-sm md:text-base text-gray-700 mb-6">
-          Bienvenue et merci d'utiliser notre service de streaming. En accédant
-          ou en utilisant nos services, vous acceptez de respecter les
-          conditions générales d'utilisation détaillées ci-dessous.
-        </p>
-
-        {/* Sections */}
-        <div className="space-y-8">
-          {/* Section 1 */}
-          <section>
-            <h2 className="text-xl md:text-2xl font-semibold mb-3">
-              1. Utilisation du Code d'Abonnement
-            </h2>
-            <p className="text-sm md:text-base text-gray-700">
-              Après avoir effectué le paiement, vous recevrez un code
-              d'abonnement unique. Ce code ne peut être utilisé que sur un seul
-              appareil. Une fois connecté, vous ne pourrez pas vous déconnecter
-              pour vous connecter sur un autre appareil. Veuillez donc bien
-              choisir l'appareil que vous souhaitez utiliser pour accéder au
-              service.
-              <strong>
-                {" "}
-                Si vous souhaitez utiliser le service sur plusieurs appareils,
-                comme un téléphone et un ordinateur, vous devrez souscrire à
-                deux abonnements distincts.
-              </strong>
-            </p>
-          </section>
-
-          {/* Section 2 */}
-          <section>
-            <h2 className="text-xl md:text-2xl font-semibold mb-3">
-              2. Restrictions du Profil Utilisateur
-            </h2>
-            <p className="text-sm md:text-base text-gray-700">
-              Vous n'avez pas le droit de modifier le mot de passe de votre
-              compte, ni le nom ou les informations de votre profil. Vous n'êtes
-              pas autorisé non plus à supprimer un profil existant. Ces mesures
-              sont en place pour garantir la sécurité et la stabilité de nos
-              services.
-            </p>
-          </section>
-
-          {/* Section 3 */}
-          <section>
-            <h2 className="text-xl md:text-2xl font-semibold mb-3">
-              3. Renouvellement de l'Abonnement
-            </h2>
-            <p className="text-sm md:text-base text-gray-700">
-              Pour éviter toute interruption de service, nous vous recommandons
-              de renouveler votre abonnement avant son expiration. En cas de
-              non-renouvellement, vous risquez d'être automatiquement déconnecté
-              de votre appareil.
-            </p>
-          </section>
-
-          {/* Section 4 */}
-          <section>
-            <h2 className="text-xl md:text-2xl font-semibold mb-3">
-              4. Acceptation des Conditions d'Utilisation
-            </h2>
-            <p className="text-sm md:text-base text-gray-700">
-              En utilisant nos services, vous reconnaissez avoir lu et accepté
-              ces conditions d'utilisation. Vous consentez également à ce que
-              votre abonnement puisse être annulé sans remboursement en cas de
-              non-respect de ces règles.
-            </p>
-          </section>
+    <div className="min-h-screen bg-gray-50 py-12">
+      <div className="container mx-auto px-4 max-w-4xl">
+        {/* En-tête */}
+        <div className="text-center mb-12">
+          <div className="inline-flex items-center justify-center w-16 h-16 bg-blue-100 rounded-2xl mb-4">
+            <FileText className="h-8 w-8 text-blue-600" />
+          </div>
+          <h1 className="text-4xl font-bold text-gray-900 mb-4">
+            Conditions Générales d'Utilisation
+          </h1>
+          <p className="text-lg text-gray-600">
+            Dernière mise à jour : {new Date().toLocaleDateString('fr-FR')}
+          </p>
         </div>
 
-        {/* Note de bas de page */}
-        <p className="text-xs md:text-sm text-gray-500 italic mt-8">
-          Ces conditions générales peuvent être mises à jour de temps à autre.
-          Nous vous encourageons à consulter cette page régulièrement pour
-          rester informé de nos conditions d'utilisation actuelles.
-        </p>
-        <div className="flex justify-center items-center mt-10 space-x-2 cursor-pointer">
-          <MoveLeft />
-          <p
-            onClick={() => handleBack()}
-            className="text-sm md:text-xl text-blue-400 hover:text-blue-500"
-          >
-            {" "}
-            Retour à la page précédentes
+        {/* Message important */}
+        <div className="bg-blue-50 border-2 border-blue-200 rounded-2xl p-6 mb-8">
+          <div className="flex items-start gap-4">
+            <Shield className="h-6 w-6 text-blue-600 flex-shrink-0 mt-1" />
+            <div>
+              <h3 className="font-bold text-blue-900 mb-2">
+                Votre confiance est notre priorité
+              </h3>
+              <p className="text-sm text-blue-800">
+                Nous vous recommandons de lire attentivement ces conditions. Elles décrivent vos droits et obligations lors de l'utilisation de notre plateforme.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* Sections en accordéon */}
+        <div className="space-y-4 mb-12">
+          {sections.map((section) => (
+            <div
+              key={section.id}
+              className="bg-white rounded-2xl border-2 border-gray-200 overflow-hidden hover:border-blue-300 transition-all"
+            >
+              <button
+                onClick={() => toggleSection(section.id)}
+                className="w-full flex items-center justify-between p-6 text-left hover:bg-gray-50 transition-all"
+              >
+                <div className="flex items-center gap-4">
+                  <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center flex-shrink-0">
+                    <section.icon className="h-6 w-6 text-blue-600" />
+                  </div>
+                  <h2 className="text-xl font-bold text-gray-900">
+                    {section.title}
+                  </h2>
+                </div>
+                {openSection === section.id ? (
+                  <ChevronUp className="h-6 w-6 text-blue-600" />
+                ) : (
+                  <ChevronDown className="h-6 w-6 text-gray-400" />
+                )}
+              </button>
+
+              {openSection === section.id && (
+                <div className="px-6 pb-6 animate-fadeIn">
+                  <div className="pl-16 text-gray-700 whitespace-pre-line leading-relaxed">
+                    {section.content}
+                  </div>
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+
+        {/* Contact */}
+        <div className="bg-gradient-to-r from-blue-600 to-indigo-600 rounded-2xl p-8 text-white">
+          <h3 className="text-2xl font-bold mb-4">Des questions ?</h3>
+          <p className="text-blue-100 mb-6">
+            Notre équipe support est là pour vous aider
+          </p>
+          <div className="grid md:grid-cols-2 gap-4">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center">
+                <Mail className="h-5 w-5" />
+              </div>
+              <div>
+                <div className="text-sm text-blue-100">Email</div>
+                <div className="font-semibold">support@richesses.ci</div>
+              </div>
+            </div>
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center">
+                <Phone className="h-5 w-5" />
+              </div>
+              <div>
+                <div className="text-sm text-blue-100">Téléphone</div>
+                <div className="font-semibold">+225 XX XX XX XX XX</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Footer */}
+        <div className="text-center mt-12 text-sm text-gray-600">
+          <p>
+            © {new Date().getFullYear()} Richesses Streaming. Tous droits réservés.
           </p>
         </div>
       </div>
+
+      <style jsx>{`
+        @keyframes fadeIn {
+          from {
+            opacity: 0;
+            transform: translateY(-10px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+        .animate-fadeIn {
+          animation: fadeIn 0.3s ease-out;
+        }
+      `}</style>
     </div>
-  );
+  )
 }

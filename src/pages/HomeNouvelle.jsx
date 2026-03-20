@@ -1,241 +1,276 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Search, Play, Star, TrendingUp, Shield, Users, Sparkles } from 'lucide-react'
+import { Sparkles, Zap, Shield, TrendingUp, ChevronRight, Star } from 'lucide-react'
 
 export default function HomeNouvelle() {
   const navigate = useNavigate()
-  const [searchQuery, setSearchQuery] = useState('')
-  const [popularOffres, setPopularOffres] = useState([])
-  const [loading, setLoading] = useState(false)
+  const [hoveredCard, setHoveredCard] = useState(null)
 
-  // Catégories avec emojis
-  const categories = [
-    { value: 'FILMS_SERIES', label: 'Films & Séries', icon: '🎬', color: 'bg-red-500' },
-    { value: 'MUSIQUE', label: 'Musique', icon: '🎵', color: 'bg-purple-500' },
-    { value: 'GAMING', label: 'Gaming', icon: '🎮', color: 'bg-green-500' },
-    { value: 'EBOOKS', label: 'Ebooks', icon: '📚', color: 'bg-yellow-500' },
-    { value: 'SPORT', label: 'Sport', icon: '⚽', color: 'bg-blue-500' },
+  const features = [
+    {
+      icon: Zap,
+      title: "Instantané",
+      description: "Recevez vos identifiants en quelques minutes seulement",
+      color: "from-amber-400 to-orange-500"
+    },
+    {
+      icon: Shield,
+      title: "100% Sécurisé",
+      description: "Paiements protégés et données cryptées",
+      color: "from-emerald-400 to-teal-500"
+    },
+    {
+      icon: TrendingUp,
+      title: "Économique",
+      description: "Les meilleurs prix du marché garantis",
+      color: "from-blue-400 to-indigo-500"
+    }
   ]
 
-  const handleSearch = (e) => {
-    e.preventDefault()
-    if (searchQuery.trim()) {
-      navigate(`/catalogue?search=${encodeURIComponent(searchQuery)}`)
+  const offresPopulaires = [
+    {
+      nom: "Netflix Premium",
+      prix: "7 500 FCFA",
+      duree: "1 mois",
+      badge: "Populaire",
+      gradient: "from-red-500 via-pink-500 to-purple-600"
+    },
+    {
+      nom: "Spotify Premium",
+      prix: "4 500 FCFA",
+      duree: "1 mois",
+      badge: "Tendance",
+      gradient: "from-green-400 via-emerald-500 to-teal-500"
+    },
+    {
+      nom: "YouTube Premium",
+      prix: "6 000 FCFA",
+      duree: "1 mois",
+      badge: "Nouveau",
+      gradient: "from-red-600 via-orange-500 to-yellow-500"
     }
-  }
-
-  const handleCategoryClick = (category) => {
-    navigate(`/catalogue?categorie=${category}`)
-  }
+  ]
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Hero Section avec gradient moderne */}
-      <section className="relative bg-gradient-to-br from-indigo-600 via-purple-600 to-pink-500 text-white overflow-hidden">
-        {/* Éléments décoratifs */}
-        <div className="absolute top-0 left-0 w-full h-full opacity-10">
-          <div className="absolute top-10 left-10 w-72 h-72 bg-white rounded-full blur-3xl"></div>
-          <div className="absolute bottom-10 right-10 w-96 h-96 bg-yellow-300 rounded-full blur-3xl"></div>
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-indigo-50">
+      {/* Hero Section */}
+      <section className="relative overflow-hidden">
+        {/* Animated Background Elements */}
+        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+          <div className="absolute -top-40 -right-40 w-80 h-80 bg-gradient-to-br from-purple-200 to-indigo-200 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-blob"></div>
+          <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-gradient-to-br from-cyan-200 to-blue-200 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-blob animation-delay-2000"></div>
+          <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-80 h-80 bg-gradient-to-br from-pink-200 to-purple-200 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-blob animation-delay-4000"></div>
         </div>
 
-        <div className="container mx-auto px-4 py-20 md:py-32 relative z-10">
-          {/* Badge */}
-          <div className="flex justify-center mb-6">
-            <div className="inline-flex items-center gap-2 px-4 py-2 bg-white/20 backdrop-blur-sm rounded-full border border-white/30">
+        <div className="container mx-auto px-4 py-20 relative z-10">
+          <div className="max-w-4xl mx-auto text-center">
+            <div className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-indigo-500 to-purple-600 text-white rounded-full text-sm font-medium mb-6 shadow-lg shadow-indigo-500/30 hover:shadow-indigo-500/50 transition-all duration-300 hover:scale-105">
               <Sparkles className="h-4 w-4" />
-              <span className="text-sm font-medium">+500 offres de streaming disponibles</span>
+              <span>Plateforme #1 en Côte d'Ivoire</span>
             </div>
-          </div>
 
-          {/* Titre principal */}
-          <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold text-center mb-6 leading-tight">
-            VOS ABONNEMENTS STREAMING<br />
-            <span className="bg-gradient-to-r from-yellow-200 to-pink-200 bg-clip-text text-transparent">
-              AU MEILLEUR PRIX 💜
-            </span>
-          </h1>
+            <h1 className="text-5xl md:text-7xl font-extrabold mb-6 bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 bg-clip-text text-transparent leading-tight">
+              Vos abonnements
+              <br />
+              en un clic
+            </h1>
 
-          {/* Sous-titre */}
-          <p className="text-xl md:text-2xl text-center mb-12 text-white/90 max-w-3xl mx-auto">
-            Découvrez Netflix, Spotify, Disney+ et plus encore à des prix imbattables. 
-            Comparez les offres en un clin d'œil.
-          </p>
+            <p className="text-xl md:text-2xl text-gray-600 mb-10 max-w-2xl mx-auto leading-relaxed">
+              Accédez à vos plateformes préférées sans carte bancaire.
+              <span className="font-semibold text-indigo-600"> Simple, rapide et sécurisé.</span>
+            </p>
 
-          {/* Barre de recherche géante */}
-          <form onSubmit={handleSearch} className="max-w-3xl mx-auto">
-            <div className="relative">
-              <input
-                type="text"
-                placeholder="Rechercher Netflix, Spotify, Disney+..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full px-6 py-5 pr-32 text-lg rounded-2xl border-0 shadow-2xl focus:outline-none focus:ring-4 focus:ring-white/30 text-gray-900"
-              />
+            <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
               <button
-                type="submit"
-                className="absolute right-2 top-2 bottom-2 px-8 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-xl font-semibold hover:from-indigo-700 hover:to-purple-700 transition-all shadow-lg flex items-center gap-2"
+                onClick={() => navigate('/catalogue')}
+                className="group px-8 py-4 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-xl font-bold text-lg shadow-xl shadow-indigo-500/30 hover:shadow-2xl hover:shadow-indigo-500/40 transition-all duration-300 hover:scale-105 flex items-center gap-2"
               >
-                <Search className="h-5 w-5" />
-                Rechercher
+                Parcourir les offres
+                <ChevronRight className="h-5 w-5 group-hover:translate-x-1 transition-transform" />
+              </button>
+              <button
+                onClick={() => navigate('/conditions')}
+                className="px-8 py-4 bg-white text-indigo-600 rounded-xl font-bold text-lg border-2 border-indigo-200 hover:border-indigo-400 hover:bg-indigo-50 transition-all duration-300 hover:scale-105 shadow-lg"
+              >
+                Comment ça marche ?
               </button>
             </div>
-          </form>
 
-          {/* Stats */}
-          <div className="grid grid-cols-3 gap-8 max-w-2xl mx-auto mt-16">
-            <div className="text-center">
-              <div className="text-4xl font-bold mb-2">500+</div>
-              <div className="text-white/80">Offres disponibles</div>
-            </div>
-            <div className="text-center">
-              <div className="text-4xl font-bold mb-2">50+</div>
-              <div className="text-white/80">Partenaires</div>
-            </div>
-            <div className="text-center">
-              <div className="text-4xl font-bold mb-2">10K+</div>
-              <div className="text-white/80">Clients satisfaits</div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Section Catégories */}
-      <section className="py-16 bg-white">
-        <div className="container mx-auto px-4">
-          <h2 className="text-3xl font-bold text-center mb-12">
-            Explorez par catégorie
-          </h2>
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6">
-            {categories.map((cat) => (
-              <button
-                key={cat.value}
-                onClick={() => handleCategoryClick(cat.value)}
-                className="group p-6 bg-gradient-to-br from-white to-gray-50 rounded-2xl border-2 border-gray-200 hover:border-indigo-500 hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1"
-              >
-                <div className="text-5xl mb-3">{cat.icon}</div>
-                <div className="font-semibold text-gray-900">{cat.label}</div>
-              </button>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Section Offres Populaires */}
-      <section className="py-16 bg-gray-50">
-        <div className="container mx-auto px-4">
-          <div className="flex items-center justify-between mb-12">
-            <div>
-              <h2 className="text-3xl font-bold mb-2">🔥 Offres populaires</h2>
-              <p className="text-gray-600">Les plus demandées par nos clients</p>
-            </div>
-            <button
-              onClick={() => navigate('/catalogue')}
-              className="px-6 py-3 bg-indigo-600 text-white rounded-xl font-semibold hover:bg-indigo-700 transition-all shadow-lg"
-            >
-              Voir tout →
-            </button>
-          </div>
-
-          {/* Placeholder pour les cartes d'offres */}
-          <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {[1, 2, 3, 4].map((i) => (
-              <div
-                key={i}
-                className="group bg-white rounded-2xl border-2 border-gray-200 overflow-hidden hover:border-indigo-500 hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2"
-              >
-                <div className="relative h-48 bg-gradient-to-br from-indigo-500 to-purple-600">
-                  <div className="absolute top-3 left-3 px-3 py-1 bg-white/20 backdrop-blur-sm rounded-full text-xs font-semibold text-white border border-white/30">
-                    🎬 Films & Séries
-                  </div>
-                  <div className="absolute top-3 right-3">
-                    <Star className="h-6 w-6 text-yellow-400 fill-yellow-400" />
-                  </div>
+            {/* Trust Indicators */}
+            <div className="mt-12 flex flex-wrap justify-center gap-8 text-sm text-gray-500">
+              <div className="flex items-center gap-2">
+                <div className="flex -space-x-2">
+                  {[...Array(3)].map((_, i) => (
+                    <div key={i} className="w-8 h-8 rounded-full bg-gradient-to-br from-purple-400 to-indigo-400 border-2 border-white"></div>
+                  ))}
                 </div>
-                <div className="p-6">
-                  <h3 className="text-xl font-bold mb-2">Service Premium</h3>
-                  <div className="flex items-center gap-2 text-sm text-gray-600 mb-4">
-                    <div className="flex items-center gap-1">
-                      👤 <span>Partenaire</span>
-                    </div>
-                    <span>•</span>
-                    <span>Abidjan</span>
+                <span className="font-medium">+2,500 utilisateurs</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Star className="h-5 w-5 fill-yellow-400 text-yellow-400" />
+                <span className="font-medium">4.9/5 sur les avis</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Features Section */}
+      <section className="py-20 relative">
+        <div className="container mx-auto px-4">
+          <div className="max-w-6xl mx-auto">
+            <div className="text-center mb-16">
+              <h2 className="text-4xl md:text-5xl font-bold mb-4 bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">
+                Pourquoi nous choisir ?
+              </h2>
+              <p className="text-xl text-gray-600">Une expérience pensée pour vous</p>
+            </div>
+
+            <div className="grid md:grid-cols-3 gap-8">
+              {features.map((feature, index) => (
+                <div
+                  key={index}
+                  onMouseEnter={() => setHoveredCard(index)}
+                  onMouseLeave={() => setHoveredCard(null)}
+                  className="group relative bg-white rounded-2xl p-8 shadow-lg hover:shadow-2xl transition-all duration-500 hover:-translate-y-2 border border-gray-100"
+                >
+                  <div className={`absolute inset-0 bg-gradient-to-r ${feature.color} opacity-0 group-hover:opacity-5 rounded-2xl transition-opacity duration-500`}></div>
+
+                  <div className={`w-16 h-16 rounded-2xl bg-gradient-to-r ${feature.color} flex items-center justify-center mb-6 shadow-lg group-hover:scale-110 transition-transform duration-300`}>
+                    <feature.icon className="h-8 w-8 text-white" />
                   </div>
-                  <div className="flex items-center gap-2 mb-4">
-                    <span className="text-sm text-gray-600">⏰ 1 mois</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <div className="text-2xl font-bold text-indigo-600">7,000 F</div>
-                      <div className="text-xs text-gray-500">(7,000 F/mois)</div>
+
+                  <h3 className="text-2xl font-bold mb-3 text-gray-900">{feature.title}</h3>
+                  <p className="text-gray-600 leading-relaxed">{feature.description}</p>
+
+                  {hoveredCard === index && (
+                    <div className="absolute -bottom-2 left-1/2 transform -translate-x-1/2 w-16 h-1 bg-gradient-to-r from-indigo-500 to-purple-500 rounded-full"></div>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Offres Populaires */}
+      <section className="py-20 bg-gradient-to-br from-gray-50 to-white relative overflow-hidden">
+        <div className="absolute inset-0 pointer-events-none">
+          <div className="absolute top-0 right-0 w-96 h-96 bg-gradient-to-br from-purple-100 to-transparent rounded-full filter blur-3xl opacity-30"></div>
+        </div>
+
+        <div className="container mx-auto px-4 relative z-10">
+          <div className="max-w-6xl mx-auto">
+            <div className="text-center mb-16">
+              <h2 className="text-4xl md:text-5xl font-bold mb-4 bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">
+                Offres populaires
+              </h2>
+              <p className="text-xl text-gray-600">Nos abonnements les plus demandés</p>
+            </div>
+
+            <div className="grid md:grid-cols-3 gap-8">
+              {offresPopulaires.map((offre, index) => (
+                <div
+                  key={index}
+                  className="group relative bg-white rounded-3xl overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-500 hover:-translate-y-2 border-2 border-transparent hover:border-indigo-200"
+                >
+                  {/* Gradient Header */}
+                  <div className={`h-2 bg-gradient-to-r ${offre.gradient}`}></div>
+
+                  <div className="p-8">
+                    {/* Badge */}
+                    <div className="inline-flex items-center gap-1 px-3 py-1 bg-gradient-to-r from-indigo-500 to-purple-600 text-white text-xs font-bold rounded-full mb-4">
+                      <Sparkles className="h-3 w-3" />
+                      {offre.badge}
                     </div>
-                    <button className="px-6 py-2 bg-indigo-600 text-white rounded-lg font-semibold hover:bg-indigo-700 transition-all">
+
+                    <h3 className="text-2xl font-bold mb-2 text-gray-900">{offre.nom}</h3>
+                    <p className="text-gray-500 text-sm mb-6">{offre.duree}</p>
+
+                    <div className="flex items-end gap-2 mb-6">
+                      <span className={`text-4xl font-extrabold bg-gradient-to-r ${offre.gradient} bg-clip-text text-transparent`}>
+                        {offre.prix}
+                      </span>
+                    </div>
+
+                    <button
+                      onClick={() => navigate('/catalogue')}
+                      className={`w-full py-3 bg-gradient-to-r ${offre.gradient} text-white rounded-xl font-bold shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 flex items-center justify-center gap-2 group`}
+                    >
                       Souscrire
+                      <ChevronRight className="h-5 w-5 group-hover:translate-x-1 transition-transform" />
                     </button>
                   </div>
+
+                  {/* Hover Effect */}
+                  <div className={`absolute inset-0 bg-gradient-to-r ${offre.gradient} opacity-0 group-hover:opacity-5 transition-opacity duration-500 pointer-events-none`}></div>
                 </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Section Pourquoi nous choisir */}
-      <section className="py-16 bg-white">
-        <div className="container mx-auto px-4">
-          <h2 className="text-3xl font-bold text-center mb-12">
-            Pourquoi Joris Streaming ?
-          </h2>
-          <div className="grid md:grid-cols-3 gap-8">
-            <div className="text-center p-8 bg-gradient-to-br from-green-50 to-white rounded-2xl border-2 border-green-200">
-              <div className="inline-flex items-center justify-center w-16 h-16 bg-green-500 rounded-2xl mb-6">
-                <TrendingUp className="h-8 w-8 text-white" />
-              </div>
-              <h3 className="text-xl font-bold mb-3">Meilleurs prix</h3>
-              <p className="text-gray-600">
-                Comparez et trouvez les offres les plus avantageuses du marché
-              </p>
+              ))}
             </div>
 
-            <div className="text-center p-8 bg-gradient-to-br from-blue-50 to-white rounded-2xl border-2 border-blue-200">
-              <div className="inline-flex items-center justify-center w-16 h-16 bg-blue-500 rounded-2xl mb-6">
-                <Shield className="h-8 w-8 text-white" />
-              </div>
-              <h3 className="text-xl font-bold mb-3">Paiement sécurisé</h3>
-              <p className="text-gray-600">
-                Transactions 100% sécurisées avec CinetPay Mobile Money
-              </p>
-            </div>
-
-            <div className="text-center p-8 bg-gradient-to-br from-purple-50 to-white rounded-2xl border-2 border-purple-200">
-              <div className="inline-flex items-center justify-center w-16 h-16 bg-purple-500 rounded-2xl mb-6">
-                <Users className="h-8 w-8 text-white" />
-              </div>
-              <h3 className="text-xl font-bold mb-3">Support 24/7</h3>
-              <p className="text-gray-600">
-                Notre équipe est là pour vous accompagner à tout moment
-              </p>
+            <div className="text-center mt-12">
+              <button
+                onClick={() => navigate('/catalogue')}
+                className="px-8 py-4 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-xl font-bold text-lg shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-105 inline-flex items-center gap-2"
+              >
+                Voir toutes les offres
+                <ChevronRight className="h-5 w-5" />
+              </button>
             </div>
           </div>
         </div>
       </section>
 
       {/* CTA Final */}
-      <section className="py-20 bg-gradient-to-r from-indigo-600 to-purple-600 text-white">
-        <div className="container mx-auto px-4 text-center">
-          <h2 className="text-3xl md:text-4xl font-bold mb-6">
-            Prêt à économiser sur vos abonnements ? 🎉
-          </h2>
-          <p className="text-xl mb-8 text-white/90 max-w-2xl mx-auto">
-            Rejoignez des milliers de clients satisfaits
-          </p>
-          <button
-            onClick={() => navigate('/catalogue')}
-            className="px-8 py-4 bg-white text-indigo-600 rounded-xl font-bold text-lg hover:bg-gray-100 transition-all shadow-2xl transform hover:scale-105"
-          >
-            Découvrir les offres →
-          </button>
+      <section className="py-20 relative overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600"></div>
+        <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiNmZmYiIGZpbGwtb3BhY2l0eT0iMC4wNSI+PHBhdGggZD0iTTM2IDM0djItaDJ2LTJoLTJ6bTAtNHYyaDJ2LTJoLTJ6bTAtNHYyaDJ2LTJoLTJ6bTAtNHYyaDJ2LTJoLTJ6bTAtNHYyaDJ2LTJoLTJ6bTAtNHYyaDJ2LTJoLTJ6bTAtNHYyaDJ2LTJoLTJ6bTAtNHYyaDJ2LTJoLTJ6bTAtNHYyaDJ2LTJoLTJ6Ii8+PC9nPjwvZz48L3N2Zz4=')] opacity-30"></div>
+
+        <div className="container mx-auto px-4 relative z-10">
+          <div className="max-w-4xl mx-auto text-center text-white">
+            <h2 className="text-4xl md:text-5xl font-extrabold mb-6">
+              Prêt à commencer ?
+            </h2>
+            <p className="text-xl mb-10 text-indigo-100">
+              Rejoignez des milliers d'utilisateurs satisfaits et profitez de vos plateformes préférées dès aujourd'hui
+            </p>
+            <button
+              onClick={() => navigate('/catalogue')}
+              className="px-10 py-5 bg-white text-indigo-600 rounded-xl font-bold text-lg shadow-2xl hover:shadow-3xl transition-all duration-300 hover:scale-105 inline-flex items-center gap-3"
+            >
+              <Sparkles className="h-6 w-6" />
+              Découvrir les offres
+              <ChevronRight className="h-6 w-6" />
+            </button>
+          </div>
         </div>
       </section>
+
+      <style jsx>{`
+                @keyframes blob {
+                    0% {
+                        transform: translate(0px, 0px) scale(1);
+                    }
+                    33% {
+                        transform: translate(30px, -50px) scale(1.1);
+                    }
+                    66% {
+                        transform: translate(-20px, 20px) scale(0.9);
+                    }
+                    100% {
+                        transform: translate(0px, 0px) scale(1);
+                    }
+                }
+                .animate-blob {
+                    animation: blob 7s infinite;
+                }
+                .animation-delay-2000 {
+                    animation-delay: 2s;
+                }
+                .animation-delay-4000 {
+                    animation-delay: 4s;
+                }
+            `}</style>
     </div>
   )
 }

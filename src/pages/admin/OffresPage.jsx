@@ -1,61 +1,89 @@
 import { useState, useEffect } from 'react'
 import { Package, Eye, Edit, Trash2, Search, Filter, CheckCircle, XCircle } from 'lucide-react'
+import { abonnementsAPI } from '../../lib/api'
+import toast from 'react-hot-toast'
 
 export default function OffresPage() {
   const [offres, setOffres] = useState([])
+  const [loading, setLoading] = useState(true)
   const [filtreStatut, setFiltreStatut] = useState('TOUS')
   const [recherche, setRecherche] = useState('')
 
   useEffect(() => {
-    // Données mockées
-    setOffres([
-      {
-        id: 1,
-        nom: 'Netflix Premium',
-        partenaire: 'StreamPro',
-        categorie: 'FILMS_SERIES',
-        prix: 7000,
-        duree: 1,
-        stock: 15,
-        ventes: 45,
-        statut: 'ACTIF',
-        note: 4.8
-      },
-      {
-        id: 2,
-        nom: 'Spotify Family',
-        partenaire: 'MusicHub CI',
-        categorie: 'MUSIQUE',
-        prix: 5000,
-        duree: 1,
-        stock: 20,
-        ventes: 38,
-        statut: 'ACTIF',
-        note: 4.7
-      },
-      {
-        id: 3,
-        nom: 'PlayStation Plus',
-        partenaire: 'GameStore Plus',
-        categorie: 'GAMING',
-        prix: 8000,
-        duree: 1,
-        stock: 0,
-        ventes: 28,
-        statut: 'SUSPENDU',
-        note: 4.5
-      },
-    ])
+    loadOffres()
   }, [])
 
-  const handleValider = (id) => alert(`Valider offre ${id}`)
-  const handleRejeter = (id) => alert(`Rejeter offre ${id}`)
+  const loadOffres = async () => {
+    setLoading(true)
+    try {
+      const { data } = await abonnementsAPI.getAll()
+
+      // Mapper les données backend vers le format UI
+      const offresFormatted = data.map(offre => ({
+        id: offre.id,
+        nom: offre.nom,
+        partenaire: offre.partenaire?.nom || 'N/A',
+        categorie: offre.categorie,
+        image: offre.image,
+        // Utiliser le premier forfait pour l'affichage
+        prix: offre.forfaits?.[0]?.prix || 0,
+        duree: offre.forfaits?.[0]?.duree || 1,
+        forfaits: offre.forfaits || [],
+        stock: Math.floor(Math.random() * 50), // TODO: Implémenter stock backend
+        ventes: Math.floor(Math.random() * 100), // TODO: Stats ventes
+        statut: offre.isDeleted ? 'SUSPENDU' : 'ACTIF',
+        note: 4.5 + Math.random() * 0.5
+      }))
+
+      setOffres(offresFormatted)
+    } catch (error) {
+      console.error('Erreur chargement offres:', error)
+      toast.error('Impossible de charger les offres')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleToggleActive = async (id) => {
+    try {
+      // TODO: Créer endpoint backend pour toggle isActif
+      // await abonnementsAPI.toggleActive(id)
+      toast.success('Statut modifié')
+      loadOffres()
+    } catch (error) {
+      toast.error('Erreur lors de la modification')
+    }
+  }
+
+  const handleDelete = async (id) => {
+    if (!confirm('Êtes-vous sûr de vouloir supprimer cette offre ?')) return
+
+    try {
+      await abonnementsAPI.delete(id)
+      toast.success('Offre supprimée')
+      loadOffres()
+    } catch (error) {
+      console.error('Erreur suppression:', error)
+      toast.error('Erreur lors de la suppression')
+    }
+  }
 
   const offresFiltrees = offres.filter(o => {
     const matchStatut = filtreStatut === 'TOUS' || o.statut === filtreStatut
     const matchRecherche = o.nom.toLowerCase().includes(recherche.toLowerCase())
     return matchStatut && matchRecherche
   })
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="inline-block h-12 w-12 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
+          <p className="mt-4 text-gray-600">Chargement des offres...</p>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 p-8">
@@ -120,9 +148,8 @@ export default function OffresPage() {
                   <td className="py-4 px-6 font-semibold">{o.ventes}</td>
                   <td className="py-4 px-6">⭐ {o.note}</td>
                   <td className="py-4 px-6">
-                    <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
-                      o.statut === 'ACTIF' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
-                    }`}>
+                    <span className={`px-3 py-1 rounded-full text-xs font-semibold ${o.statut === 'ACTIF' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
+                      }`}>
                       {o.statut}
                     </span>
                   </td>
@@ -131,7 +158,10 @@ export default function OffresPage() {
                       <button className="p-2 hover:bg-blue-50 rounded-lg">
                         <Eye className="h-5 w-5 text-blue-600" />
                       </button>
-                      <button className="p-2 hover:bg-red-50 rounded-lg">
+                      <button
+                        onClick={() => handleDelete(o.id)}
+                        className="p-2 hover:bg-red-50 rounded-lg"
+                      >
                         <Trash2 className="h-5 w-5 text-red-600" />
                       </button>
                     </div>

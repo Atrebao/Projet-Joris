@@ -8,6 +8,7 @@ import { DashboardAdmin } from './pages/admin/DashboardAdmin'
 
 // Layout
 import { Navbar } from './components/client/Navbar'
+import HomeNouvelle from './pages/HomeNouvelle'
 
 function App() {
   return (
@@ -20,7 +21,7 @@ function App() {
         <main className="flex-1">
           <Routes>
             {/* Routes CLIENT - Publiques */}
-            <Route path="/" element={<HomePage />} />
+            <Route path="/" element={<HomeNouvelle />} />
             <Route path="/catalogue" element={<CataloguePage />} />
 
             {/* Routes PARTENAIRE - Protégées */}

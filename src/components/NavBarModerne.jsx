@@ -1,29 +1,64 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { NavLink, useNavigate, useLocation } from "react-router-dom";
 import { resetStorage } from "../Utils/Utils";
-import { 
-  Menu, 
-  X, 
-  LayoutDashboard, 
-  Users, 
-  Package, 
-  BarChart3, 
+import {
+  Menu,
+  X,
+  LayoutDashboard,
+  Users,
+  Package,
+  BarChart3,
   UserCircle2,
   LogOut,
   ShoppingCart,
-  Settings,
   Bell,
   Search
 } from "lucide-react";
 
 export default function NavBarModerne() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
 
-  // Déterminer si on est en mode admin ou partenaire
-  const isAdmin = location.pathname.includes('/admin') || location.pathname.includes('/backoffice');
-  const isPartenaire = location.pathname.includes('/partenaire');
+  // Déterminer le type d'utilisateur de manière plus robuste
+  const getUserType = () => {
+    const path = location.pathname;
+    if (path.includes('/backoffice') || path === '/backoffice') return 'admin';
+    if (path.includes('/partenaire')) return 'partenaire';
+    
+    // Vérifier dans le localStorage si l'utilisateur est connecté
+    const user = localStorage.getItem('user');
+    if (user) {
+      try {
+        const userData = JSON.parse(user);
+        if (userData.role === 'admin') return 'admin';
+        if (userData.role === 'partenaire') return 'partenaire';
+      } catch (e) {
+        console.error('Erreur parsing user data:', e);
+      }
+    }
+    
+    return null; // Non authentifié
+  };
+
+  const userType = getUserType();
+  const isAdmin = userType === 'admin';
+  const isPartenaire = userType === 'partenaire';
+
+  // Gestion du scroll pour l'effet sticky amélioré
+  useEffect(() => {
+    const handleScroll = () => {
+      setScrolled(window.scrollY > 10);
+    };
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  // Fermer le menu mobile lors du changement de route
+  useEffect(() => {
+    setIsMenuOpen(false);
+  }, [location.pathname]);
 
   const toggleMenu = () => {
     setIsMenuOpen((prev) => !prev);
@@ -31,52 +66,63 @@ export default function NavBarModerne() {
 
   const handleLogout = () => {
     resetStorage();
-    navigate(isAdmin ? "/backoffice/login" : "/");
+    navigate("/");
+    setIsMenuOpen(false);
   };
 
   // Navigation admin
   const adminLinks = [
-    { to: "/admin", icon: LayoutDashboard, label: "Dashboard" },
-    { to: "/admin/partenaires", icon: Users, label: "Partenaires" },
-    { to: "/admin/offres", icon: Package, label: "Offres" },
-    { to: "/admin/clients", icon: ShoppingCart, label: "Clients" },
-    { to: "/admin/stats", icon: BarChart3, label: "Stats" },
+    { to: "/backoffice", icon: LayoutDashboard, label: "Dashboard", exact: true },
+    { to: "/backoffice/partenaires", icon: Users, label: "Partenaires" },
+    { to: "/backoffice/offres", icon: Package, label: "Offres" },
+    { to: "/backoffice/clients", icon: ShoppingCart, label: "Clients" },
+    { to: "/backoffice/stats", icon: BarChart3, label: "Stats" },
   ];
 
   // Navigation partenaire
   const partenaireLinks = [
-    { to: "/partenaire", icon: LayoutDashboard, label: "Dashboard" },
+    { to: "/partenaire", icon: LayoutDashboard, label: "Dashboard", exact: true },
+    { to: "/partenaire/commandes", icon: ShoppingCart, label: "Commandes" },
     { to: "/partenaire/offres/nouvelle", icon: Package, label: "Nouvelle Offre" },
     { to: "/partenaire/clients", icon: Users, label: "Clients" },
     { to: "/partenaire/stats", icon: BarChart3, label: "Statistiques" },
   ];
 
-  const links = isPartenaire ? partenaireLinks : adminLinks;
-  const gradientClass = isPartenaire 
-    ? "from-purple-600 via-pink-500 to-rose-500" 
-    : "from-indigo-600 via-purple-600 to-pink-500";
+  const links = isPartenaire ? partenaireLinks : (isAdmin ? adminLinks : []);
+
+  // Si l'utilisateur n'est pas authentifié, ne pas afficher la navbar
+  if (!userType) {
+    return null;
+  }
+
+  // Couleurs sobres pour admin/partenaire
+  const themeColor = isPartenaire ? "text-purple-600" : "text-indigo-600";
+  const themeBg = isPartenaire ? "bg-purple-600" : "bg-indigo-600";
+  const themeHoverBg = isPartenaire ? "hover:bg-purple-50" : "hover:bg-indigo-50";
 
   return (
-    <nav className={`sticky top-0 z-50 bg-gradient-to-r ${gradientClass} shadow-2xl`}>
+    <nav className={`sticky top-0 z-50 transition-all duration-300 ${
+      scrolled 
+        ? 'bg-white/95 backdrop-blur-md border-b border-gray-200 shadow-lg' 
+        : 'bg-white border-b border-gray-200 shadow-sm'
+    }`}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
-          <NavLink 
-            to={isPartenaire ? "/partenaire" : "/admin"} 
-            className="flex items-center gap-3 group"
+          <NavLink
+            to={isPartenaire ? "/partenaire" : "/backoffice"}
+            className="flex items-center gap-3 group cursor-pointer"
             onClick={() => setIsMenuOpen(false)}
           >
-            <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
-              <span className="text-2xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
-                R
-              </span>
+            <div className={`w-10 h-10 ${themeBg} rounded-xl flex items-center justify-center shadow-md group-hover:scale-110 transition-transform duration-200`}>
+              <span className="text-2xl font-bold text-white">R</span>
             </div>
             <div className="hidden sm:block">
-              <div className="text-white font-bold text-xl tracking-tight">
+              <div className="text-slate-800 font-bold text-xl tracking-tight">
                 RICHESSES
               </div>
-              <div className="text-white/80 text-xs font-semibold uppercase tracking-wider">
-                {isPartenaire ? "Partenaire" : "Admin"} Panel
+              <div className={`${themeColor} text-xs font-semibold uppercase tracking-wider`}>
+                {isPartenaire ? "Espace Partenaire" : "Administration"}
               </div>
             </div>
           </NavLink>
@@ -87,15 +133,16 @@ export default function NavBarModerne() {
               <NavLink
                 key={link.to}
                 to={link.to}
+                end={link.exact || false}
                 className={({ isActive }) =>
                   `flex items-center gap-2 px-4 py-2 rounded-xl transition-all duration-200 ${
                     isActive
-                      ? "bg-white text-purple-600 shadow-lg font-semibold"
-                      : "text-white hover:bg-white/20 hover:shadow-md"
+                      ? `${themeBg} text-white shadow-md font-medium`
+                      : `text-slate-600 ${themeHoverBg} hover:scale-105`
                   }`
                 }
               >
-                <link.icon className="h-5 w-5" />
+                <link.icon className="h-4 w-4" />
                 <span className="text-sm font-medium">{link.label}</span>
               </NavLink>
             ))}
@@ -103,67 +150,69 @@ export default function NavBarModerne() {
 
           {/* Right side actions */}
           <div className="hidden md:flex items-center gap-3">
-            {/* Search */}
-            <button className="p-2 text-white hover:bg-white/20 rounded-xl transition-all">
+            {/* Search - optionnel */}
+            <button className="p-2 text-slate-500 hover:bg-slate-100 rounded-xl transition-all">
               <Search className="h-5 w-5" />
             </button>
 
             {/* Notifications */}
-            <button className="relative p-2 text-white hover:bg-white/20 rounded-xl transition-all">
+            <button className="relative p-2 text-slate-500 hover:bg-slate-100 rounded-xl transition-all">
               <Bell className="h-5 w-5" />
-              <span className="absolute top-1 right-1 w-2 h-2 bg-rose-500 rounded-full"></span>
-            </button>
-
-            {/* Settings */}
-            <button className="p-2 text-white hover:bg-white/20 rounded-xl transition-all">
-              <Settings className="h-5 w-5" />
+              <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full border border-white animate-pulse"></span>
             </button>
 
             {/* Profile */}
-            <div className="flex items-center gap-3 pl-3 border-l-2 border-white/20">
+            <div className="flex items-center gap-3 pl-3 border-l border-gray-200">
               <div className="text-right hidden lg:block">
-                <div className="text-white text-sm font-semibold">Admin User</div>
-                <div className="text-white/70 text-xs">admin@richesses.ci</div>
+                <div className="text-slate-800 text-sm font-semibold">
+                  {isPartenaire ? "Espace Partenaire" : "Administrateur"}
+                </div>
+                <div className="text-slate-500 text-xs">Connecté</div>
               </div>
-              <button className="p-2 bg-white/20 hover:bg-white/30 rounded-xl transition-all">
-                <UserCircle2 className="h-6 w-6 text-white" />
-              </button>
+              <div className={`p-2 ${isPartenaire ? 'bg-purple-50' : 'bg-indigo-50'} ${themeColor} rounded-xl cursor-pointer hover:scale-110 transition-transform`}>
+                <UserCircle2 className="h-6 w-6" />
+              </div>
             </div>
 
             {/* Logout */}
             <button
               onClick={handleLogout}
-              className="flex items-center gap-2 px-4 py-2 bg-white/20 hover:bg-white/30 rounded-xl transition-all text-white"
+              className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-xl transition-all duration-200"
+              title="Déconnexion"
             >
               <LogOut className="h-5 w-5" />
-              <span className="text-sm font-medium">Déconnexion</span>
             </button>
           </div>
 
           {/* Mobile menu button */}
           <button
             onClick={toggleMenu}
-            className="md:hidden p-2 text-white hover:bg-white/20 rounded-lg transition-all"
+            className="md:hidden p-2 text-slate-600 hover:bg-slate-100 rounded-lg transition-all"
+            aria-label={isMenuOpen ? "Fermer le menu" : "Ouvrir le menu"}
           >
             {isMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
           </button>
         </div>
       </div>
 
-      {/* Mobile menu */}
-      {isMenuOpen && (
-        <div className="md:hidden bg-white/10 backdrop-blur-lg border-t border-white/20">
+      {/* Mobile menu avec animation */}
+      <div
+        className={`md:hidden transition-all duration-300 overflow-hidden ${
+          isMenuOpen ? 'max-h-screen opacity-100' : 'max-h-0 opacity-0'
+        }`}
+      >
+        <div className="bg-white border-t border-gray-100">
           <div className="px-4 pt-2 pb-3 space-y-1">
             {links.map((link) => (
               <NavLink
                 key={link.to}
                 to={link.to}
-                onClick={() => setIsMenuOpen(false)}
+                end={link.exact || false}
                 className={({ isActive }) =>
                   `flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${
                     isActive
-                      ? "bg-white text-purple-600 font-semibold shadow-lg"
-                      : "text-white hover:bg-white/20"
+                      ? `${themeBg} text-white font-medium shadow-md`
+                      : `text-slate-600 ${themeHoverBg}`
                   }`
                 }
               >
@@ -172,15 +221,24 @@ export default function NavBarModerne() {
               </NavLink>
             ))}
 
-            {/* Mobile actions */}
-            <div className="pt-4 mt-4 border-t border-white/20 space-y-2">
-              <button className="flex items-center gap-3 px-4 py-3 text-white hover:bg-white/20 rounded-xl transition-all w-full">
-                <Settings className="h-5 w-5" />
-                <span className="font-medium">Paramètres</span>
-              </button>
+            {/* Mobile search */}
+            <button className="flex items-center gap-3 px-4 py-3 text-slate-600 hover:bg-slate-50 rounded-xl transition-all w-full">
+              <Search className="h-5 w-5" />
+              <span className="font-medium">Rechercher</span>
+            </button>
+
+            {/* Mobile notifications */}
+            <button className="flex items-center gap-3 px-4 py-3 text-slate-600 hover:bg-slate-50 rounded-xl transition-all w-full relative">
+              <Bell className="h-5 w-5" />
+              <span className="font-medium">Notifications</span>
+              <span className="ml-auto w-2 h-2 bg-red-500 rounded-full"></span>
+            </button>
+
+            {/* Mobile logout */}
+            <div className="pt-4 mt-4 border-t border-gray-100">
               <button
                 onClick={handleLogout}
-                className="flex items-center gap-3 px-4 py-3 text-white hover:bg-white/20 rounded-xl transition-all w-full"
+                className="flex items-center gap-3 px-4 py-3 text-red-600 hover:bg-red-50 rounded-xl transition-all w-full"
               >
                 <LogOut className="h-5 w-5" />
                 <span className="font-medium">Déconnexion</span>
@@ -188,7 +246,7 @@ export default function NavBarModerne() {
             </div>
           </div>
         </div>
-      )}
+      </div>
     </nav>
   );
 }

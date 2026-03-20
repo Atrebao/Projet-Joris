@@ -1,12 +1,12 @@
 import React from "react";
-import { Outlet, useNavigate } from "react-router-dom";
-import NavBar from "../components/NavBar";
+import { Outlet } from "react-router-dom";
+import NavBarClient from "../components/NavBarClient";
 import Footer from "../components/Footer";
 
 export default function LayoutClient() {
   return (
     <div className="w-full min-h-screen">
-      <NavBar />
+      <NavBarClient />
       <main>
         <Outlet />
       </main>

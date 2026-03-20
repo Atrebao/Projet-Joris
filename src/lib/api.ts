@@ -35,13 +35,13 @@ api.interceptors.response.use(
 export const authAPI = {
   loginAdmin: (credentials: { email: string; password: string }) =>
     api.post('/auth/admin/login', credentials),
-  
+
   loginPartenaire: (credentials: { email: string; password: string }) =>
     api.post('/auth/partenaire/login', credentials),
-  
+
   registerPartenaire: (data: any) =>
     api.post('/auth/partenaire/register', data),
-  
+
   me: () => api.get('/auth/me'),
 }
 
@@ -89,19 +89,44 @@ export const souscriptionsAPI = {
     api.patch(`/souscriptions/${id}/status`, { status }),
 }
 
-// API Clients (à implémenter côté backend)
-export const clientsAPI = {
-  getAll: () => api.get('/clients'),
-  getByPartenaire: (partenaireId: number) =>
-    api.get(`/clients/partenaire/${partenaireId}`),
-  getOne: (id: number) => api.get(`/clients/${id}`),
+// API Abonnements
+export const abonnementsAPI = {
+  getAll: () => api.get('/abonnements/rechercher-abonnements'),
+  getPublic: () => api.get('/abonnements/public'),
+  getOne: (id: number) => api.get(`/abonnements/${id}`),
+  getDetails: (id: number) => api.get(`/abonnements/rechercher-details/${id}`),
+  getByPartenaire: (partenaireId: number) => api.get(`/abonnements/partenaire/${partenaireId}`),
+  create: (data: any) => api.post('/abonnements/enregistrer', data),
+  update: (id: number, data: any) => api.post(`/abonnements/modifier/${id}`, data),
+  delete: (id: number) => api.delete(`/abonnements/supprimer/${id}`),
 }
 
-// API Stats (à implémenter côté backend)
+// API Users/Clients
+export const usersAPI = {
+  getClients: (params?: { search?: string; limit?: number }) => api.get('/users/clients', { params }),
+  getClient: (id: number) => api.get(`/users/clients/${id}`),
+  getClientSouscriptions: (id: number) => api.get(`/users/clients/${id}/souscriptions`),
+  getUsers: () => api.get('/users/rechercher-users'),
+  createUser: (data: any) => api.post('/users/enregistrer', data),
+  updateCredentials: (data: any) => api.post('/users/modifier-identifiants', data),
+  deactivate: (userId: number) => api.post(`/users/desactiver/${userId}`),
+}
+
+// API Clients (compatibilité)
+export const clientsAPI = {
+  getAll: (params?: any) => usersAPI.getClients(params),
+  getByPartenaire: (partenaireId: number) => api.get(`/clients/partenaire/${partenaireId}`),
+  getOne: (id: number) => usersAPI.getClient(id),
+}
+
+// API Stats
 export const statsAPI = {
-  global: () => api.get('/stats/global'),
-  partenaire: (partenaireId: number) =>
-    api.get(`/stats/partenaire/${partenaireId}`),
+  adminDashboard: () => api.get('/stats/admin/dashboard'),
+  partenaireDashboard: (id: number) => api.get(`/stats/partenaire/${id}/dashboard`),
+  ca: (params?: { dateDebut?: string; dateFin?: string; partenaireId?: number }) => api.get('/stats/ca', { params }),
+  grapheCA: (params?: { periode?: string; annee?: number; mois?: number; dateDebut?: string; dateFin?: string }) => api.get('/stats/graphe-ca', { params }),
+  global: () => api.get('/stats/admin/dashboard'),
+  partenaire: (partenaireId: number) => api.get(`/stats/partenaire/${partenaireId}/dashboard`),
 }
 
 export default api

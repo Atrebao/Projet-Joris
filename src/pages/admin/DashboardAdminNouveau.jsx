@@ -14,6 +14,8 @@ import {
   ShoppingBag,
   UserCheck
 } from 'lucide-react'
+import { statsAPI, partenairesAPI } from '../../lib/api'
+import toast from 'react-hot-toast'
 
 export default function DashboardAdminNouveau() {
   const navigate = useNavigate()
@@ -22,76 +24,83 @@ export default function DashboardAdminNouveau() {
   const [offreRecentes, setOffreRecentes] = useState([])
   const [loading, setLoading] = useState(true)
 
-  // Charger les données (simulation)
+  // Charger les données réelles depuis l'API
   useEffect(() => {
     const loadData = async () => {
       setLoading(true)
 
-      // Simulation données
-      await new Promise(resolve => setTimeout(resolve, 500))
+      try {
+        // Charger les stats dashboard
+        const { data: statsData } = await statsAPI.adminDashboard()
 
-      setStats({
-        totalPartenaires: 45,
-        totalOffres: 287,
-        totalRevenu: 12450000,
-        totalClients: 1842,
-        partenairesActifs: 38,
-        offresActives: 245,
-        ventesAujourdhui: 34,
-        croissance: 12.5
-      })
+        setStats({
+          totalPartenaires: statsData.totalPartenaires || 0,
+          totalOffres: 0, // TODO: Ajouter dans l'API
+          totalRevenu: statsData.revenusTotal || 0,
+          totalClients: statsData.totalClients || 0,
+          partenairesActifs: statsData.partenairesActifs || 0,
+          offresActives: 0, // TODO
+          ventesAujourdhui: statsData.souscriptionsMois || 0,
+          croissance: statsData.evolutionRevenus || 0,
+          souscriptionsActives: statsData.souscriptionsActives || 0,
+          revenusMois: statsData.revenusMois || 0,
+          nouveauxClientsMois: statsData.nouveauxClientsMois || 0,
+          enAttenteLivraison: statsData.enAttenteLivraison || 0,
+          tauxConversion: statsData.tauxConversion || 0
+        })
 
-      setPartenairesEnAttente([
-        {
-          id: 1,
-          nom: 'Digital Services Pro',
-          email: 'contact@digitalpro.ci',
-          ville: 'Abidjan',
-          dateInscription: '2025-11-15',
-          offresProposees: 15,
-          status: 'EN_ATTENTE'
-        },
-        {
-          id: 2,
-          nom: 'Stream Masters',
-          email: 'info@streammasters.ci',
-          ville: 'Cocody',
-          dateInscription: '2025-11-16',
-          offresProposees: 8,
-          status: 'EN_ATTENTE'
-        },
-        {
-          id: 3,
-          nom: 'Media Plus CI',
-          email: 'media@mediaplus.ci',
-          ville: 'Yopougon',
-          dateInscription: '2025-11-17',
-          offresProposees: 12,
-          status: 'EN_ATTENTE'
-        },
-      ])
+        console.log("DATA  AMIN"+ stats)
+        // Charger les partenaires (on filtrera en attente côté frontend pour l'instant)
+        try {
+          const { data: partenairesData } = await partenairesAPI.getAll()
+          // Filtrer les partenaires en attente de validation
+          const enAttente = partenairesData.filter(p => !p.isValide)
+          setPartenairesEnAttente(enAttente.slice(0, 3)) // Top 3
+        } catch (error) {
+          console.error('Erreur chargement partenaires:', error)
+        }
 
-      setOffreRecentes([
-        { id: 1, nom: 'Netflix Premium', partenaire: 'StreamPro', ventes: 45, revenu: 315000 },
-        { id: 2, nom: 'Spotify Family', partenaire: 'MusicHub', ventes: 38, revenu: 190000 },
-        { id: 3, nom: 'Disney+ Premium', partenaire: 'StreamPro', ventes: 32, revenu: 208000 },
-        { id: 4, nom: 'PS Plus', partenaire: 'GameStore', ventes: 28, revenu: 224000 },
-      ])
+        // TODO: Charger top offres depuis une vraie API
+        setOffreRecentes([
+          { id: 1, nom: 'Netflix Premium', partenaire: 'StreamPro', ventes: 45, revenu: 315000 },
+          { id: 2, nom: 'Spotify Family', partenaire: 'MusicHub', ventes: 38, revenu: 190000 },
+          { id: 3, nom: 'Disney+ Premium', partenaire: 'StreamPro', ventes: 32, revenu: 208000 },
+          { id: 4, nom: 'PS Plus', partenaire: 'GameStore', ventes: 28, revenu: 224000 },
+        ])
 
-      setLoading(false)
+      } catch (error) {
+        console.error('Erreur chargement dashboard:', error)
+        toast.error('Impossible de charger les statistiques')
+      } finally {
+        setLoading(false)
+      }
     }
 
     loadData()
   }, [])
 
   const handleValiderPartenaire = async (partenaireId) => {
-    // TODO: Appel API pour valider
-    alert(`Valider partenaire ${partenaireId}`)
+    try {
+      await partenairesAPI.validate(partenaireId)
+      toast.success('Partenaire validé avec succès')
+      // Retirer de la liste locale
+      setPartenairesEnAttente(prev => prev.filter(p => p.id !== partenaireId))
+    } catch (error) {
+      console.error('Erreur validation partenaire:', error)
+      toast.error('Erreur lors de la validation')
+    }
   }
 
   const handleRejeterPartenaire = async (partenaireId) => {
-    // TODO: Appel API pour rejeter
-    alert(`Rejeter partenaire ${partenaireId}`)
+    try {
+      // TODO: Ajouter endpoint /rejeter dans l'API si nécessaire
+      // Pour l'instant on peut utiliser delete ou toggle
+      toast.info('Fonctionnalité de rejet à implémenter')
+      // await partenairesAPI.delete(partenaireId)
+    } catch (error) {
+      console.error('Erreur rejet partenaire:', error)
+      toast.error('Erreur lors du rejet')
+    }
   }
 
   if (loading) {

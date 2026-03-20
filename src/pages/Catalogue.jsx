@@ -1,11 +1,14 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { Search, Filter, X, Star, MapPin, Clock } from 'lucide-react'
+import { abonnementsAPI } from '../lib/api'
+import toast from 'react-hot-toast'
+import ForfaitCard from '@/components/forfaitCard'
 
 export default function Catalogue() {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
-  
+
   const [offres, setOffres] = useState([])
   const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState(searchParams.get('search') || '')
@@ -41,92 +44,40 @@ export default function Catalogue() {
     { value: '20000+', label: 'Plus de 20,000 F' },
   ]
 
-  // Charger les offres (simulation)
+  // Charger les offres depuis l'API
   useEffect(() => {
     const loadOffres = async () => {
       setLoading(true)
-      
-      // Simulation de données (à remplacer par votre API)
-      const mockOffres = [
-        {
-          id: 1,
-          nom: 'Netflix Premium',
-          categorie: 'FILMS_SERIES',
-          description: 'Abonnement Netflix Premium - 4 écrans simultanés',
-          prixMensuel: 7000,
-          duree: 1,
-          partenaire: { nom: 'StreamPro', ville: 'Abidjan' },
-          image: 'https://via.placeholder.com/400x250/dc2626/ffffff?text=Netflix',
-          rating: 4.8,
-          stock: 15
-        },
-        {
-          id: 2,
-          nom: 'Spotify Family',
-          categorie: 'MUSIQUE',
-          description: 'Spotify Premium Family - 6 comptes',
-          prixMensuel: 5000,
-          duree: 1,
-          partenaire: { nom: 'MusicHub', ville: 'Cocody' },
-          image: 'https://via.placeholder.com/400x250/10b981/ffffff?text=Spotify',
-          rating: 4.9,
-          stock: 20
-        },
-        {
-          id: 3,
-          nom: 'Disney+ Premium',
-          categorie: 'FILMS_SERIES',
-          description: 'Disney+ avec tout le catalogue Marvel, Star Wars...',
-          prixMensuel: 6500,
-          duree: 1,
-          partenaire: { nom: 'StreamPro', ville: 'Abidjan' },
-          image: 'https://via.placeholder.com/400x250/3b82f6/ffffff?text=Disney+',
-          rating: 4.7,
-          stock: 10
-        },
-        {
-          id: 4,
-          nom: 'PlayStation Plus',
-          categorie: 'GAMING',
-          description: 'PS Plus Essential - Jeux mensuels gratuits',
-          prixMensuel: 8000,
-          duree: 3,
-          partenaire: { nom: 'GameStore', ville: 'Yopougon' },
-          image: 'https://via.placeholder.com/400x250/8b5cf6/ffffff?text=PS+Plus',
-          rating: 4.6,
-          stock: 8
-        },
-        {
-          id: 5,
-          nom: 'Amazon Prime Video',
-          categorie: 'FILMS_SERIES',
-          description: 'Prime Video + livraison gratuite Amazon',
-          prixMensuel: 4500,
-          duree: 1,
-          partenaire: { nom: 'StreamPro', ville: 'Abidjan' },
-          image: 'https://via.placeholder.com/400x250/f59e0b/ffffff?text=Prime',
-          rating: 4.5,
-          stock: 25
-        },
-        {
-          id: 6,
-          nom: 'Apple Music',
-          categorie: 'MUSIQUE',
-          description: 'Apple Music - Écoute illimitée',
-          prixMensuel: 4000,
-          duree: 1,
-          partenaire: { nom: 'MusicHub', ville: 'Cocody' },
-          image: 'https://via.placeholder.com/400x250/ec4899/ffffff?text=Apple+Music',
-          rating: 4.8,
-          stock: 30
-        },
-      ]
 
-      // Simulation délai réseau
-      await new Promise(resolve => setTimeout(resolve, 500))
-      
-      setOffres(mockOffres)
-      setLoading(false)
+      try {
+        const { data } = await abonnementsAPI.getAll()
+
+        // Mapper les données backend vers le format frontend
+        const offresFormatted = data.map(offre => ({
+          id: offre.id,
+          nom: offre.nom,
+          categorie: offre.categorie,
+          description: offre.description || `Profitez de ${offre.nom}`,
+          image: offre.image || `https://via.placeholder.com/400x250/6366f1/ffffff?text=${encodeURIComponent(offre.nom)}`,
+          icon: offre.icon,
+          forfaits: offre.forfaits || [],
+          // Utiliser le premier forfait pour affichage simplifié
+          prixMensuel: offre.forfaits?.[0]?.prix || 0,
+          duree: offre.forfaits?.[0]?.duree || 1,
+          // Infos partenaire (si disponible)
+          partenaire: offre.partenaire || { nom: 'RICHESSES', ville: 'Abidjan' },
+          rating: 4.5,
+          avis: Math.floor(Math.random() * 500) + 100,
+        }))
+
+        setOffres(offresFormatted)
+      } catch (error) {
+        console.error('Erreur chargement catalogue:', error)
+        toast.error('Impossible de charger le catalogue')
+        setOffres([])
+      } finally {
+        setLoading(false)
+      }
     }
 
     loadOffres()
@@ -174,6 +125,24 @@ export default function Catalogue() {
   const handleOffreClick = (offreId) => {
     navigate(`/offre/${offreId}`)
   }
+
+  // Fonction pour formater le prix
+const formatPrix = (prix) => {
+  if (!prix) return '0 FCFA'
+  return new Intl.NumberFormat('fr-FR').format(prix) + ' FCFA'
+}
+
+// Obtenir le prix minimum d'une offre
+const getPrixMin = (forfaits) => {
+  if (!forfaits || forfaits.length === 0) return 0
+  return Math.min(...forfaits.map(f => f.prix || 0))
+}
+
+// Obtenir la durée minimum
+const getDureeMin = (forfaits) => {
+  if (!forfaits || forfaits.length === 0) return 1
+  return Math.min(...forfaits.map(f => f.duree || 999))
+}
 
   return (
     <div className="min-h-screen bg-gray-50 py-8">
@@ -290,87 +259,116 @@ export default function Catalogue() {
             </button>
           </div>
         ) : (
-          <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {offresFiltrees.map(offre => (
-              <div
-                key={offre.id}
-                onClick={() => handleOffreClick(offre.id)}
-                className="group bg-white rounded-2xl border-2 border-gray-200 overflow-hidden hover:border-indigo-500 hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 cursor-pointer"
-              >
-                {/* Image */}
-                <div className="relative h-48 overflow-hidden bg-gradient-to-br from-indigo-500 to-purple-600">
-                  <img
-                    src={offre.image}
-                    alt={offre.nom}
-                    className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
-                  />
-                  {/* NOM DU SERVICE EN GROS AU CENTRE */}
-                  <div className="absolute inset-0 flex items-center justify-center bg-black/20">
-                    <h2 className="text-4xl font-black text-white drop-shadow-2xl tracking-tight">
-                      {offre.nom.split(' ')[0]}
-                    </h2>
+<div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+  {offresFiltrees.map(offre => (
+    <div
+      key={offre.id}
+      onClick={() => handleOffreClick(offre.id)}
+      className="group bg-white rounded-2xl border-2 border-gray-200 overflow-hidden hover:border-indigo-500 hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 cursor-pointer flex flex-col h-full"
+    >
+      {/* Image */}
+      <div className="relative h-48 overflow-hidden bg-gradient-to-br from-indigo-500 to-purple-600 flex-shrink-0">
+        <img
+          src={offre.image}
+          alt={offre.nom}
+          className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
+        />
+        {/* NOM DU SERVICE EN GROS AU CENTRE */}
+        <div className="absolute inset-0 flex items-center justify-center bg-black/30">
+          <h3 className="text-4xl font-black text-white drop-shadow-2xl tracking-tight text-center px-4">
+            {offre.nom.split(' ').slice(0, 2).join(' ')}
+          </h3>
+        </div>
+        <div className="absolute top-3 left-3 px-3 py-1 bg-white/90 backdrop-blur-sm rounded-full text-xs font-semibold border">
+          {categories.find(c => c.value === offre.categorie)?.label || offre.categorie}
+        </div>
+        <div className="absolute top-3 right-3 flex items-center gap-1 px-2 py-1 bg-yellow-400 rounded-full">
+          <Star className="h-3 w-3 fill-yellow-600 text-yellow-600" />
+          <span className="text-xs font-bold text-yellow-900">{offre.rating}</span>
+        </div>
+        {offre.stock < 10 && offre.stock > 0 && (
+          <div className="absolute bottom-3 left-3 px-2 py-1 bg-red-500 text-white text-xs font-semibold rounded-full">
+            Plus que {offre.stock} en stock !
+          </div>
+        )}
+        {offre.stock === 0 && (
+          <div className="absolute bottom-3 left-3 px-2 py-1 bg-gray-700 text-white text-xs font-semibold rounded-full">
+            Rupture de stock
+          </div>
+        )}
+      </div>
+
+      {/* Contenu */}
+      <div className="p-5 flex flex-col flex-grow">
+        <h4 className="text-lg font-bold mb-2 line-clamp-1">{offre.nom}</h4>
+
+        <p className="text-sm text-gray-600 mb-3 line-clamp-2">
+          {offre.description}
+        </p>
+
+        {/* Infos partenaire */}
+        <div className="flex items-center gap-2 text-xs text-gray-500 mb-3 pb-3 border-b">
+          <div className="flex items-center gap-1">
+            <span>👤</span>
+            <span className="truncate">{offre.partenaire?.nom || 'RICHESSES'}</span>
+          </div>
+          {offre.partenaire?.ville && (
+            <>
+              <span>•</span>
+              <div className="flex items-center gap-1">
+                <MapPin className="h-3 w-3" />
+                <span>{offre.partenaire.ville}</span>
+              </div>
+            </>
+          )}
+        </div>
+
+
+        {/* Affichage des forfaits */}
+        {offre.forfaits && offre.forfaits.length > 0 && (
+          <div className="mt-auto">
+            <div className="flex flex-wrap gap-2 mb-3">
+              {offre.forfaits.slice(0, 3).map(forfait => (
+                <div
+                  key={forfait.id}
+                  className="flex-1 min-w-[80px] bg-gray-50 rounded-lg p-2 text-center border border-gray-200"
+                >
+                  <div className="text-xs text-gray-500">{forfait.duree} mois</div>
+                  <div className="text-sm font-bold text-indigo-600">
+                    {formatPrix(forfait.prix)}
                   </div>
-                  <div className="absolute top-3 left-3 px-3 py-1 bg-white/90 backdrop-blur-sm rounded-full text-xs font-semibold border">
-                    {categories.find(c => c.value === offre.categorie)?.label}
-                  </div>
-                  <div className="absolute top-3 right-3 flex items-center gap-1 px-2 py-1 bg-yellow-400 rounded-full">
-                    <Star className="h-4 w-4 fill-yellow-600 text-yellow-600" />
-                    <span className="text-xs font-bold text-yellow-900">{offre.rating}</span>
-                  </div>
-                  {offre.stock < 10 && (
-                    <div className="absolute bottom-3 left-3 px-2 py-1 bg-red-500 text-white text-xs font-semibold rounded-full">
-                      Plus que {offre.stock} en stock !
-                    </div>
+                  {forfait.plan && (
+                    <div className="text-xs text-gray-500 truncate">{forfait.plan}</div>
                   )}
                 </div>
-
-                {/* Contenu */}
-                <div className="p-6">
-                  <h3 className="text-xl font-bold mb-2 line-clamp-1">{offre.nom}</h3>
-                  
-                  <p className="text-sm text-gray-600 mb-4 line-clamp-2">
-                    {offre.description}
-                  </p>
-
-                  {/* Infos partenaire */}
-                  <div className="flex items-center gap-3 text-sm text-gray-600 mb-4 pb-4 border-b">
-                    <div className="flex items-center gap-1">
-                      <span>👤</span>
-                      <span>{offre.partenaire.nom}</span>
-                    </div>
-                    <span>•</span>
-                    <div className="flex items-center gap-1">
-                      <MapPin className="h-4 w-4" />
-                      <span>{offre.partenaire.ville}</span>
-                    </div>
-                  </div>
-
-                  {/* Durée */}
-                  <div className="flex items-center gap-2 text-sm text-gray-600 mb-4">
-                    <Clock className="h-4 w-4" />
-                    <span>{offre.duree} mois</span>
-                  </div>
-
-                  {/* Prix et action */}
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <div className="text-2xl font-bold text-indigo-600">
-                        {offre.prixMensuel.toLocaleString()} F
-                      </div>
-                      <div className="text-xs text-gray-500">
-                        ({(offre.prixMensuel / offre.duree).toLocaleString()} F/mois)
-                      </div>
-                    </div>
-                    <button className="px-6 py-2 bg-indigo-600 text-white rounded-lg font-semibold hover:bg-indigo-700 transition-all">
-                      Voir
-                    </button>
-                  </div>
-                </div>
+              ))}
+            </div>
+            
+            {offre.forfaits.length > 3 && (
+              <div className="text-center text-xs text-gray-500 mb-3">
+                +{offre.forfaits.length - 3} autres formules
               </div>
-            ))}
+            )}
           </div>
+        )}
+
+        {/* Bouton voir détails */}
+        <button 
+          className="w-full mt-3 px-4 py-2 bg-indigo-50 text-indigo-600 rounded-lg font-semibold hover:bg-indigo-100 transition-colors"
+          onClick={(e) => {
+            e.stopPropagation();
+            handleOffreClick(offre.id);
+          }}
+        >
+          Voir les détails
+        </button>
+      </div>
+    </div>
+  ))}
+</div>
         )}
       </div>
     </div>
   )
 }
+
