@@ -1,24 +1,93 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { ArrowLeft, Save } from 'lucide-react'
+import { ArrowLeft, Save, ImagePlus, Loader2 } from 'lucide-react'
+import { getPartenaireId } from '../../Utils/Utils'
+import { offresAPI } from '../../lib/api'
+import toast from 'react-hot-toast'
 
 export default function NouvelleOffrePage() {
   const navigate = useNavigate()
+  const partenaireId = getPartenaireId()
+  const [loading, setLoading] = useState(false)
+  const [uploadingImage, setUploadingImage] = useState(false)
+  const [imageFile, setImageFile] = useState(null)
+  const [imagePreview, setImagePreview] = useState(null)
   const [formData, setFormData] = useState({
     nom: '',
     description: '',
     categorie: 'FILMS_SERIES',
-    prix: '',
+    prixOriginal: '',
+    prixVente: '',
     duree: '1',
-    stock: '',
+    stock: '0',
     imageUrl: ''
   })
 
-  const handleSubmit = (e) => {
+  useEffect(() => {
+    if (!partenaireId) navigate('/backoffice/login')
+  }, [partenaireId, navigate])
+
+  const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:3000'
+
+  const handleImageChange = (e) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    if (!/^image\/(jpeg|jpg|png|gif|webp)/i.test(file.type)) {
+      toast.error('Format image non supporté (jpg, png, gif, webp)')
+      return
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('Image trop volumineuse (max 5 Mo)')
+      return
+    }
+    setImageFile(file)
+    setImagePreview(URL.createObjectURL(file))
+  }
+
+  const handleSubmit = async (e) => {
     e.preventDefault()
-    // TODO: Appel API pour créer l'offre
-    alert('Offre créée : ' + formData.nom)
-    navigate('/backoffice/mes-offres')
+    if (!partenaireId) return
+    if (!imageFile && !formData.imageUrl?.trim()) {
+      toast.error('Ajoutez une photo de l’offre ou une URL d’image')
+      return
+    }
+    setLoading(true)
+    try {
+      let imageService = formData.imageUrl?.trim()
+      if (imageFile) {
+        setUploadingImage(true)
+        const { data: up } = await offresAPI.uploadImage(imageFile)
+        imageService = `${API_BASE}${up.url}`
+        setUploadingImage(false)
+      }
+      if (!imageService) {
+        imageService = 'https://via.placeholder.com/400x250?text=Offre'
+      } else if (!imageService.startsWith('http')) {
+        imageService = `${API_BASE}${imageService.startsWith('/') ? '' : '/'}${imageService}`
+      }
+
+      const prixOrig = parseFloat(formData.prixOriginal) || 0
+      const prixV = parseFloat(formData.prixVente) || 0
+      await offresAPI.create({
+        partenaireId,
+        nomService: formData.nom,
+        categorie: formData.categorie,
+        description: formData.description || undefined,
+        imageService,
+        prixOriginal: prixOrig,
+        prixVente: prixV,
+        duree: parseInt(formData.duree) || 1,
+        typeCompte: 'Standard',
+        quantiteDisponible: parseInt(formData.stock) || 0
+      })
+      toast.success('Offre créée avec succès')
+      navigate('/partenaire/dashboard')
+    } catch (error) {
+      toast.error(error?.response?.data?.message || 'Erreur lors de la création')
+    } finally {
+      setUploadingImage(false)
+      setLoading(false)
+    }
   }
 
   const handleChange = (e) => {
@@ -55,7 +124,7 @@ export default function NouvelleOffrePage() {
                 value={formData.nom}
                 onChange={handleChange}
                 placeholder="Ex: Netflix Premium 1 mois"
-                className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-purple-500"
+                className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-slate-500"
               />
             </div>
 
@@ -70,7 +139,7 @@ export default function NouvelleOffrePage() {
                 onChange={handleChange}
                 rows="4"
                 placeholder="Décrivez votre offre..."
-                className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-purple-500"
+                className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-slate-500"
               />
             </div>
 
@@ -84,7 +153,7 @@ export default function NouvelleOffrePage() {
                   required
                   value={formData.categorie}
                   onChange={handleChange}
-                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-purple-500"
+                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-slate-500"
                 >
                   <option value="FILMS_SERIES">Films & Séries</option>
                   <option value="MUSIQUE">Musique</option>
@@ -103,7 +172,7 @@ export default function NouvelleOffrePage() {
                   required
                   value={formData.duree}
                   onChange={handleChange}
-                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-purple-500"
+                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-slate-500"
                 >
                   <option value="1">1 mois</option>
                   <option value="3">3 mois</option>
@@ -116,19 +185,32 @@ export default function NouvelleOffrePage() {
             <div className="grid sm:grid-cols-2 gap-6">
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  Prix (FCFA) *
+                  Prix coûtant (FCFA) *
                 </label>
                 <input
                   type="number"
-                  name="prix"
+                  name="prixOriginal"
                   required
-                  value={formData.prix}
+                  value={formData.prixOriginal}
                   onChange={handleChange}
-                  placeholder="7000"
-                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-purple-500"
+                  placeholder="5000"
+                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-slate-500"
                 />
               </div>
-
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  Prix de vente (FCFA) *
+                </label>
+                <input
+                  type="number"
+                  name="prixVente"
+                  required
+                  value={formData.prixVente}
+                  onChange={handleChange}
+                  placeholder="7000"
+                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-slate-500"
+                />
+              </div>
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-2">
                   Stock disponible *
@@ -140,32 +222,59 @@ export default function NouvelleOffrePage() {
                   value={formData.stock}
                   onChange={handleChange}
                   placeholder="50"
-                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-purple-500"
+                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-slate-500"
                 />
               </div>
             </div>
 
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-2">
-                URL de l'image
+                Photo de l&apos;offre *
               </label>
+              <div className="border-2 border-dashed border-gray-300 rounded-xl p-6 bg-gray-50 hover:border-slate-400 transition-colors">
+                <input
+                  type="file"
+                  accept="image/jpeg,image/png,image/gif,image/webp"
+                  onChange={handleImageChange}
+                  className="hidden"
+                  id="offre-image-input"
+                />
+                <label
+                  htmlFor="offre-image-input"
+                  className="flex flex-col items-center justify-center cursor-pointer gap-2"
+                >
+                  {imagePreview ? (
+                    <img src={imagePreview} alt="Aperçu" className="max-h-48 rounded-lg shadow-md object-contain" />
+                  ) : (
+                    <>
+                      <ImagePlus className="h-12 w-12 text-slate-400" />
+                      <span className="text-sm font-medium text-slate-600">Cliquez pour choisir une image (max 5 Mo)</span>
+                    </>
+                  )}
+                </label>
+                {imageFile && (
+                  <p className="text-center text-xs text-gray-500 mt-2">{imageFile.name}</p>
+                )}
+              </div>
+              <p className="text-xs text-gray-500 mt-2">Ou collez une URL (optionnel si vous avez déjà une image en ligne)</p>
               <input
                 type="url"
                 name="imageUrl"
                 value={formData.imageUrl}
                 onChange={handleChange}
-                placeholder="https://..."
-                className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-purple-500"
+                placeholder="https://... (optionnel)"
+                className="w-full mt-2 px-4 py-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-slate-500"
               />
             </div>
 
             <div className="flex gap-4 pt-6">
               <button
                 type="submit"
-                className="flex-1 px-6 py-3 bg-purple-600 text-white rounded-lg font-semibold hover:bg-purple-700 transition-all flex items-center justify-center gap-2"
+                disabled={loading || uploadingImage}
+                className="flex-1 px-6 py-3 bg-slate-600 text-white rounded-lg font-semibold hover:bg-slate-700 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
               >
-                <Save className="h-5 w-5" />
-                Créer l'offre
+                {loading || uploadingImage ? <Loader2 className="h-5 w-5 animate-spin" /> : <Save className="h-5 w-5" />}
+                {uploadingImage ? "Envoi de l'image..." : loading ? 'Création...' : "Créer l'offre"}
               </button>
               <button
                 type="button"

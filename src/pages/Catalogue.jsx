@@ -58,7 +58,7 @@ export default function Catalogue() {
           nom: offre.nom,
           categorie: offre.categorie,
           description: offre.description || `Profitez de ${offre.nom}`,
-          image: offre.image || `https://via.placeholder.com/400x250/6366f1/ffffff?text=${encodeURIComponent(offre.nom)}`,
+          image: offre.image || `https://via.placeholder.com/400x250/475569/ffffff?text=${encodeURIComponent(offre.nom)}`,
           icon: offre.icon,
           forfaits: offre.forfaits || [],
           // Utiliser le premier forfait pour affichage simplifié
@@ -164,7 +164,7 @@ const getDureeMin = (forfaits) => {
               placeholder="Rechercher une offre..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-12 pr-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-indigo-500"
+              className="w-full pl-12 pr-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-slate-600"
             />
           </div>
         </div>
@@ -179,7 +179,7 @@ const getDureeMin = (forfaits) => {
             {(selectedCategorie || selectedDuree || selectedPrix) && (
               <button
                 onClick={resetFilters}
-                className="text-sm text-indigo-600 hover:text-indigo-700 flex items-center gap-1"
+                className="text-sm text-slate-700 hover:text-slate-800 flex items-center gap-1"
               >
                 <X className="h-4 w-4" />
                 Réinitialiser
@@ -196,7 +196,7 @@ const getDureeMin = (forfaits) => {
               <select
                 value={selectedCategorie}
                 onChange={(e) => setSelectedCategorie(e.target.value)}
-                className="w-full px-4 py-2 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-indigo-500"
+                className="w-full px-4 py-2 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-slate-600"
               >
                 {categories.map(cat => (
                   <option key={cat.value} value={cat.value}>{cat.label}</option>
@@ -212,7 +212,7 @@ const getDureeMin = (forfaits) => {
               <select
                 value={selectedDuree}
                 onChange={(e) => setSelectedDuree(e.target.value)}
-                className="w-full px-4 py-2 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-indigo-500"
+                className="w-full px-4 py-2 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-slate-600"
               >
                 {durees.map(duree => (
                   <option key={duree.value} value={duree.value}>{duree.label}</option>
@@ -228,7 +228,7 @@ const getDureeMin = (forfaits) => {
               <select
                 value={selectedPrix}
                 onChange={(e) => setSelectedPrix(e.target.value)}
-                className="w-full px-4 py-2 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-indigo-500"
+                className="w-full px-4 py-2 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-slate-600"
               >
                 {prix.map(p => (
                   <option key={p.value} value={p.value}>{p.label}</option>
@@ -241,7 +241,7 @@ const getDureeMin = (forfaits) => {
         {/* Liste des offres */}
         {loading ? (
           <div className="text-center py-20">
-            <div className="inline-block h-12 w-12 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
+            <div className="inline-block h-12 w-12 border-4 border-slate-600 border-t-transparent rounded-full animate-spin"></div>
             <p className="mt-4 text-gray-600">Chargement des offres...</p>
           </div>
         ) : offresFiltrees.length === 0 ? (
@@ -253,7 +253,7 @@ const getDureeMin = (forfaits) => {
             </p>
             <button
               onClick={resetFilters}
-              className="px-6 py-2 bg-indigo-600 text-white rounded-lg font-semibold hover:bg-indigo-700"
+              className="px-6 py-2 bg-slate-700 text-white rounded-lg font-semibold hover:bg-slate-800"
             >
               Réinitialiser les filtres
             </button>
@@ -264,10 +264,10 @@ const getDureeMin = (forfaits) => {
     <div
       key={offre.id}
       onClick={() => handleOffreClick(offre.id)}
-      className="group bg-white rounded-2xl border-2 border-gray-200 overflow-hidden hover:border-indigo-500 hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 cursor-pointer flex flex-col h-full"
+      className="group bg-white rounded-2xl border-2 border-gray-200 overflow-hidden hover:border-slate-600 hover:shadow-xl transition-all duration-300 transform hover:-translate-y-2 cursor-pointer flex flex-col h-full"
     >
       {/* Image */}
-      <div className="relative h-48 overflow-hidden bg-gradient-to-br from-indigo-500 to-purple-600 flex-shrink-0">
+      <div className="relative h-48 overflow-hidden bg-slate-800 flex-shrink-0">
         <img
           src={offre.image}
           alt={offre.nom}
@@ -334,7 +334,7 @@ const getDureeMin = (forfaits) => {
                   className="flex-1 min-w-[80px] bg-gray-50 rounded-lg p-2 text-center border border-gray-200"
                 >
                   <div className="text-xs text-gray-500">{forfait.duree} mois</div>
-                  <div className="text-sm font-bold text-indigo-600">
+                  <div className="text-sm font-bold text-slate-700">
                     {formatPrix(forfait.prix)}
                   </div>
                   {forfait.plan && (
@@ -354,7 +354,7 @@ const getDureeMin = (forfaits) => {
 
         {/* Bouton voir détails */}
         <button 
-          className="w-full mt-3 px-4 py-2 bg-indigo-50 text-indigo-600 rounded-lg font-semibold hover:bg-indigo-100 transition-colors"
+          className="w-full mt-3 px-4 py-2 bg-slate-100 text-slate-700 rounded-lg font-semibold hover:bg-slate-200 transition-colors"
           onClick={(e) => {
             e.stopPropagation();
             handleOffreClick(offre.id);

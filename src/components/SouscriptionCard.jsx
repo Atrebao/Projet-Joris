@@ -107,17 +107,17 @@ export default function SouscriptionCard({ subscription }) {
     addOne(
       `${MODIFIER_ETAT_SOUSCRIPTION}/${subscription.id}`,
       "application/json",
-      "ACTIF"
+      { etat: etat || "ACTIF" }
     )
       .then((res) => {
         if (res.data) {
-          toast.success("Souscription activée avec succès");
-          souscriptionStore.getAllData("", "");
+          toast.success("Souscription modifiée avec succès");
+          souscriptionStore.getAllData("", "", "");
         }
       })
       .catch((error) => {
-        console.error("Erreur lors de l'activation de la souscription:", error);
-        toast.error("Erreur lors de l'activation de la souscription:", error);
+        console.error("Erreur lors de la modification:", error);
+        toast.error("Erreur lors de la modification de la souscription");
       });
   };
 
@@ -398,7 +398,14 @@ export default function SouscriptionCard({ subscription }) {
               </div>
 
               <div className="mt-2 flex justify-end">
-                <button className="p-2  bg-blue-500 hover:bg-blue-600 transition text-white rounded-md flex items-center justify-center">
+                <button
+                  type="button"
+                  onClick={() => {
+                    handleModifierEtat();
+                    document.getElementById(`fermer-modal-edit-abonnement-${subscription?.id}`)?.click();
+                  }}
+                  className="p-2  bg-blue-500 hover:bg-blue-600 transition text-white rounded-md flex items-center justify-center"
+                >
                   Enregistrer
                 </button>
               </div>

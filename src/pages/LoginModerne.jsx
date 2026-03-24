@@ -2,43 +2,55 @@ import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
-import { Eye, EyeOff, Lock, Mail, Loader, Sparkles, TrendingUp } from "lucide-react";
-import { getUserProfil, HOMEADMIN, saveUserProfil } from "../Utils/Utils";
+import { Eye, EyeOff, Lock, Mail, Loader, Sparkles, TrendingUp, User, Store } from "lucide-react";
+import { getUserProfil, HOMEADMIN, HOMEPARTENAIRE, saveUserProfil, getPartenaireId } from "../Utils/Utils";
 import { loginUser } from "../services/LoginService";
+import { authAPI } from "../lib/api";
 
 export default function LoginModerne() {
   const navigate = useNavigate();
+  const [loginType, setLoginType] = useState("admin"); // "admin" | "partenaire"
   const { register, handleSubmit, formState: { errors } } = useForm();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
   useEffect(() => {
-    if (getUserProfil()) {
-      navigate(`${HOMEADMIN}/stats`);
+    const info = getUserProfil();
+    if (info) {
+      if (getPartenaireId()) {
+        navigate(`${HOMEPARTENAIRE}/dashboard`);
+      } else {
+        navigate(`${HOMEADMIN}/stats`);
+      }
     }
   }, [navigate]);
 
   const onSubmit = async (data) => {
     setIsSubmitting(true);
-
-    setTimeout(() => {
-      loginUser(data)
-        .then((res) => {
-          if (res.data) {
-            saveUserProfil(res.data);
-            toast.success("Connexion réussie !");
-            navigate(`${HOMEADMIN}/stats`);
-          }
-        })
-        .catch((err) => {
-          setIsSubmitting(false);
-          if (err.code === "ERR_BAD_REQUEST") {
-            toast.error("Identifiants incorrects");
-          } else {
-            toast.error("Erreur de connexion");
-          }
-        });
-    }, 1500);
+    try {
+      let res;
+      if (loginType === "partenaire") {
+        res = await authAPI.loginPartenaire({ email: data.email || data.username, password: data.password });
+      } else {
+        res = await loginUser({ username: data.username || data.email, password: data.password });
+      }
+      if (res?.data) {
+        saveUserProfil(res.data);
+        toast.success("Connexion réussie !");
+        if (loginType === "partenaire") {
+          navigate(`${HOMEPARTENAIRE}/dashboard`);
+        } else {
+          navigate(`${HOMEADMIN}/stats`);
+        }
+      }
+    } catch (err) {
+      setIsSubmitting(false);
+      if (err?.response?.status === 401 || err?.code === "ERR_BAD_REQUEST") {
+        toast.error("Identifiants incorrects");
+      } else {
+        toast.error(err?.response?.data?.message || "Erreur de connexion");
+      }
+    }
   };
 
   return (
@@ -48,42 +60,64 @@ export default function LoginModerne() {
         <div className="w-full max-w-md">
           {/* Logo */}
           <div className="text-center mb-8">
-            <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-purple-600 to-pink-600 rounded-2xl mb-4 shadow-2xl">
+            <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-slate-600 to-slate-600 rounded-2xl mb-4 shadow-2xl">
               <span className="text-3xl font-bold text-white">R</span>
             </div>
-            <h1 className="text-3xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent mb-2">
+            <h1 className="text-3xl font-bold bg-gradient-to-r from-slate-600 to-slate-600 bg-clip-text text-transparent mb-2">
               RICHESSES STREAMING
             </h1>
-            <p className="text-gray-600">Connectez-vous à votre espace admin</p>
+            <p className="text-gray-600">Connectez-vous à votre espace</p>
           </div>
 
           {/* Login Card */}
           <div className="bg-white rounded-2xl shadow-2xl p-8 border-2 border-gray-100">
-            <h2 className="text-2xl font-bold text-gray-800 mb-6">Connexion</h2>
+            <h2 className="text-2xl font-bold text-gray-800 mb-4">Connexion</h2>
+
+            {/* Type de connexion */}
+            <div className="flex gap-2 mb-6 p-1 bg-gray-100 rounded-lg">
+              <button
+                type="button"
+                onClick={() => setLoginType("admin")}
+                className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-md font-semibold transition-all ${
+                  loginType === "admin" ? "bg-white shadow text-slate-700" : "text-gray-500 hover:text-gray-700"
+                }`}
+              >
+                <User className="h-4 w-4" />
+                Admin
+              </button>
+              <button
+                type="button"
+                onClick={() => setLoginType("partenaire")}
+                className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-md font-semibold transition-all ${
+                  loginType === "partenaire" ? "bg-white shadow text-slate-700" : "text-gray-500 hover:text-gray-700"
+                }`}
+              >
+                <Store className="h-4 w-4" />
+                Partenaire
+              </button>
+            </div>
 
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
-              {/* Username */}
+              {/* Identifiant (username ou email selon le type) */}
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  Nom d'utilisateur
+                  {loginType === "partenaire" ? "Email" : "Nom d'utilisateur"}
                 </label>
                 <div className="relative">
                   <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
                   <input
-                    type="text"
-                    placeholder="Entrez votre nom d'utilisateur"
+                    type={loginType === "partenaire" ? "email" : "text"}
+                    placeholder={loginType === "partenaire" ? "votre@email.com" : "Nom d'utilisateur"}
                     className={`w-full pl-10 pr-4 py-3 border-2 rounded-lg focus:outline-none transition-all ${
-                      errors.username
-                        ? "border-red-300 focus:border-red-500"
-                        : "border-gray-200 focus:border-purple-500"
+                      (errors.username || errors.email) ? "border-red-300 focus:border-red-500" : "border-gray-200 focus:border-slate-500"
                     }`}
-                    {...register("username", {
-                      required: "Le nom d'utilisateur est requis",
+                    {...register(loginType === "partenaire" ? "email" : "username", {
+                      required: loginType === "partenaire" ? "L'email est requis" : "Le nom d'utilisateur est requis",
                     })}
                   />
                 </div>
-                {errors.username && (
-                  <p className="mt-1 text-sm text-red-600">{errors.username.message}</p>
+                {(errors.username || errors.email) && (
+                  <p className="mt-1 text-sm text-red-600">{errors.username?.message || errors.email?.message}</p>
                 )}
               </div>
 
@@ -100,7 +134,7 @@ export default function LoginModerne() {
                     className={`w-full pl-10 pr-12 py-3 border-2 rounded-lg focus:outline-none transition-all ${
                       errors.password
                         ? "border-red-300 focus:border-red-500"
-                        : "border-gray-200 focus:border-purple-500"
+                        : "border-gray-200 focus:border-slate-500"
                     }`}
                     {...register("password", {
                       required: "Le mot de passe est requis",
@@ -122,12 +156,12 @@ export default function LoginModerne() {
               {/* Remember & Forgot */}
               <div className="flex items-center justify-between text-sm">
                 <label className="flex items-center gap-2 cursor-pointer">
-                  <input type="checkbox" className="w-4 h-4 accent-purple-600" />
+                  <input type="checkbox" className="w-4 h-4 accent-slate-600" />
                   <span className="text-gray-600">Se souvenir de moi</span>
                 </label>
                 <button
                   type="button"
-                  className="text-purple-600 hover:text-purple-700 font-semibold"
+                  className="text-slate-600 hover:text-slate-700 font-semibold"
                 >
                   Mot de passe oublié ?
                 </button>
@@ -140,7 +174,7 @@ export default function LoginModerne() {
                 className={`w-full py-3 rounded-lg font-semibold flex items-center justify-center gap-2 transition-all shadow-lg ${
                   isSubmitting
                     ? "bg-gray-300 text-gray-500 cursor-not-allowed"
-                    : "bg-gradient-to-r from-purple-600 to-pink-600 text-white hover:shadow-xl hover:scale-[1.02]"
+                    : "bg-gradient-to-r from-slate-600 to-slate-600 text-white hover:shadow-xl hover:scale-[1.02]"
                 }`}
               >
                 {isSubmitting ? (
@@ -179,7 +213,7 @@ export default function LoginModerne() {
               <button
                 type="button"
                 onClick={() => navigate("/register-partenaire")}
-                className="py-3 border-2 border-purple-600 text-purple-600 rounded-lg font-semibold hover:bg-purple-50 transition-all"
+                className="py-3 border-2 border-slate-600 text-slate-600 rounded-lg font-semibold hover:bg-slate-50 transition-all"
               >
                 Devenir Partenaire
               </button>
@@ -194,7 +228,7 @@ export default function LoginModerne() {
       </div>
 
       {/* Right side - Hero Section */}
-      <div className="hidden lg:flex flex-1 bg-gradient-to-br from-purple-600 via-pink-600 to-rose-600 p-12 items-center justify-center relative overflow-hidden">
+      <div className="hidden lg:flex flex-1 bg-gradient-to-br from-slate-600 via-slate-600 to-slate-600 p-12 items-center justify-center relative overflow-hidden">
         {/* Background decoration */}
         <div className="absolute inset-0 opacity-10">
           <div className="absolute top-20 left-20 w-64 h-64 bg-white rounded-full blur-3xl"></div>
@@ -207,7 +241,7 @@ export default function LoginModerne() {
             <h2 className="text-5xl font-bold mb-4 leading-tight">
               Gérez votre plateforme de streaming
             </h2>
-            <p className="text-xl text-purple-100 leading-relaxed">
+            <p className="text-xl text-slate-100 leading-relaxed">
               Accédez à un tableau de bord complet pour gérer vos partenaires, offres et clients en toute simplicité.
             </p>
           </div>
@@ -219,14 +253,14 @@ export default function LoginModerne() {
                 <TrendingUp className="h-6 w-6" />
                 <span className="text-3xl font-bold">45+</span>
               </div>
-              <p className="text-purple-100">Partenaires actifs</p>
+              <p className="text-slate-100">Partenaires actifs</p>
             </div>
             <div className="bg-white/10 backdrop-blur-sm rounded-xl p-6 border border-white/20">
               <div className="flex items-center gap-3 mb-2">
                 <Sparkles className="h-6 w-6" />
                 <span className="text-3xl font-bold">287</span>
               </div>
-              <p className="text-purple-100">Offres disponibles</p>
+              <p className="text-slate-100">Offres disponibles</p>
             </div>
           </div>
 
@@ -234,15 +268,15 @@ export default function LoginModerne() {
           <div className="mt-12 space-y-4">
             <div className="flex items-center gap-3">
               <div className="w-2 h-2 bg-white rounded-full"></div>
-              <p className="text-purple-100">Tableau de bord en temps réel</p>
+              <p className="text-slate-100">Tableau de bord en temps réel</p>
             </div>
             <div className="flex items-center gap-3">
               <div className="w-2 h-2 bg-white rounded-full"></div>
-              <p className="text-purple-100">Gestion simplifiée des partenaires</p>
+              <p className="text-slate-100">Gestion simplifiée des partenaires</p>
             </div>
             <div className="flex items-center gap-3">
               <div className="w-2 h-2 bg-white rounded-full"></div>
-              <p className="text-purple-100">Statistiques détaillées</p>
+              <p className="text-slate-100">Statistiques détaillées</p>
             </div>
           </div>
         </div>

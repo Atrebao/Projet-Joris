@@ -1,15 +1,46 @@
 export const HOMECLIENT = "/client";
 export const HOMEADMIN = "/backoffice";
+export const HOMEPARTENAIRE = "/partenaire";
 export const BASE_URL = "http://localhost:3001";
 
 export const BASE_URLS = "http://localhost:3000";
 
 export const resetStorage = () => {
   localStorage.removeItem("infoUser");
+  localStorage.removeItem("token");
+  localStorage.removeItem("user");
+  localStorage.removeItem("partenaire");
 };
 
 export const saveUserProfil = (data) => {
+  if (data?.accessToken) {
+    localStorage.setItem("token", data.accessToken);
+  }
+  if (data?.user) {
+    localStorage.setItem("user", JSON.stringify(data.user));
+  }
+  if (data?.partenaire) {
+    localStorage.setItem("partenaire", JSON.stringify(data.partenaire));
+  }
   return localStorage.setItem("infoUser", JSON.stringify(data));
+};
+
+/** Retourne l'ID du partenaire connecté (null si admin/client) */
+export const getPartenaireId = () => {
+  const info = getUserProfil();
+  if (info?.partenaire?.id) return info.partenaire.id;
+  const partenaire = JSON.parse(localStorage.getItem("partenaire") || "null");
+  return partenaire?.id ?? null;
+};
+
+/** Vérifie si l'utilisateur connecté est un partenaire */
+export const isPartenaire = () => !!getPartenaireId();
+
+/** Vérifie si l'utilisateur connecté est un admin */
+export const isAdmin = () => {
+  const info = getUserProfil();
+  const user = info?.user || JSON.parse(localStorage.getItem("user") || "null");
+  return user?.role === "ADMIN" || user?.role === "SUPER_ADMIN";
 };
 
 export const saveToken = (token) => {
@@ -95,7 +126,7 @@ export const months = [
 //     name: "Visa",
 //     icon: "",
 //     value: "VISA",
-//     color: "bindigo-500",
+//     color: "slate-600",
 //   },
 // ];
 
@@ -106,14 +137,14 @@ export const paymentMethods = [
     name: "Visa",
     icon: "",
     value: "VISA",
-    color: "bindigo-500",
+    color: "slate-600",
   },
   {
     id: "mobile_money",
     name: "Mobile money",
     icon: "",
     value: "MOBILE_MONEY",
-    color: "bindigo-500",
+    color: "slate-600",
   },
 
 ]

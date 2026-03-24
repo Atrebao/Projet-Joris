@@ -60,13 +60,12 @@ export default function DashboardAdminNouveau() {
           console.error('Erreur chargement partenaires:', error)
         }
 
-        // TODO: Charger top offres depuis une vraie API
-        setOffreRecentes([
-          { id: 1, nom: 'Netflix Premium', partenaire: 'StreamPro', ventes: 45, revenu: 315000 },
-          { id: 2, nom: 'Spotify Family', partenaire: 'MusicHub', ventes: 38, revenu: 190000 },
-          { id: 3, nom: 'Disney+ Premium', partenaire: 'StreamPro', ventes: 32, revenu: 208000 },
-          { id: 4, nom: 'PS Plus', partenaire: 'GameStore', ventes: 28, revenu: 224000 },
-        ])
+        try {
+          const { data: topOffresData } = await statsAPI.topOffres()
+          setOffreRecentes(Array.isArray(topOffresData) ? topOffresData : [])
+        } catch {
+          setOffreRecentes([])
+        }
 
       } catch (error) {
         console.error('Erreur chargement dashboard:', error)
@@ -107,7 +106,7 @@ export default function DashboardAdminNouveau() {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
-          <div className="inline-block h-12 w-12 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
+          <div className="inline-block h-12 w-12 border-4 border-slate-600 border-t-transparent rounded-full animate-spin"></div>
           <p className="mt-4 text-gray-600">Chargement...</p>
         </div>
       </div>
@@ -117,15 +116,15 @@ export default function DashboardAdminNouveau() {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* En-tête */}
-      <div className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white">
+      <div className="bg-slate-700 text-white">
         <div className="container mx-auto px-4 py-8">
           <div className="flex items-center justify-between">
             <div>
               <h1 className="text-3xl font-bold mb-2">Dashboard Super Admin</h1>
-              <p className="text-indigo-100">Vue d'ensemble de la plateforme</p>
+              <p className="text-slate-200">Vue d'ensemble de la plateforme</p>
             </div>
             <div className="text-right">
-              <div className="text-sm text-indigo-100">Aujourd'hui</div>
+              <div className="text-sm text-slate-200">Aujourd'hui</div>
               <div className="text-2xl font-bold">{new Date().toLocaleDateString('fr-FR')}</div>
             </div>
           </div>
@@ -155,10 +154,10 @@ export default function DashboardAdminNouveau() {
           {/* Total Offres */}
           <div className="bg-white rounded-2xl border-2 border-gray-200 p-6 hover:shadow-xl transition-all">
             <div className="flex items-center justify-between mb-4">
-              <div className="w-12 h-12 bg-purple-100 rounded-xl flex items-center justify-center">
-                <Package className="h-6 w-6 text-purple-600" />
+              <div className="w-12 h-12 bg-slate-100 rounded-xl flex items-center justify-center">
+                <Package className="h-6 w-6 text-slate-700" />
               </div>
-              <span className="text-xs font-semibold px-2 py-1 bg-purple-100 text-purple-600 rounded-full">
+              <span className="text-xs font-semibold px-2 py-1 bg-slate-100 text-slate-700 rounded-full">
                 {stats.offresActives} actives
               </span>
             </div>
@@ -221,7 +220,7 @@ export default function DashboardAdminNouveau() {
                   {partenairesEnAttente.map((partenaire) => (
                     <div
                       key={partenaire.id}
-                      className="border-2 border-gray-200 rounded-xl p-4 hover:border-indigo-300 transition-all"
+                      className="border-2 border-gray-200 rounded-xl p-4 hover:border-slate-300 transition-all"
                     >
                       <div className="flex items-start justify-between mb-3">
                         <div className="flex-1">
@@ -264,7 +263,7 @@ export default function DashboardAdminNouveau() {
                           Rejeter
                         </button>
                         <button
-                          className="px-4 py-2 border-2 border-gray-200 rounded-lg font-semibold hover:border-indigo-500 transition-all flex items-center justify-center gap-2"
+                          className="px-4 py-2 border-2 border-gray-200 rounded-lg font-semibold hover:border-slate-500 transition-all flex items-center justify-center gap-2"
                         >
                           <Eye className="h-4 w-4" />
                         </button>
@@ -284,17 +283,17 @@ export default function DashboardAdminNouveau() {
                   <h2 className="text-xl font-bold">Top Offres</h2>
                   <p className="text-sm text-gray-600">Ce mois</p>
                 </div>
-                <BarChart3 className="h-6 w-6 text-indigo-600" />
+                <BarChart3 className="h-6 w-6 text-slate-700" />
               </div>
 
               <div className="space-y-4">
                 {offreRecentes.map((offre, index) => (
                   <div
                     key={offre.id}
-                    className="border-2 border-gray-200 rounded-xl p-4 hover:border-indigo-300 transition-all"
+                    className="border-2 border-gray-200 rounded-xl p-4 hover:border-slate-300 transition-all"
                   >
                     <div className="flex items-start gap-3">
-                      <div className="w-8 h-8 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-lg flex items-center justify-center text-white font-bold text-sm flex-shrink-0">
+                      <div className="w-8 h-8 bg-slate-700 rounded-lg flex items-center justify-center text-white font-bold text-sm flex-shrink-0">
                         #{index + 1}
                       </div>
                       <div className="flex-1 min-w-0">
@@ -303,7 +302,7 @@ export default function DashboardAdminNouveau() {
                         <div className="flex items-center justify-between mt-2">
                           <div className="text-sm">
                             <div className="text-xs text-gray-500">Ventes</div>
-                            <div className="font-bold text-indigo-600">{offre.ventes}</div>
+                            <div className="font-bold text-slate-700">{offre.ventes}</div>
                           </div>
                           <div className="text-sm text-right">
                             <div className="text-xs text-gray-500">Revenu</div>
@@ -317,8 +316,8 @@ export default function DashboardAdminNouveau() {
               </div>
 
               <button
-                onClick={() => navigate('/admin/rapports')}
-                className="w-full mt-6 px-4 py-3 bg-indigo-50 text-indigo-600 rounded-lg font-semibold hover:bg-indigo-100 transition-all"
+                onClick={() => navigate('/backoffice/stats')}
+                className="w-full mt-6 px-4 py-3 bg-slate-50 text-slate-700 rounded-lg font-semibold hover:bg-slate-100 transition-all"
               >
                 Voir tous les rapports →
               </button>
@@ -329,25 +328,25 @@ export default function DashboardAdminNouveau() {
         {/* Actions rapides */}
         <div className="mt-8 grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <button
-            onClick={() => navigate('/admin/partenaires')}
-            className="p-6 bg-white rounded-2xl border-2 border-gray-200 hover:border-indigo-500 hover:shadow-lg transition-all text-left"
+            onClick={() => navigate('/backoffice/partenaires')}
+            className="p-6 bg-white rounded-2xl border-2 border-gray-200 hover:border-slate-500 hover:shadow-lg transition-all text-left"
           >
-            <Users className="h-8 w-8 text-indigo-600 mb-3" />
+            <Users className="h-8 w-8 text-slate-700 mb-3" />
             <div className="font-bold mb-1">Gérer partenaires</div>
             <div className="text-sm text-gray-600">Voir tous les partenaires</div>
           </button>
 
           <button
-            onClick={() => navigate('/admin/offres')}
-            className="p-6 bg-white rounded-2xl border-2 border-gray-200 hover:border-purple-500 hover:shadow-lg transition-all text-left"
+            onClick={() => navigate('/backoffice/offres')}
+            className="p-6 bg-white rounded-2xl border-2 border-gray-200 hover:border-slate-600 hover:shadow-lg transition-all text-left"
           >
-            <Package className="h-8 w-8 text-purple-600 mb-3" />
+            <Package className="h-8 w-8 text-slate-700 mb-3" />
             <div className="font-bold mb-1">Gérer offres</div>
             <div className="text-sm text-gray-600">Modérer les offres</div>
           </button>
 
           <button
-            onClick={() => navigate('/admin/clients')}
+            onClick={() => navigate('/backoffice/clients')}
             className="p-6 bg-white rounded-2xl border-2 border-gray-200 hover:border-green-500 hover:shadow-lg transition-all text-left"
           >
             <ShoppingBag className="h-8 w-8 text-green-600 mb-3" />
@@ -356,7 +355,7 @@ export default function DashboardAdminNouveau() {
           </button>
 
           <button
-            onClick={() => navigate('/admin/stats')}
+            onClick={() => navigate('/backoffice/stats')}
             className="p-6 bg-white rounded-2xl border-2 border-gray-200 hover:border-orange-500 hover:shadow-lg transition-all text-left"
           >
             <BarChart3 className="h-8 w-8 text-orange-600 mb-3" />

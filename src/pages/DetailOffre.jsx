@@ -1,181 +1,104 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { ArrowLeft, Star, MapPin, Clock, CheckCircle, Shield, Zap, Users } from 'lucide-react'
+import { abonnementsAPI, promotionsAPI } from '../lib/api'
+import toast from 'react-hot-toast'
+
+// Catégories (alignées avec Catalogue.jsx)
+const categories = [
+  { value: '', label: 'Toutes' },
+  { value: 'FILMS_SERIES', label: '🎬 Films & Séries' },
+  { value: 'MUSIQUE', label: '🎵 Musique' },
+  { value: 'GAMING', label: '🎮 Gaming' },
+  { value: 'EBOOKS', label: '📚 Ebooks' },
+  { value: 'SPORT', label: '⚽ Sport' },
+]
 
 export default function DetailOffre() {
   const { id } = useParams()
   const navigate = useNavigate()
-  
+
   const [offre, setOffre] = useState(null)
   const [loading, setLoading] = useState(true)
+  const [selectedForfait, setSelectedForfait] = useState(null)
   const [quantity, setQuantity] = useState(1)
   const [email, setEmail] = useState('')
   const [telephone, setTelephone] = useState('')
+  const [promotions, setPromotions] = useState([])
 
-  // Charger l'offre (simulation)
+  // Formater le prix (aligné avec Catalogue.jsx)
+  const formatPrix = (prix) => {
+    if (!prix) return '0 FCFA'
+    return new Intl.NumberFormat('fr-FR').format(prix) + ' FCFA'
+  }
+
+  // Charger l'offre depuis l'API (comme Catalogue.jsx)
   useEffect(() => {
     const loadOffre = async () => {
       setLoading(true)
-      
-      // Simulation de données (à remplacer par votre API)
-      const mockOffres = {
-        1: {
-          id: 1,
-          nom: 'Netflix Premium',
-          categorie: 'FILMS_SERIES',
-          description: 'Abonnement Netflix Premium avec 4 écrans simultanés. Profitez de tout le catalogue Netflix en Ultra HD avec le meilleur son.',
-          prixMensuel: 7000,
-          duree: 1,
-          partenaire: { nom: 'StreamPro', ville: 'Abidjan', note: 4.8, ventes: 245 },
-          image: 'https://via.placeholder.com/800x450/dc2626/ffffff?text=Netflix+Premium',
-          rating: 4.8,
-          stock: 15,
-          caracteristiques: [
-            '4 écrans simultanés',
-            'Qualité Ultra HD (4K)',
-            'Téléchargement illimité',
-            'Son surround disponible',
-            'Accessible sur tous vos appareils'
-          ],
-          modeEmploi: [
-            'Vous recevrez vos identifiants par email',
-            'Connectez-vous sur netflix.com',
-            'Profitez de votre abonnement immédiatement',
-            'Support disponible 24/7'
-          ]
-        },
-        2: {
-          id: 2,
-          nom: 'Spotify Family',
-          categorie: 'MUSIQUE',
-          description: 'Spotify Premium Family pour 6 comptes. Écoute illimitée sans pub avec téléchargements offline.',
-          prixMensuel: 5000,
-          duree: 1,
-          partenaire: { nom: 'MusicHub', ville: 'Cocody', note: 4.9, ventes: 189 },
-          image: 'https://via.placeholder.com/800x450/10b981/ffffff?text=Spotify+Family',
-          rating: 4.9,
-          stock: 20,
-          caracteristiques: [
-            '6 comptes Premium',
-            'Écoute sans publicité',
-            'Mode hors ligne',
-            'Son haute qualité',
-            'Playlists personnalisées'
-          ],
-          modeEmploi: [
-            'Invitations envoyées par email',
-            'Chaque membre crée son compte',
-            'Activation instantanée',
-            'Renouvelable chaque mois'
-          ]
-        },
-        3: {
-          id: 3,
-          nom: 'Disney+ Premium',
-          categorie: 'FILMS_SERIES',
-          description: 'Disney+ avec tout le catalogue Marvel, Star Wars, Pixar et plus encore.',
-          prixMensuel: 6500,
-          duree: 1,
-          partenaire: { nom: 'StreamPro', ville: 'Abidjan', note: 4.8, ventes: 245 },
-          image: 'https://via.placeholder.com/800x450/3b82f6/ffffff?text=Disney+Plus',
-          rating: 4.7,
-          stock: 10,
-          caracteristiques: [
-            'Tout le catalogue Disney+',
-            'Marvel, Star Wars, Pixar',
-            '4 écrans simultanés',
-            'Qualité 4K HDR',
-            'Téléchargements illimités'
-          ],
-          modeEmploi: [
-            'Identifiants par SMS et email',
-            'Compatible tous appareils',
-            'Support client réactif',
-            'Accès immédiat'
-          ]
-        },
-        4: {
-          id: 4,
-          nom: 'PlayStation Plus',
-          categorie: 'GAMING',
-          description: 'PS Plus Essential avec jeux mensuels gratuits et multijoueur en ligne.',
-          prixMensuel: 8000,
-          duree: 3,
-          partenaire: { nom: 'GameStore', ville: 'Yopougon', note: 4.6, ventes: 156 },
-          image: 'https://via.placeholder.com/800x450/8b5cf6/ffffff?text=PS+Plus',
-          rating: 4.6,
-          stock: 8,
-          caracteristiques: [
-            '2-3 jeux gratuits/mois',
-            'Multijoueur en ligne',
-            'Stockage cloud',
-            'Réductions exclusives',
-            'Abonnement 3 mois'
-          ],
-          modeEmploi: [
-            'Code envoyé par email',
-            'Activation sur PlayStation Store',
-            'Jeux ajoutés automatiquement',
-            'Valable 3 mois'
-          ]
-        },
-        5: {
-          id: 5,
-          nom: 'Amazon Prime Video',
-          categorie: 'FILMS_SERIES',
-          description: 'Prime Video + livraison gratuite Amazon',
-          prixMensuel: 4500,
-          duree: 1,
-          partenaire: { nom: 'StreamPro', ville: 'Abidjan', note: 4.8, ventes: 245 },
-          image: 'https://via.placeholder.com/800x450/f59e0b/ffffff?text=Prime+Video',
-          rating: 4.5,
-          stock: 25,
-          caracteristiques: [
-            'Catalogue Prime Video complet',
-            'Films et séries exclusifs',
-            'Qualité HD/4K',
-            'Livraison Prime gratuite',
-            '2 écrans simultanés'
-          ],
-          modeEmploi: [
-            'Compte Amazon fourni',
-            'Accès Prime Video + Shopping',
-            'Activation immédiate',
-            'Support 24/7'
-          ]
-        },
-        6: {
-          id: 6,
-          nom: 'Apple Music',
-          categorie: 'MUSIQUE',
-          description: 'Apple Music - Écoute illimitée de millions de titres',
-          prixMensuel: 4000,
-          duree: 1,
-          partenaire: { nom: 'MusicHub', ville: 'Cocody', note: 4.9, ventes: 189 },
-          image: 'https://via.placeholder.com/800x450/ec4899/ffffff?text=Apple+Music',
-          rating: 4.8,
-          stock: 30,
-          caracteristiques: [
-            '100+ millions de chansons',
-            'Son spatial Dolby Atmos',
-            'Mode hors ligne',
-            'Sans publicité',
-            'Radio en direct'
-          ],
-          modeEmploi: [
-            'Compte Apple Music créé',
-            'Identifiants par email',
-            'Compatible tous appareils',
-            'Accès immédiat'
-          ]
-        },
-      }
 
-      // Simulation délai réseau
-      await new Promise(resolve => setTimeout(resolve, 500))
-      
-      setOffre(mockOffres[id])
-      setLoading(false)
+      try {
+        // getDetails pour les détails complets, fallback sur getOne
+        let data
+        try {
+          const res = await abonnementsAPI.getDetails(Number(id))
+          data = res.data
+        } catch {
+          const res = await abonnementsAPI.getOne(Number(id))
+          data = res.data
+        }
+
+        // Mapper les données backend vers le format frontend (aligné Catalogue.jsx)
+        const offreFormatted = {
+          id: data.id,
+          nom: data.nom,
+          categorie: data.categorie,
+          description: data.description || `Profitez de ${data.nom}`,
+          image: data.image || `https://via.placeholder.com/800x450/6366f1/ffffff?text=${encodeURIComponent(data.nom)}`,
+          icon: data.icon,
+          forfaits: data.forfaits || [],
+          prixMensuel: data.forfaits?.[0]?.prix || 0,
+          duree: data.forfaits?.[0]?.duree || 1,
+          partenaire: data.partenaire || { nom: 'RICHESSES', ville: 'Abidjan', note: 4.5, ventes: 0 },
+          rating: data.rating || 4.5,
+          avis: data.avis || 128,
+          stock: data.stock,
+          caracteristiques: data.caracteristiques || [],
+          modeEmploi: data.modeEmploi || [
+            'Vous recevrez vos identifiants par email',
+            'Connectez-vous sur le service concerné',
+            'Profitez de votre abonnement immédiatement',
+            'Support disponible 24/7',
+          ],
+        }
+
+        setOffre(offreFormatted)
+        // Sélectionner le premier forfait par défaut
+        if (offreFormatted.forfaits?.length > 0) {
+          setSelectedForfait(offreFormatted.forfaits[0])
+        } else {
+          setSelectedForfait({
+            id: 0,
+            prix: offreFormatted.prixMensuel,
+            duree: offreFormatted.duree,
+            plan: 'Standard',
+          })
+        }
+
+        // Promotions actives pour cette offre (optionnel)
+        try {
+          const { data } = await promotionsAPI.activesParAbonnement(Number(id))
+          setPromotions(Array.isArray(data) ? data : [])
+        } catch {
+          setPromotions([])
+        }
+      } catch (error) {
+        console.error('Erreur chargement offre:', error)
+        toast.error('Impossible de charger cette offre')
+        setOffre(null)
+      } finally {
+        setLoading(false)
+      }
     }
 
     loadOffre()
@@ -183,25 +106,34 @@ export default function DetailOffre() {
 
   const handleSouscrire = (e) => {
     e.preventDefault()
-    
+
+    if (!offre) return
+
     // Validation basique
     if (!email || !telephone) {
-      alert('Veuillez remplir tous les champs')
+      toast.error('Veuillez remplir tous les champs')
       return
     }
 
-    // Calculer le montant total
-    const montantTotal = offre.prixMensuel * quantity
+    const forfait = selectedForfait || offre.forfaits?.[0]
+    const prixUnitaire = forfait?.prix ?? offre.prixMensuel
+    const duree = forfait?.duree ?? offre.duree ?? 1
+    const montantTotal = prixUnitaire * quantity
 
-    // Rediriger vers la page de paiement avec les données
+    // Rediriger vers la page de paiement avec les données (compatible PaiementNouveau.jsx)
     navigate('/paiement', {
       state: {
-        offre: offre,
-        quantity: quantity,
-        montantTotal: montantTotal,
-        email: email,
-        telephone: telephone
-      }
+        offre: {
+          ...offre,
+          prixMensuel: prixUnitaire,
+          duree,
+          selectedForfait: forfait,
+        },
+        quantity,
+        montantTotal,
+        email,
+        telephone,
+      },
     })
   }
 
@@ -209,8 +141,8 @@ export default function DetailOffre() {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
-          <div className="inline-block h-12 w-12 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
-          <p className="mt-4 text-gray-600">Chargement...</p>
+          <div className="inline-block h-12 w-12 border-4 border-slate-600 border-t-transparent rounded-full animate-spin"></div>
+          <p className="mt-4 text-gray-600">Chargement de l&apos;offre...</p>
         </div>
       </div>
     )
@@ -224,7 +156,7 @@ export default function DetailOffre() {
           <h2 className="text-2xl font-bold mb-4">Offre introuvable</h2>
           <button
             onClick={() => navigate('/catalogue')}
-            className="px-6 py-3 bg-indigo-600 text-white rounded-lg font-semibold hover:bg-indigo-700"
+            className="px-6 py-3 bg-slate-700 text-white rounded-lg font-semibold hover:bg-slate-800"
           >
             Retour au catalogue
           </button>
@@ -233,7 +165,11 @@ export default function DetailOffre() {
     )
   }
 
-  const montantTotal = offre.prixMensuel * quantity
+  const forfait = selectedForfait || offre.forfaits?.[0]
+  const prixUnitaire = forfait?.prix ?? offre.prixMensuel
+  const duree = forfait?.duree ?? offre.duree ?? 1
+  
+  const montantTotal = prixUnitaire ;
 
   return (
     <div className="min-h-screen bg-gray-50 py-8">
@@ -250,15 +186,27 @@ export default function DetailOffre() {
         <div className="grid lg:grid-cols-2 gap-8">
           {/* Colonne gauche - Image et détails */}
           <div>
-            {/* Image principale */}
-            <div className="relative rounded-2xl overflow-hidden mb-6">
+            {/* Image principale - style Catalogue */}
+            <div className="relative rounded-2xl overflow-hidden mb-6 bg-slate-800">
               <img
                 src={offre.image}
                 alt={offre.nom}
                 className="w-full h-96 object-cover"
               />
-              {offre.stock < 10 && (
-                <div className="absolute top-4 left-4 px-4 py-2 bg-red-500 text-white font-semibold rounded-full">
+              <div className="absolute inset-0 flex items-center justify-center bg-black/30">
+                <h2 className="text-4xl font-black text-white drop-shadow-2xl tracking-tight text-center px-4">
+                  {offre.nom.split(' ').slice(0, 2).join(' ')}
+                </h2>
+              </div>
+              <div className="absolute top-4 left-4 px-3 py-1 bg-white/90 backdrop-blur-sm rounded-full text-xs font-semibold border">
+                {categories.find(c => c.value === offre.categorie)?.label || offre.categorie}
+              </div>
+              <div className="absolute top-4 right-4 flex items-center gap-1 px-2 py-1 bg-yellow-400 rounded-full">
+                <Star className="h-3 w-3 fill-yellow-600 text-yellow-600" />
+                <span className="text-xs font-bold text-yellow-900">{offre.rating}</span>
+              </div>
+              {offre.stock != null && offre.stock < 10 && offre.stock > 0 && (
+                <div className="absolute bottom-4 left-4 px-4 py-2 bg-red-500 text-white font-semibold rounded-full">
                   ⚠️ Plus que {offre.stock} en stock !
                 </div>
               )}
@@ -271,44 +219,52 @@ export default function DetailOffre() {
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <Users className="h-5 w-5 text-gray-600" />
-                    <span>{offre.partenaire.nom}</span>
+                    <span>{offre.partenaire?.nom || 'RICHESSES'}</span>
                   </div>
-                  <div className="flex items-center gap-1">
-                    <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
-                    <span className="font-semibold">{offre.partenaire.note}</span>
+                  {offre.partenaire?.note != null && (
+                    <div className="flex items-center gap-1">
+                      <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
+                      <span className="font-semibold">{offre.partenaire.note}</span>
+                    </div>
+                  )}
+                </div>
+                {offre.partenaire?.ville && (
+                  <div className="flex items-center gap-2 text-gray-600">
+                    <MapPin className="h-5 w-5" />
+                    <span>{offre.partenaire.ville}</span>
                   </div>
-                </div>
-                <div className="flex items-center gap-2 text-gray-600">
-                  <MapPin className="h-5 w-5" />
-                  <span>{offre.partenaire.ville}</span>
-                </div>
-                <div className="text-sm text-gray-600">
-                  ✅ {offre.partenaire.ventes}+ ventes réussies
-                </div>
+                )}
+                {offre.partenaire?.ventes != null && offre.partenaire.ventes > 0 && (
+                  <div className="text-sm text-gray-600">
+                    ✅ {offre.partenaire.ventes}+ ventes réussies
+                  </div>
+                )}
               </div>
             </div>
 
             {/* Caractéristiques */}
-            <div className="bg-white rounded-2xl border-2 border-gray-200 p-6 mb-6">
-              <h3 className="font-semibold mb-4">✨ Caractéristiques</h3>
-              <ul className="space-y-3">
-                {offre.caracteristiques.map((item, index) => (
-                  <li key={index} className="flex items-start gap-2">
-                    <CheckCircle className="h-5 w-5 text-green-500 flex-shrink-0 mt-0.5" />
-                    <span className="text-gray-700">{item}</span>
-                  </li>
-                ))}
-              </ul>
-            </div>
+            {offre.caracteristiques?.length > 0 && (
+              <div className="bg-white rounded-2xl border-2 border-gray-200 p-6 mb-6">
+                <h3 className="font-semibold mb-4">✨ Caractéristiques</h3>
+                <ul className="space-y-3">
+                  {offre.caracteristiques.map((item, index) => (
+                    <li key={index} className="flex items-start gap-2">
+                      <CheckCircle className="h-5 w-5 text-green-500 flex-shrink-0 mt-0.5" />
+                      <span className="text-gray-700">{item}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
 
-            {/* Mode d'emploi */}
+            {/* Mode d&apos;emploi */}
             <div className="bg-blue-50 rounded-2xl border-2 border-blue-200 p-6">
               <h3 className="font-semibold mb-4 flex items-center gap-2">
                 <Zap className="h-5 w-5 text-blue-600" />
-                Mode d'emploi
+                Mode d&apos;emploi
               </h3>
               <ol className="space-y-3">
-                {offre.modeEmploi.map((etape, index) => (
+                {offre.modeEmploi?.map((etape, index) => (
                   <li key={index} className="flex gap-3">
                     <span className="flex-shrink-0 w-6 h-6 bg-blue-600 text-white rounded-full flex items-center justify-center text-sm font-bold">
                       {index + 1}
@@ -333,28 +289,83 @@ export default function DetailOffre() {
                 <div className="flex items-center gap-2">
                   <Star className="h-5 w-5 fill-yellow-400 text-yellow-400" />
                   <span className="font-semibold">{offre.rating}</span>
-                  <span className="text-gray-500 text-sm">(128 avis)</span>
+                  <span className="text-gray-500 text-sm">({offre.avis || 128} avis)</span>
                 </div>
                 <span className="text-gray-300">|</span>
                 <div className="flex items-center gap-2 text-gray-600">
                   <Clock className="h-5 w-5" />
-                  <span>{offre.duree} mois</span>
+                  <span>{duree} mois</span>
                 </div>
               </div>
 
+              {/* Sélection du forfait (comme dans Catalogue) */}
+              {offre.forfaits?.length > 0 && (
+                <div className="mb-6">
+                  <label className="block text-sm font-medium text-gray-700 mb-3">
+                    Choisir une formule
+                  </label>
+                  <div className="flex flex-wrap gap-2">
+                    {offre.forfaits.map((f) => (
+                      <button
+                        key={f.id}
+                        type="button"
+                        onClick={() => setSelectedForfait(f)}
+                        className={`flex-1 min-w-[100px] p-4 rounded-xl border-2 text-center transition-all ${
+                          selectedForfait?.id === f.id
+                            ? 'border-slate-600 bg-slate-50 text-slate-700'
+                            : 'border-gray-200 hover:border-slate-300 bg-white'
+                        }`}
+                      >
+                        <div className="text-xs text-gray-500">{f.duree} mois</div>
+                        <div className="text-lg font-bold text-slate-700">
+                          {formatPrix(f.prix)}
+                        </div>
+                        {f.plan && (
+                          <div className="text-xs text-gray-500 truncate">{f.plan}</div>
+                        )}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               {/* Prix */}
               <div className="mb-8">
-                <div className="text-4xl font-bold text-indigo-600 mb-2">
-                  {offre.prixMensuel.toLocaleString()} F
+                <div className="text-4xl font-bold text-slate-700 mb-2">
+                  {formatPrix(prixUnitaire)}
                 </div>
-                <div className="text-gray-500">
-                  {(offre.prixMensuel / offre.duree).toLocaleString()} F / mois
-                </div>
+                {duree > 1 && (
+                  <div className="text-gray-500">
+                    {formatPrix(Math.round(prixUnitaire / duree))} / mois
+                  </div>
+                )}
               </div>
+
+              {/* Promotions actives (optionnelles) */}
+              {promotions?.length > 0 && (
+                <div className="mb-6">
+                  <h3 className="text-sm font-semibold text-amber-700 mb-3">
+                    Réductions disponibles
+                  </h3>
+                  <div className="flex flex-wrap gap-2">
+                    {promotions.map((p) => (
+                      <span
+                        key={p.id}
+                        className="px-3 py-1 rounded-full text-xs font-semibold bg-amber-50 text-amber-700 border border-amber-200"
+                      >
+                        {p.type === 'POURCENTAGE'
+                          ? `-${Number(p.valeur) || 0}%`
+                          : `-${Number(p.valeur) || 0} FCFA`}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
 
               {/* Formulaire */}
               <form onSubmit={handleSouscrire} className="space-y-6">
                 {/* Quantité */}
+                {/*
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Quantité
@@ -362,13 +373,14 @@ export default function DetailOffre() {
                   <select
                     value={quantity}
                     onChange={(e) => setQuantity(parseInt(e.target.value))}
-                    className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-indigo-500"
+                    className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-slate-600"
                   >
                     {[1, 2, 3, 4, 5].map(q => (
                       <option key={q} value={q}>{q}</option>
                     ))}
                   </select>
-                </div>
+                </div> 
+                */}
 
                 {/* Email */}
                 <div>
@@ -381,7 +393,7 @@ export default function DetailOffre() {
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder="votre@email.com"
-                    className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-indigo-500"
+                    className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-slate-600"
                   />
                   <p className="text-xs text-gray-500 mt-1">
                     Vos identifiants seront envoyés à cette adresse
@@ -399,7 +411,7 @@ export default function DetailOffre() {
                     value={telephone}
                     onChange={(e) => setTelephone(e.target.value)}
                     placeholder="+225 XX XX XX XX XX"
-                    className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-indigo-500"
+                    className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-slate-600"
                   />
                   <p className="text-xs text-gray-500 mt-1">
                     Pour la confirmation de paiement Mobile Money
@@ -410,13 +422,13 @@ export default function DetailOffre() {
                 <div className="bg-gray-50 rounded-xl p-4">
                   <div className="flex items-center justify-between text-lg font-semibold">
                     <span>Total à payer</span>
-                    <span className="text-2xl text-indigo-600">
-                      {montantTotal.toLocaleString()} F
+                    <span className="text-2xl text-slate-700">
+                      {formatPrix(montantTotal)}
                     </span>
                   </div>
                   {quantity > 1 && (
                     <p className="text-sm text-gray-600 mt-1">
-                      {quantity} x {offre.prixMensuel.toLocaleString()} F
+                      {quantity} × {formatPrix(prixUnitaire)}
                     </p>
                   )}
                 </div>
@@ -424,7 +436,7 @@ export default function DetailOffre() {
                 {/* Bouton souscription */}
                 <button
                   type="submit"
-                  className="w-full py-4 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-xl font-bold text-lg hover:from-indigo-700 hover:to-purple-700 transition-all shadow-lg transform hover:scale-105"
+                  className="w-full py-4 bg-slate-700 text-white rounded-xl font-bold text-lg hover:bg-slate-800 transition-colors shadow-lg"
                 >
                   Souscrire maintenant 🚀
                 </button>

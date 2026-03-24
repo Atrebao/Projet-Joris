@@ -2,12 +2,15 @@ import { useState, useEffect } from 'react'
 import { Package, Eye, Edit, Trash2, Search, Filter, CheckCircle, XCircle } from 'lucide-react'
 import { abonnementsAPI } from '../../lib/api'
 import toast from 'react-hot-toast'
+import ModalDetail from '../../components/ModalDetail'
 
 export default function OffresPage() {
   const [offres, setOffres] = useState([])
   const [loading, setLoading] = useState(true)
   const [filtreStatut, setFiltreStatut] = useState('TOUS')
   const [recherche, setRecherche] = useState('')
+  const [detailOffre, setDetailOffre] = useState(null)
+  const [detailLoading, setDetailLoading] = useState(false)
 
   useEffect(() => {
     loadOffres()
@@ -41,6 +44,19 @@ export default function OffresPage() {
       toast.error('Impossible de charger les offres')
     } finally {
       setLoading(false)
+    }
+  }
+
+  const handleVoirOffre = async (id) => {
+    setDetailOffre(null)
+    setDetailLoading(true)
+    try {
+      const { data } = await abonnementsAPI.getDetails(id)
+      setDetailOffre(data)
+    } catch {
+      toast.error('Impossible de charger les détails')
+    } finally {
+      setDetailLoading(false)
     }
   }
 
@@ -78,7 +94,7 @@ export default function OffresPage() {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
-          <div className="inline-block h-12 w-12 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
+          <div className="inline-block h-12 w-12 border-4 border-slate-600 border-t-transparent rounded-full animate-spin"></div>
           <p className="mt-4 text-gray-600">Chargement des offres...</p>
         </div>
       </div>
@@ -104,14 +120,14 @@ export default function OffresPage() {
                   placeholder="Rechercher..."
                   value={recherche}
                   onChange={(e) => setRecherche(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-indigo-500"
+                  className="w-full pl-10 pr-4 py-2 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-slate-500"
                 />
               </div>
             </div>
             <select
               value={filtreStatut}
               onChange={(e) => setFiltreStatut(e.target.value)}
-              className="px-4 py-2 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-indigo-500"
+              className="px-4 py-2 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-slate-500"
             >
               <option value="TOUS">Tous</option>
               <option value="ACTIF">Actifs</option>
@@ -143,7 +159,7 @@ export default function OffresPage() {
                     <div className="text-xs text-gray-500">{o.categorie}</div>
                   </td>
                   <td className="py-4 px-6">{o.partenaire}</td>
-                  <td className="py-4 px-6 font-semibold text-indigo-600">{o.prix.toLocaleString()} F</td>
+                  <td className="py-4 px-6 font-semibold text-slate-600">{o.prix.toLocaleString()} F</td>
                   <td className="py-4 px-6">{o.stock}</td>
                   <td className="py-4 px-6 font-semibold">{o.ventes}</td>
                   <td className="py-4 px-6">⭐ {o.note}</td>
@@ -153,9 +169,9 @@ export default function OffresPage() {
                       {o.statut}
                     </span>
                   </td>
-                  <td className="py-4 px-6">
+                    <td className="py-4 px-6">
                     <div className="flex items-center justify-center gap-2">
-                      <button className="p-2 hover:bg-blue-50 rounded-lg">
+                      <button onClick={() => handleVoirOffre(o.id)} className="p-2 hover:bg-blue-50 rounded-lg">
                         <Eye className="h-5 w-5 text-blue-600" />
                       </button>
                       <button
@@ -171,6 +187,58 @@ export default function OffresPage() {
             </tbody>
           </table>
         </div>
+
+        <ModalDetail
+          open={!!detailOffre || detailLoading}
+          onClose={() => { setDetailOffre(null); setDetailLoading(false) }}
+          title="Détails de l'offre"
+          loading={detailLoading}
+        >
+          {detailOffre && (
+            <div className="space-y-4">
+              {detailOffre.image && (
+                <img src={detailOffre.image} alt={detailOffre.nom} className="w-full max-h-48 object-contain rounded-lg border border-gray-200" />
+              )}
+              <div className="grid sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="text-xs font-semibold text-gray-500 uppercase">Nom</label>
+                  <p className="font-medium">{detailOffre.nom}</p>
+                </div>
+                <div>
+                  <label className="text-xs font-semibold text-gray-500 uppercase">Catégorie</label>
+                  <p className="font-medium">{detailOffre.categorie || '-'}</p>
+                </div>
+                <div>
+                  <label className="text-xs font-semibold text-gray-500 uppercase">Icône</label>
+                  <p className="font-medium">{detailOffre.icon || '-'}</p>
+                </div>
+                <div>
+                  <label className="text-xs font-semibold text-gray-500 uppercase">Date création</label>
+                  <p className="font-medium">{detailOffre.dateCreation ? new Date(detailOffre.dateCreation).toLocaleDateString('fr-FR') : '-'}</p>
+                </div>
+                {detailOffre.description && (
+                  <div className="sm:col-span-2">
+                    <label className="text-xs font-semibold text-gray-500 uppercase">Description</label>
+                    <p className="text-sm mt-1">{detailOffre.description}</p>
+                  </div>
+                )}
+                {detailOffre.forfaits?.length > 0 && (
+                  <div className="sm:col-span-2">
+                    <label className="text-xs font-semibold text-gray-500 uppercase">Forfaits</label>
+                    <div className="mt-2 space-y-2">
+                      {detailOffre.forfaits.map((f, i) => (
+                        <div key={i} className="flex justify-between p-3 bg-gray-50 rounded-lg">
+                          <span>{f.duree} {f.periode || 'mois'}</span>
+                          <span className="font-semibold">{Number(f.prix || 0).toLocaleString()} FCFA</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+        </ModalDetail>
       </div>
     </div>
   )

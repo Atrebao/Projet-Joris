@@ -1,17 +1,55 @@
 import { useState, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { TrendingUp, DollarSign, Package, ShoppingCart, Calendar, BarChart3 } from 'lucide-react'
+import { getPartenaireId } from '../../Utils/Utils'
+import { statsAPI, offresAPI } from '../../lib/api'
+import toast from 'react-hot-toast'
 
 export default function StatsPage() {
+  const navigate = useNavigate()
+  const partenaireId = getPartenaireId()
   const [periode, setPeriode] = useState('mois')
+  const [loading, setLoading] = useState(true)
   const [stats, setStats] = useState({
-    ventesMois: 287,
-    revenuMois: 2450000,
-    offresMois: 15,
-    clientsMois: 142,
-    tendance: '+23%',
-    meilleurOffre: 'Netflix Premium',
-    categorieTop: 'Films & Séries'
+    ventesMois: 0,
+    revenuMois: 0,
+    offresMois: 0,
+    clientsMois: 0,
+    tendance: '+0%',
+    meilleurOffre: '-',
+    categorieTop: '-'
   })
+
+  useEffect(() => {
+    if (!partenaireId) {
+      navigate('/backoffice/login')
+      return
+    }
+    const loadStats = async () => {
+      setLoading(true)
+      try {
+        const [statsRes, offresRes] = await Promise.all([
+          statsAPI.partenaireDashboard(partenaireId),
+          offresAPI.getByPartenaire(partenaireId)
+        ])
+        const s = statsRes?.data || {}
+        setStats({
+          ventesMois: s.souscriptionsActives ?? 0,
+          revenuMois: s.revenusMois ?? 0,
+          offresMois: s.offresActives ?? 0,
+          clientsMois: s.clientsUniques ?? 0,
+          tendance: '+0%',
+          meilleurOffre: offresRes?.data?.[0]?.nomService || '-',
+          categorieTop: offresRes?.data?.[0]?.categorie || '-'
+        })
+      } catch (error) {
+        toast.error('Impossible de charger les statistiques')
+      } finally {
+        setLoading(false)
+      }
+    }
+    loadStats()
+  }, [partenaireId, navigate, periode])
 
   const ventesParJour = [
     { jour: 'Lun', ventes: 42 },
@@ -31,7 +69,18 @@ export default function StatsPage() {
     { nom: 'Disney+', ventes: 18, revenu: 126000 }
   ]
 
-  const maxVentes = Math.max(...ventesParJour.map(v => v.ventes))
+  const maxVentes = Math.max(1, ...ventesParJour.map(v => v.ventes))
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="inline-block h-12 w-12 border-4 border-slate-600 border-t-transparent rounded-full animate-spin"></div>
+          <p className="mt-4 text-gray-600">Chargement des statistiques...</p>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 p-8">
@@ -40,7 +89,7 @@ export default function StatsPage() {
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4">
           <div>
             <h1 className="text-3xl font-bold mb-2 flex items-center gap-3">
-              <BarChart3 className="h-8 w-8 text-purple-600" />
+              <BarChart3 className="h-8 w-8 text-slate-600" />
               Statistiques & Performance
             </h1>
             <p className="text-gray-600">Analysez vos performances</p>
@@ -49,7 +98,7 @@ export default function StatsPage() {
           <select
             value={periode}
             onChange={(e) => setPeriode(e.target.value)}
-            className="px-4 py-2 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-purple-500 font-semibold"
+            className="px-4 py-2 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-slate-500 font-semibold"
           >
             <option value="semaine">Cette semaine</option>
             <option value="mois">Ce mois</option>
@@ -78,13 +127,13 @@ export default function StatsPage() {
             <div className="text-green-100 text-sm">Revenu ce mois</div>
           </div>
 
-          <div className="bg-gradient-to-br from-purple-500 to-purple-600 rounded-2xl p-6 text-white shadow-lg hover:shadow-xl transition-all">
+          <div className="bg-gradient-to-br from-slate-500 to-slate-600 rounded-2xl p-6 text-white shadow-lg hover:shadow-xl transition-all">
             <div className="flex items-center justify-between mb-4">
-              <Package className="h-10 w-10 text-purple-100" />
-              <Calendar className="h-6 w-6 text-purple-100" />
+              <Package className="h-10 w-10 text-slate-100" />
+              <Calendar className="h-6 w-6 text-slate-100" />
             </div>
             <div className="text-3xl font-bold mb-1">{stats.offresMois}</div>
-            <div className="text-purple-100 text-sm">Offres actives</div>
+            <div className="text-slate-100 text-sm">Offres actives</div>
           </div>
 
           <div className="bg-gradient-to-br from-orange-500 to-orange-600 rounded-2xl p-6 text-white shadow-lg hover:shadow-xl transition-all">
@@ -101,7 +150,7 @@ export default function StatsPage() {
           {/* Graphique Ventes par jour */}
           <div className="bg-white rounded-2xl border-2 border-gray-200 p-6 shadow-lg">
             <h2 className="text-xl font-bold mb-6 flex items-center gap-2">
-              <BarChart3 className="h-6 w-6 text-purple-600" />
+              <BarChart3 className="h-6 w-6 text-slate-600" />
               Ventes par jour (7 derniers jours)
             </h2>
             <div className="space-y-3">
@@ -111,7 +160,7 @@ export default function StatsPage() {
                   <div className="flex-1">
                     <div className="bg-gray-100 rounded-full h-8 overflow-hidden">
                       <div 
-                        className="bg-gradient-to-r from-purple-500 to-pink-500 h-full flex items-center justify-end pr-3 text-white text-sm font-semibold transition-all"
+                        className="bg-gradient-to-r from-slate-500 to-slate-500 h-full flex items-center justify-end pr-3 text-white text-sm font-semibold transition-all"
                         style={{ width: `${(jour.ventes / maxVentes) * 100}%` }}
                       >
                         {jour.ventes > 0 && jour.ventes}
@@ -131,8 +180,8 @@ export default function StatsPage() {
             </h2>
             <div className="space-y-4">
               {offreTop.map((offre, index) => (
-                <div key={index} className="flex items-center gap-4 p-4 bg-gray-50 rounded-xl hover:bg-purple-50 transition-all">
-                  <div className="flex-shrink-0 w-8 h-8 bg-gradient-to-br from-purple-500 to-pink-500 rounded-full flex items-center justify-center text-white font-bold">
+                <div key={index} className="flex items-center gap-4 p-4 bg-gray-50 rounded-xl hover:bg-slate-50 transition-all">
+                  <div className="flex-shrink-0 w-8 h-8 bg-gradient-to-br from-slate-500 to-slate-500 rounded-full flex items-center justify-center text-white font-bold">
                     {index + 1}
                   </div>
                   <div className="flex-1 min-w-0">
@@ -151,16 +200,16 @@ export default function StatsPage() {
 
         {/* Informations supplémentaires */}
         <div className="grid md:grid-cols-2 gap-6">
-          <div className="bg-gradient-to-br from-indigo-500 to-purple-600 rounded-2xl p-6 text-white shadow-lg">
+          <div className="bg-gradient-to-br from-slate-500 to-slate-600 rounded-2xl p-6 text-white shadow-lg">
             <h3 className="text-lg font-bold mb-2">🏆 Meilleure Offre</h3>
             <p className="text-2xl font-bold mb-1">{stats.meilleurOffre}</p>
-            <p className="text-indigo-100 text-sm">45 ventes ce mois</p>
+            <p className="text-slate-100 text-sm">45 ventes ce mois</p>
           </div>
 
-          <div className="bg-gradient-to-br from-pink-500 to-rose-600 rounded-2xl p-6 text-white shadow-lg">
+          <div className="bg-gradient-to-br from-slate-500 to-rose-600 rounded-2xl p-6 text-white shadow-lg">
             <h3 className="text-lg font-bold mb-2">📊 Catégorie Leader</h3>
             <p className="text-2xl font-bold mb-1">{stats.categorieTop}</p>
-            <p className="text-pink-100 text-sm">127 ventes ce mois</p>
+            <p className="text-slate-100 text-sm">127 ventes ce mois</p>
           </div>
         </div>
       </div>

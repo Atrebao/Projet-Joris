@@ -37,7 +37,7 @@ export const SOUSCRIRE = "/souscription/souscrire";
 export const RECHERCHER_LISTES_SOUSCRIPTION =
   "/souscription/rechercher-souscriptions";
 export const RECHERCHER_DETAILS_SOUSCRIPTION =
-  "/souscription/rechercher-details";
+  "/souscription/rechercher-souscription";
 export const VERIFIER_STATUT_SOUSCRIPTION =
   "/souscription/verifier-statut-paiement-souscription";
 export const MODIFIER_STATUT_SOUSCRIPTION =

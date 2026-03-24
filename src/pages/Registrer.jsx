@@ -19,7 +19,7 @@ export default function Register() {
     //   </div>
     // </div>
 
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-purple-100 to-white">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-slate-100 to-white">
       <div className="w-full max-w-6xl px-6 py-12">
         <h1 className="text-3xl font-bold text-center">
           Choose your right plan!
@@ -29,16 +29,16 @@ export default function Register() {
           Customize your subscription for a seamless fit!
         </p>
         {/* <div class="flex justify-center mt-6">
-          <button class="bg-purple-600 text-white px-6 py-2 rounded-full">
+          <button class="bg-slate-600 text-white px-6 py-2 rounded-full">
             Monthly
           </button>
-          <button class="ml-4 border border-purple-600 text-purple-600 px-6 py-2 rounded-full">
+          <button class="ml-4 border border-slate-600 text-slate-600 px-6 py-2 rounded-full">
             Quarterly (save 10%)
           </button>
         </div> */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-12 ">
-          <div className="border border-gray-200 rounded-2xl p-8 shadow-md hover:border hover:border-purple-400 duration-300 transition-all">
-            <div className="p-2 bg-purple-500 w-12 h-8 rounded-md flex items-center justify-center">
+          <div className="border border-gray-200 rounded-2xl p-8 shadow-md hover:border hover:border-slate-400 duration-300 transition-all">
+            <div className="p-2 bg-slate-500 w-12 h-8 rounded-md flex items-center justify-center">
               <h2 className="text-white">Pro</h2>
             </div>
             <p className="text-gray-500 mt-2">
@@ -60,8 +60,8 @@ export default function Register() {
             </button>
           </div>
 
-          <div className=" rounded-2xl p-8 shadow-md hover:border hover:border-purple-400 duration-300 transition-all">
-            <div className="p-2 bg-purple-500 w-28 h-8 rounded-md flex items-center justify-center">
+          <div className=" rounded-2xl p-8 shadow-md hover:border hover:border-slate-400 duration-300 transition-all">
+            <div className="p-2 bg-slate-500 w-28 h-8 rounded-md flex items-center justify-center">
               <h2 className="text-white ">Pro Plus</h2>
             </div>
             <p className="text-gray-500 mt-2">
@@ -85,7 +85,7 @@ export default function Register() {
             </button>
           </div>
 
-          {/* <div class="border border-gray-200 rounded-2xl p-8 shadow-md bg-purple-100">
+          {/* <div class="border border-gray-200 rounded-2xl p-8 shadow-md bg-slate-100">
             <h2 class="text-gray-800 font-semibold">Custom</h2>
             <p class="text-gray-500 mt-2">
               If these plans don't fit, let's create one that suits.

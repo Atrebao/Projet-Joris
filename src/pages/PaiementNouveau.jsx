@@ -10,6 +10,14 @@ import {
   Clock,
   AlertCircle
 } from 'lucide-react'
+import orangeMoney from '../assets/images/orange-money.png'
+import mtnMobileMoney from '../assets/images/mtn-mobile-money.jpg'
+import moovMobileMoney from '../assets/images/moov-mobile-money.png'
+import waveMobileMoney from '../assets/images/wave-mobile-money.jpg'
+import StripeService from '../services/StripeService'
+import CinetPayService from '../services/CinetPayService'
+import BillMapService from '../services/BillMapService'
+import { souscriptionsAPI, codesPromoAPI } from '../lib/api'
 
 export default function PaiementNouveau() {
   const location = useLocation()
@@ -18,10 +26,17 @@ export default function PaiementNouveau() {
   // Récupérer les données de l'offre depuis la navigation
   const { offre, quantity, montantTotal, email, telephone } = location.state || {}
 
+  const baseMontantTotal = Number(montantTotal || 0)
+
   const [selectedMethod, setSelectedMethod] = useState('')
   const [phoneNumber, setPhoneNumber] = useState(telephone || '')
   const [isProcessing, setIsProcessing] = useState(false)
   const [paymentSuccess, setPaymentSuccess] = useState(false)
+
+  const [montantApayer, setMontantApayer] = useState(baseMontantTotal)
+  const [promoCodeInput, setPromoCodeInput] = useState('')
+  const [promoAppliquee, setPromoAppliquee] = useState(null)
+  const [isApplyingPromo, setIsApplyingPromo] = useState(false)
 
   // Si pas de données, rediriger
   useEffect(() => {
@@ -33,40 +48,101 @@ export default function PaiementNouveau() {
   const paymentMethods = [
     {
       id: 'stripe',
-      name: 'Carte Bancaire',
-      logo: '💳',
-      color: 'bg-indigo-600',
-      description: 'Visa, Mastercard (Stripe)'
+      name: 'Carte bancaire',
+      logo: null,
+      icon: 'CreditCard',
+      color: 'bg-slate-600',
+      description: 'Visa, Mastercard via Stripe',
+      requiresPhone: false,
     },
     {
       id: 'orange',
       name: 'Orange Money',
-      logo: '🟠',
+      logo: orangeMoney,
+      icon: null,
       color: 'bg-orange-500',
-      description: 'Paiement via Orange Money'
+      description: 'Paiement via CinetPay',
+      requiresPhone: true,
     },
     {
       id: 'mtn',
       name: 'MTN Mobile Money',
-      logo: '🟡',
+      logo: mtnMobileMoney,
+      icon: null,
       color: 'bg-yellow-500',
-      description: 'Paiement via MTN Mobile Money'
+      description: 'Paiement via CinetPay',
+      requiresPhone: true,
     },
     {
       id: 'moov',
       name: 'Moov Money',
-      logo: '🔵',
+      logo: moovMobileMoney,
+      icon: null,
       color: 'bg-blue-500',
-      description: 'Paiement via Moov Money'
+      description: 'Paiement via BillMap',
+      requiresPhone: true,
     },
     {
       id: 'wave',
       name: 'Wave',
-      logo: '💜',
-      color: 'bg-purple-500',
-      description: 'Paiement via Wave'
+      logo: waveMobileMoney,
+      icon: null,
+      color: 'bg-slate-500',
+      description: 'Paiement via CinetPay',
+      requiresPhone: true,
     },
   ]
+
+  const appliquerCodePromo = async () => {
+    const code = promoCodeInput?.trim()
+    if (!code) {
+      setPromoAppliquee(null)
+      setMontantApayer(baseMontantTotal)
+      return
+    }
+    if (!offre?.id) return
+
+    try {
+      setIsApplyingPromo(true)
+      const partenaireId = offre?.partenaire?.id
+
+      const { data } = await codesPromoAPI.valider({
+        code,
+        partenaireId,
+        abonnementId: offre.id,
+      })
+
+      const remiseValeur = Number(data?.remise || 0)
+      const typeRemise = data?.typeRemise
+
+      let remiseXof = 0
+      let totalApres = baseMontantTotal
+
+      if (typeRemise === 'POURCENTAGE') {
+        remiseXof = (baseMontantTotal * remiseValeur) / 100
+        totalApres = baseMontantTotal - remiseXof
+      } else if (typeRemise === 'MONTANT_FIXE') {
+        remiseXof = remiseValeur
+        totalApres = baseMontantTotal - remiseXof
+      }
+
+      totalApres = Math.max(0, Number(totalApres))
+
+      setPromoAppliquee({
+        codePromo: data?.codePromo?.code || code,
+        remiseXof,
+        typeRemise,
+        remiseValeur,
+      })
+      setMontantApayer(totalApres)
+    } catch (err) {
+      alert(err?.response?.data?.message || 'Code promo invalide')
+      setPromoAppliquee(null)
+      setMontantApayer(baseMontantTotal)
+    } finally {
+      setIsApplyingPromo(false)
+    }
+  }
 
   const handlePayment = async (e) => {
     e.preventDefault()
@@ -76,72 +152,124 @@ export default function PaiementNouveau() {
       return
     }
 
+    const methodConfig = paymentMethods.find((m) => m.id === selectedMethod)
+    const needsPhone = methodConfig?.requiresPhone !== false
+    if (needsPhone && !phoneNumber?.trim()) {
+      alert('Veuillez entrer votre numéro de téléphone')
+      return
+    }
+
+    const reference = 'REF-' + Date.now()
+    const description = `${offre?.nom || 'Abonnement'} - ${offre?.duree || 1} mois`
+
     // ========== PAIEMENT STRIPE (CARTE BANCAIRE) ==========
     if (selectedMethod === 'stripe') {
       setIsProcessing(true)
-
       try {
-        const StripeService = (await import('../services/StripeService')).default
-
         const { url } = await StripeService.createSession({
-          reference: 'REF-' + Date.now(),
-          montant: montantTotal,
-          email: email,
-          description: `${offre.nom} - ${offre.duree || 1} mois`,
+          reference,
+          montant: montantApayer,
+          email,
+          description,
           successUrl: window.location.origin + '/#/confirmation',
-          cancelUrl: window.location.origin + '/#/paiement'
+          cancelUrl: window.location.origin + '/#/paiement',
         })
-
-        window.location.href = url
-        return
+        if (url) window.location.href = url
       } catch (error) {
         console.error('Erreur Stripe:', error)
-        alert('Erreur lors de la création du paiement Stripe')
+        alert(error?.response?.data?.message || 'Erreur lors de la création du paiement Stripe')
         setIsProcessing(false)
-        return
       }
-    }
-
-    // ========== PAIEMENT MOBILE MONEY (CinetPay) ==========
-    if (!phoneNumber) {
-      alert('Veuillez entrer votre numéro de téléphone')
       return
     }
 
     setIsProcessing(true)
 
-    // Simulation d'un appel API CinetPay
-    try {
-      // TODO: Intégrer avec votre API CinetPay
-      // const response = await axios.post('/api/paiement/initier', {
-      //   offre_id: offre.id,
-      //   montant: montantTotal,
-      //   telephone: phoneNumber,
-      //   email: email,
-      //   methode: selectedMethod
-      // })
-
-      // Simulation délai
-      await new Promise(resolve => setTimeout(resolve, 2000))
-
-      // Simuler succès
-      setPaymentSuccess(true)
-
-      // Rediriger après 3 secondes
-      setTimeout(() => {
-        navigate('/confirmation', {
-          state: {
-            offre: offre,
-            montant: montantTotal,
-            reference: 'PAY-' + Date.now()
+    // ========== PAIEMENT MOOV (BillMap) ==========
+    if (selectedMethod === 'moov') {
+      try {
+        const result = await BillMapService.debitMoov(
+          {
+            montant: montantApayer,
+            numeroTelephone: phoneNumber.replace(/\s/g, ''),
+            reference,
+            description,
+            devise: 'XOF',
+          },
+          'uat',
+        )
+        // Créer la souscription côté backend
+        const forfait = offre?.selectedForfait || offre?.forfaits?.[0]
+        if (offre?.id && forfait?.id) {
+          try {
+            await souscriptionsAPI.creerDepuisPaiement({
+              abonnementId: offre.id,
+              forfaitId: forfait.id,
+              reference,
+              montant: montantApayer,
+              email,
+              telephone: phoneNumber.replace(/\s/g, ''),
+              modePaiement: 'MOBILE_MONEY',
+              codePromo: promoAppliquee?.codePromo,
+            })
+          } catch (err) {
+            console.warn('Souscription non créée:', err)
           }
-        })
-      }, 3000)
+        }
+        if (email) localStorage.setItem('customerEmail', email)
+        setPaymentSuccess(true)
+        setTimeout(() => {
+          navigate('/confirmation', {
+            state: {
+              offre,
+              montant: montantApayer,
+              reference,
+              billmapResponse: result,
+            },
+          })
+        }, 2000)
+      } catch (error) {
+        console.error('Erreur BillMap Moov:', error)
+        alert(error?.response?.data?.message || 'Erreur lors du paiement Moov. Veuillez réessayer.')
+        setIsProcessing(false)
+      }
+      return
+    }
 
-    } catch (error) {
-      console.error('Erreur paiement:', error)
-      alert('Erreur lors du paiement. Veuillez réessayer.')
-      setIsProcessing(false)
+    // ========== PAIEMENT ORANGE / MTN / WAVE (CinetPay) ==========
+    if (['orange', 'mtn', 'wave'].includes(selectedMethod)) {
+      try {
+        const result = await CinetPayService.initiate({
+          reference,
+          montant: montantApayer,
+          description,
+          clientNom: 'Client',
+          clientPrenom: '',
+          clientEmail: email,
+          clientTelephone: phoneNumber.replace(/\s/g, ''),
+        })
+        if (result?.success && result?.paymentUrl) {
+          window.location.href = result.paymentUrl
+          return
+        }
+        if (!result?.success) {
+          throw new Error(result?.message || 'Échec de l\'initiation du paiement')
+        }
+        setPaymentSuccess(true)
+        setTimeout(() => {
+          navigate('/confirmation', {
+            state: {
+              offre,
+              montant: montantApayer,
+              reference,
+            },
+          })
+        }, 2000)
+      } catch (error) {
+        console.error('Erreur CinetPay:', error)
+        alert(error?.response?.data?.message || error?.message || 'Erreur lors du paiement. Veuillez réessayer.')
+        setIsProcessing(false)
+      }
     }
   }
 
@@ -151,7 +279,7 @@ export default function PaiementNouveau() {
 
   if (paymentSuccess) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-green-50 to-emerald-100 flex items-center justify-center p-4">
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
         <div className="bg-white rounded-3xl shadow-2xl p-12 max-w-md w-full text-center">
           <div className="inline-flex items-center justify-center w-24 h-24 bg-green-500 rounded-full mb-6 animate-bounce">
             <CheckCircle className="h-12 w-12 text-white" />
@@ -186,8 +314,8 @@ export default function PaiementNouveau() {
         <div className="max-w-5xl mx-auto">
           {/* En-tête */}
           <div className="text-center mb-8">
-            <div className="inline-flex items-center justify-center w-16 h-16 bg-indigo-100 rounded-full mb-4">
-              <Lock className="h-8 w-8 text-indigo-600" />
+            <div className="inline-flex items-center justify-center w-16 h-16 bg-slate-100 rounded-full mb-4">
+              <Lock className="h-8 w-8 text-slate-700" />
             </div>
             <h1 className="text-3xl font-bold mb-2">Paiement sécurisé</h1>
             <p className="text-gray-600">Complétez votre achat en toute sécurité</p>
@@ -200,7 +328,7 @@ export default function PaiementNouveau() {
                 {/* Sélection mode de paiement */}
                 <div className="bg-white rounded-2xl border-2 border-gray-200 p-6">
                   <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
-                    <CreditCard className="h-6 w-6 text-indigo-600" />
+                    <CreditCard className="h-6 w-6 text-slate-700" />
                     Mode de paiement
                   </h2>
 
@@ -211,18 +339,24 @@ export default function PaiementNouveau() {
                         type="button"
                         onClick={() => setSelectedMethod(method.id)}
                         className={`p-4 rounded-xl border-2 transition-all text-left ${selectedMethod === method.id
-                            ? 'border-indigo-500 bg-indigo-50 shadow-lg'
+                            ? 'border-slate-600 bg-slate-50 shadow-lg'
                             : 'border-gray-200 hover:border-gray-300'
                           }`}
                       >
                         <div className="flex items-center gap-3">
-                          <div className="text-3xl">{method.logo}</div>
+                          <div className="text-3xl w-10 h-10 flex items-center justify-center rounded-full bg-gray-100">
+                            {method.logo ? (
+                              <img src={method.logo} alt={method.name} className="w-10 h-10 rounded-full object-cover" />
+                            ) : method.icon === 'CreditCard' ? (
+                              <CreditCard className="w-6 h-6 text-slate-700" />
+                            ) : null}
+                          </div>
                           <div className="flex-1">
                             <div className="font-semibold">{method.name}</div>
                             <div className="text-xs text-gray-500">{method.description}</div>
                           </div>
                           {selectedMethod === method.id && (
-                            <CheckCircle className="h-6 w-6 text-indigo-600" />
+                            <CheckCircle className="h-6 w-6 text-slate-600" />
                           )}
                         </div>
                       </button>
@@ -230,24 +364,27 @@ export default function PaiementNouveau() {
                   </div>
                 </div>
 
-                {/* Numéro de téléphone */}
-                <div className="bg-white rounded-2xl border-2 border-gray-200 p-6">
+                {/* Numéro de téléphone - requis pour Mobile Money */}
+                <div className={`bg-white rounded-2xl border-2 border-gray-200 p-6 ${['orange', 'mtn', 'moov', 'wave'].includes(selectedMethod) ? '' : 'opacity-75'}`}>
                   <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
-                    <Smartphone className="h-6 w-6 text-indigo-600" />
+                    <Smartphone className="h-6 w-6 text-slate-700" />
                     Numéro de téléphone
+                    {['orange', 'mtn', 'moov', 'wave'].includes(selectedMethod) && (
+                      <span className="text-sm font-normal text-red-500">* requis</span>
+                    )}
                   </h2>
 
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Numéro Mobile Money *
+                      Numéro Mobile Money
                     </label>
                     <input
                       type="tel"
-                      required
+                      required={['orange', 'mtn', 'moov', 'wave'].includes(selectedMethod)}
                       value={phoneNumber}
                       onChange={(e) => setPhoneNumber(e.target.value)}
                       placeholder="+225 XX XX XX XX XX"
-                      className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-indigo-500 text-lg"
+                      className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-slate-600 text-lg"
                     />
                     <p className="text-xs text-gray-500 mt-2">
                       Vous recevrez une notification pour valider le paiement
@@ -265,7 +402,7 @@ export default function PaiementNouveau() {
                       </h3>
                       <ul className="text-sm text-blue-800 space-y-1">
                         <li>✓ Vos données sont cryptées</li>
-                        <li>✓ Transaction sécurisée par CinetPay</li>
+                        <li>✓ Transaction sécurisée (Stripe, CinetPay, BillMap)</li>
                         <li>✓ Identifiants envoyés immédiatement après paiement</li>
                       </ul>
                     </div>
@@ -278,7 +415,7 @@ export default function PaiementNouveau() {
                   disabled={isProcessing || !selectedMethod}
                   className={`w-full py-4 rounded-xl font-bold text-lg transition-all shadow-lg ${isProcessing || !selectedMethod
                       ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                      : 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white hover:from-indigo-700 hover:to-purple-700 transform hover:scale-105'
+                      : 'bg-slate-700 text-white hover:bg-slate-800 transition-colors'
                     }`}
                 >
                   {isProcessing ? (
@@ -287,7 +424,7 @@ export default function PaiementNouveau() {
                       Traitement en cours...
                     </div>
                   ) : (
-                    `Payer ${montantTotal?.toLocaleString() || '0'} F`
+                    `Payer ${montantApayer?.toLocaleString() || '0'} F`
                   )}
                 </button>
               </form>
@@ -301,7 +438,7 @@ export default function PaiementNouveau() {
                 {/* Offre */}
                 <div className="mb-6 pb-6 border-b">
                   <div className="flex items-start gap-3 mb-3">
-                    <div className="w-16 h-16 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-lg flex items-center justify-center text-white font-bold text-sm">
+                    <div className="w-16 h-16 bg-slate-700 rounded-lg flex items-center justify-center text-white font-bold text-sm">
                       {offre?.nom?.split(' ')[0]}
                     </div>
                     <div className="flex-1">
@@ -331,10 +468,39 @@ export default function PaiementNouveau() {
                 <div className="pt-6 border-t">
                   <div className="flex justify-between items-center">
                     <span className="text-lg font-semibold">Total à payer</span>
-                    <span className="text-2xl font-bold text-indigo-600">
-                      {montantTotal?.toLocaleString()} F
+                    <span className="text-2xl font-bold text-slate-800">
+                      {montantApayer?.toLocaleString()} F
                     </span>
                   </div>
+                </div>
+
+                {/* Promotion */}
+                <div className="mt-4">
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    Code promo (optionnel)
+                  </label>
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      value={promoCodeInput}
+                      onChange={(e) => setPromoCodeInput(e.target.value)}
+                      placeholder="Ex: SAVE20"
+                      className="flex-1 px-4 py-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-slate-600"
+                    />
+                    <button
+                      type="button"
+                      onClick={appliquerCodePromo}
+                      disabled={isApplyingPromo || !promoCodeInput?.trim()}
+                      className="px-4 py-3 bg-slate-700 text-white rounded-lg font-semibold hover:bg-slate-800 disabled:opacity-50 transition-all"
+                    >
+                      {isApplyingPromo ? '...' : 'Appliquer'}
+                    </button>
+                  </div>
+                  {promoAppliquee && (
+                    <p className="text-xs text-green-700 mt-2">
+                      Remise appliquée : -{promoAppliquee.remiseXof?.toLocaleString()} FCFA
+                    </p>
+                  )}
                 </div>
 
                 {/* Contact */}

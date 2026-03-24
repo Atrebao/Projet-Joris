@@ -53,7 +53,7 @@ export default function NavBarClient() {
             className="flex items-center gap-3 group"
             onClick={() => setIsMenuOpen(false)}
           >
-            <div className="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
+            <div className="w-10 h-10 bg-slate-700 rounded-xl flex items-center justify-center shadow-lg group-hover:scale-105 transition-transform">
               <span className="text-2xl font-bold text-white">
                 R
               </span>
@@ -62,7 +62,7 @@ export default function NavBarClient() {
               <div className="text-slate-800 font-bold text-xl tracking-tight">
                 RICHESSES
               </div>
-              <div className="text-indigo-600 text-xs font-semibold uppercase tracking-wider">
+              <div className="text-slate-600 text-xs font-semibold uppercase tracking-wider">
                 Streaming
               </div>
             </div>
@@ -76,7 +76,7 @@ export default function NavBarClient() {
                 to={link.to}
                 className={({ isActive }) =>
                   `flex items-center gap-2 px-4 py-2 rounded-xl transition-all duration-200 ${isActive
-                    ? 'bg-indigo-50 text-indigo-600 font-semibold'
+                    ? 'bg-slate-100 text-slate-700 font-semibold'
                     : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
                   }`
                 }
@@ -109,7 +109,7 @@ export default function NavBarClient() {
                     {notifications.map((notif) => (
                       <div key={notif.id} className="p-4 hover:bg-gray-50 transition-colors border-b border-gray-50 last:border-0 cursor-pointer">
                         <div className="flex gap-3">
-                          <div className={`mt-1 w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${notif.type === 'promo' ? 'bg-purple-100 text-purple-600' : 'bg-blue-100 text-blue-600'
+                          <div className={`mt-1 w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${notif.type === 'promo' ? 'bg-amber-100 text-amber-700' : 'bg-slate-100 text-slate-600'
                             }`}>
                             {notif.type === 'promo' ? <AlertCircle className="h-4 w-4" /> : <CheckCircle className="h-4 w-4" />}
                           </div>
@@ -123,7 +123,7 @@ export default function NavBarClient() {
                     ))}
                   </div>
                   <div className="p-3 text-center border-t border-gray-50 bg-gray-50/50">
-                    <button className="text-xs font-medium text-indigo-600 hover:text-indigo-700">
+                    <button className="text-xs font-medium text-slate-600 hover:text-slate-700">
                       Marquer tout comme lu
                     </button>
                   </div>
@@ -133,7 +133,7 @@ export default function NavBarClient() {
 
             <button
               onClick={() => navigate('/catalogue')}
-              className="px-5 py-2.5 bg-indigo-600 text-white rounded-xl font-semibold hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-200 transform hover:scale-105 text-sm"
+              className="px-5 py-2.5 bg-slate-700 text-white rounded-xl font-semibold hover:bg-slate-800 transition-colors text-sm"
             >
               Découvrir les offres
             </button>
@@ -160,7 +160,7 @@ export default function NavBarClient() {
                 onClick={() => setIsMenuOpen(false)}
                 className={({ isActive }) =>
                   `flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${isActive
-                    ? 'bg-indigo-50 text-indigo-600 font-semibold'
+                    ? 'bg-slate-100 text-slate-700 font-semibold'
                     : 'text-slate-600 hover:bg-slate-50'
                   }`
                 }
@@ -189,7 +189,7 @@ export default function NavBarClient() {
                 setIsMenuOpen(false)
                 navigate('/catalogue')
               }}
-              className="w-full mt-4 px-5 py-3 bg-indigo-600 text-white rounded-xl font-semibold hover:bg-indigo-700 transition-all shadow-lg"
+              className="w-full mt-4 px-5 py-3 bg-slate-700 text-white rounded-xl font-semibold hover:bg-slate-800 transition-colors"
             >
               Découvrir les offres
             </button>

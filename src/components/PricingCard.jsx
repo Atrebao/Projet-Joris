@@ -7,8 +7,8 @@ export default function PricingCard({ plan, prix }) {
   const navigate = useNavigate();
 
   return (
-    <div className=" rounded-2xl p-8 shadow-md hover:border hover:border-purple-400 duration-300 transition-all">
-      <div className="p-2 bg-purple-500 w-28 h-8 rounded-md flex items-center justify-center">
+    <div className=" rounded-2xl p-8 shadow-md hover:border hover:border-slate-400 duration-300 transition-all">
+      <div className="p-2 bg-slate-500 w-28 h-8 rounded-md flex items-center justify-center">
         <h2 className="text-white ">Pro Plus</h2>
       </div>
       <p className="text-gray-500 mt-2">

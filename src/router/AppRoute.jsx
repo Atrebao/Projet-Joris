@@ -13,7 +13,6 @@ import Abonnement from "../pages/AbonnementDetails";
 import Conditions from "../pages/Conditions";
 import LoginModerne from "../pages/LoginModerne";
 import StatsModerne from "../pages/StatsModerne";
-import HomeAdmin from "../pages/HomeAdmin";
 import Abonnements from "../pages/Abonnements";
 import Utilisateurs from "../pages/Utilisateurs";
 import Identifiants from "../pages/Identifiants";
@@ -39,6 +38,7 @@ import NouvelleOffrePage from "../pages/partenaire/NouvelleOffrePage";
 import EditerOffrePage from "../pages/partenaire/EditerOffrePage";
 import ClientsPage from "../pages/partenaire/ClientsPage";
 import StatsPage from "../pages/partenaire/StatsPage";
+import PromotionsPage from "../pages/partenaire/PromotionsPage";
 import CommandesPartenairePage from "../pages/partenaire/CommandesPartenairePage";
 import EnConstruction from "../pages/EnConstruction";
 
@@ -162,6 +162,10 @@ export const AppRoute = createHashRouter([
       {
         path: "clients",
         element: <ClientsPage />,
+      },
+      {
+        path: "promotions",
+        element: <PromotionsPage />,
       },
       {
         path: "stats",

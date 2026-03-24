@@ -1,76 +1,45 @@
 import { useState, useEffect } from 'react'
-import { Users, Search, Eye, Mail, Phone, Filter, Download, UserCheck, UserX } from 'lucide-react'
+import { Users, Search, Eye, Mail, Phone, Filter, Download, UserCheck, UserX, Calendar } from 'lucide-react'
+import toast from 'react-hot-toast'
+import { usersAPI } from '../../lib/api'
+import ModalDetail from '../../components/ModalDetail'
 
 export default function ClientsAdminPage() {
   const [clients, setClients] = useState([])
+  const [loading, setLoading] = useState(true)
   const [recherche, setRecherche] = useState('')
   const [filtreStatut, setFiltreStatut] = useState('TOUS')
+  const [detailClient, setDetailClient] = useState(null)
+  const [detailLoading, setDetailLoading] = useState(false)
 
   useEffect(() => {
-    // Données mockées
-    setClients([
-      {
-        id: 1,
-        nom: 'Kouassi Jean-Baptiste',
-        email: 'jean.kouassi@example.ci',
-        telephone: '+225 07 12 34 56 78',
-        ville: 'Abidjan',
-        dateInscription: '2025-01-15',
-        nbAchats: 18,
-        totalDepense: 126000,
-        derniereActivite: '2025-11-18',
-        statut: 'ACTIF'
-      },
-      {
-        id: 2,
-        nom: 'Diabate Marie-Claire',
-        email: 'marie.diabate@example.ci',
-        telephone: '+225 05 23 45 67 89',
-        ville: 'Cocody',
-        dateInscription: '2025-02-20',
-        nbAchats: 12,
-        totalDepense: 84000,
-        derniereActivite: '2025-11-15',
-        statut: 'ACTIF'
-      },
-      {
-        id: 3,
-        nom: 'Toure Ibrahim',
-        email: 'ibrahim.toure@example.ci',
-        telephone: '+225 01 98 76 54 32',
-        ville: 'Yopougon',
-        dateInscription: '2024-11-10',
-        nbAchats: 28,
-        totalDepense: 196000,
-        derniereActivite: '2025-11-19',
-        statut: 'VIP'
-      },
-      {
-        id: 4,
-        nom: 'Kone Aminata',
-        email: 'aminata.kone@example.ci',
-        telephone: '+225 07 45 67 89 01',
-        ville: 'Marcory',
-        dateInscription: '2025-03-05',
-        nbAchats: 5,
-        totalDepense: 35000,
-        derniereActivite: '2025-10-28',
-        statut: 'INACTIF'
-      },
-      {
-        id: 5,
-        nom: 'Bamba Sekou',
-        email: 'sekou.bamba@example.ci',
-        telephone: '+225 01 55 44 33 22',
-        ville: 'Koumassi',
-        dateInscription: '2025-04-12',
-        nbAchats: 22,
-        totalDepense: 154000,
-        derniereActivite: '2025-11-17',
-        statut: 'VIP'
-      },
-    ])
-  }, [])
+    const loadClients = async () => {
+      try {
+        setLoading(true)
+        const { data } = await usersAPI.getClients({ search: recherche })
+        const formatted = (data || []).map((u) => ({
+          id: u.id,
+          nom: u.nom ? `${u.prenoms || ''} ${u.nom}`.trim() : u.username,
+          email: u.email,
+          telephone: u.numero || '-',
+          ville: '-',
+          dateInscription: u.dateCreation ? new Date(u.dateCreation).toISOString().split('T')[0] : '-',
+          nbAchats: 0,
+          totalDepense: 0,
+          derniereActivite: '-',
+          statut: u.enabled !== false ? 'ACTIF' : 'INACTIF'
+        }))
+        setClients(formatted)
+      } catch (error) {
+        console.error('Erreur chargement clients:', error)
+        toast.error('Impossible de charger les clients')
+        setClients([])
+      } finally {
+        setLoading(false)
+      }
+    }
+    loadClients()
+  }, [recherche])
 
   const clientsFiltres = clients.filter(c => {
     const matchRecherche = c.nom.toLowerCase().includes(recherche.toLowerCase()) ||
@@ -78,6 +47,19 @@ export default function ClientsAdminPage() {
     const matchStatut = filtreStatut === 'TOUS' || c.statut === filtreStatut
     return matchRecherche && matchStatut
   })
+
+  const handleVoirClient = async (id) => {
+    setDetailClient(null)
+    setDetailLoading(true)
+    try {
+      const { data } = await usersAPI.getClient(id)
+      setDetailClient(data)
+    } catch {
+      toast.error('Impossible de charger les détails')
+    } finally {
+      setDetailLoading(false)
+    }
+  }
 
   const statsGlobales = {
     total: clients.length,
@@ -87,6 +69,17 @@ export default function ClientsAdminPage() {
     revenuTotal: clients.reduce((sum, c) => sum + c.totalDepense, 0)
   }
 
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 p-8 flex items-center justify-center">
+        <div className="text-center">
+          <div className="inline-block h-12 w-12 border-4 border-slate-600 border-t-transparent rounded-full animate-spin mb-4"></div>
+          <p className="text-gray-600">Chargement des clients...</p>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="min-h-screen bg-gray-50 p-8">
       <div className="max-w-7xl mx-auto">
@@ -94,13 +87,13 @@ export default function ClientsAdminPage() {
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4">
           <div>
             <h1 className="text-3xl font-bold mb-2 flex items-center gap-3">
-              <Users className="h-8 w-8 text-indigo-600" />
+              <Users className="h-8 w-8 text-slate-600" />
               Gestion des Clients
             </h1>
             <p className="text-gray-600">{clients.length} clients au total</p>
           </div>
 
-          <button className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg font-semibold hover:bg-indigo-700 transition-all shadow-lg">
+          <button className="flex items-center gap-2 px-4 py-2 bg-slate-600 text-white rounded-lg font-semibold hover:bg-slate-700 transition-all shadow-lg">
             <Download className="h-5 w-5" />
             Exporter CSV
           </button>
@@ -108,12 +101,12 @@ export default function ClientsAdminPage() {
 
         {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-8">
-          <div className="bg-gradient-to-br from-indigo-500 to-indigo-600 rounded-2xl p-6 text-white shadow-xl">
+          <div className="bg-gradient-to-br from-slate-500 to-slate-600 rounded-2xl p-6 text-white shadow-xl">
             <div className="flex items-center justify-between mb-4">
-              <Users className="h-10 w-10 text-indigo-100" />
+              <Users className="h-10 w-10 text-slate-100" />
             </div>
             <div className="text-3xl font-bold mb-1">{statsGlobales.total}</div>
-            <div className="text-indigo-100 text-sm">Total Clients</div>
+            <div className="text-slate-100 text-sm">Total Clients</div>
           </div>
 
           <div className="bg-gradient-to-br from-green-500 to-green-600 rounded-2xl p-6 text-white shadow-xl">
@@ -140,12 +133,12 @@ export default function ClientsAdminPage() {
             <div className="text-gray-100 text-sm">Inactifs</div>
           </div>
 
-          <div className="bg-gradient-to-br from-purple-500 to-purple-600 rounded-2xl p-6 text-white shadow-xl">
+          <div className="bg-gradient-to-br from-slate-500 to-slate-600 rounded-2xl p-6 text-white shadow-xl">
             <div className="flex items-center justify-between mb-4">
               <span className="text-2xl">💰</span>
             </div>
             <div className="text-3xl font-bold mb-1">{(statsGlobales.revenuTotal / 1000).toFixed(0)}K</div>
-            <div className="text-purple-100 text-sm">Revenu Total</div>
+            <div className="text-slate-100 text-sm">Revenu Total</div>
           </div>
         </div>
 
@@ -160,7 +153,7 @@ export default function ClientsAdminPage() {
                   placeholder="Rechercher par nom ou email..."
                   value={recherche}
                   onChange={(e) => setRecherche(e.target.value)}
-                  className="w-full pl-10 pr-4 py-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-indigo-500 transition-all"
+                  className="w-full pl-10 pr-4 py-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-slate-500 transition-all"
                 />
               </div>
             </div>
@@ -170,7 +163,7 @@ export default function ClientsAdminPage() {
               <select
                 value={filtreStatut}
                 onChange={(e) => setFiltreStatut(e.target.value)}
-                className="px-4 py-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-indigo-500 font-semibold"
+                className="px-4 py-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-slate-500 font-semibold"
               >
                 <option value="TOUS">Tous les statuts</option>
                 <option value="ACTIF">Actifs</option>
@@ -185,7 +178,7 @@ export default function ClientsAdminPage() {
         <div className="bg-white rounded-2xl border-2 border-gray-200 overflow-hidden shadow-lg">
           <div className="overflow-x-auto">
             <table className="w-full">
-              <thead className="bg-gradient-to-r from-indigo-500 to-purple-500 text-white">
+              <thead className="bg-gradient-to-r from-slate-500 to-slate-500 text-white">
                 <tr>
                   <th className="text-left py-4 px-6 font-semibold">Client</th>
                   <th className="text-left py-4 px-6 font-semibold">Contact</th>
@@ -200,11 +193,11 @@ export default function ClientsAdminPage() {
               </thead>
               <tbody>
                 {clientsFiltres.map((client) => (
-                  <tr key={client.id} className="border-b border-gray-100 hover:bg-indigo-50 transition-all">
+                  <tr key={client.id} className="border-b border-gray-100 hover:bg-slate-50 transition-all">
                     <td className="py-4 px-6">
                       <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 bg-gradient-to-br from-indigo-400 to-purple-400 rounded-full flex items-center justify-center text-white font-bold">
-                          {client.nom.split(' ').map(n => n[0]).join('')}
+                        <div className="w-10 h-10 bg-gradient-to-br from-slate-400 to-slate-400 rounded-full flex items-center justify-center text-white font-bold">
+                          {(client.nom || '?').split(' ').filter(Boolean).map(n => n[0]).join('').slice(0, 2) || '?'}
                         </div>
                         <div>
                           <div className="font-semibold">{client.nom}</div>
@@ -233,7 +226,7 @@ export default function ClientsAdminPage() {
                       </span>
                     </td>
                     <td className="py-4 px-6">
-                      <span className="font-semibold text-indigo-600">{client.nbAchats}</span>
+                      <span className="font-semibold text-slate-600">{client.nbAchats}</span>
                     </td>
                     <td className="py-4 px-6">
                       <span className="font-bold text-green-600">{client.totalDepense.toLocaleString()} F</span>
@@ -255,10 +248,11 @@ export default function ClientsAdminPage() {
                     <td className="py-4 px-6">
                       <div className="flex items-center justify-center gap-2">
                         <button
-                          className="p-2 hover:bg-indigo-50 rounded-lg transition-all"
+                          onClick={() => handleVoirClient(client.id)}
+                          className="p-2 hover:bg-slate-50 rounded-lg transition-all"
                           title="Voir le profil"
                         >
-                          <Eye className="h-5 w-5 text-indigo-600" />
+                          <Eye className="h-5 w-5 text-slate-600" />
                         </button>
                       </div>
                     </td>
@@ -275,6 +269,52 @@ export default function ClientsAdminPage() {
             </div>
           )}
         </div>
+
+        <ModalDetail
+          open={!!detailClient || detailLoading}
+          onClose={() => { setDetailClient(null); setDetailLoading(false) }}
+          title="Détails du client"
+          loading={detailLoading}
+        >
+          {detailClient && (
+            <div className="space-y-4">
+              <div className="grid sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="text-xs font-semibold text-gray-500 uppercase">Nom complet</label>
+                  <p className="font-medium">{[detailClient.prenoms, detailClient.nom].filter(Boolean).join(' ') || detailClient.username}</p>
+                </div>
+                <div>
+                  <label className="text-xs font-semibold text-gray-500 uppercase">Email</label>
+                  <p className="font-medium">{detailClient.email}</p>
+                </div>
+                <div>
+                  <label className="text-xs font-semibold text-gray-500 uppercase">Téléphone</label>
+                  <p className="font-medium">{detailClient.numero || '-'}</p>
+                </div>
+                <div>
+                  <label className="text-xs font-semibold text-gray-500 uppercase">Nom d'utilisateur</label>
+                  <p className="font-medium">{detailClient.username}</p>
+                </div>
+                <div>
+                  <label className="text-xs font-semibold text-gray-500 uppercase">Rôle</label>
+                  <p className="font-medium">{detailClient.role || 'CLIENT'}</p>
+                </div>
+                <div>
+                  <label className="text-xs font-semibold text-gray-500 uppercase">Statut</label>
+                  <p><span className={`px-2 py-1 rounded-full text-xs font-semibold ${detailClient.enabled ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-700'}`}>{detailClient.enabled ? 'Actif' : 'Inactif'}</span></p>
+                </div>
+                <div>
+                  <label className="text-xs font-semibold text-gray-500 uppercase">Date d'inscription</label>
+                  <p className="font-medium">{detailClient.dateCreation ? new Date(detailClient.dateCreation).toLocaleDateString('fr-FR') : '-'}</p>
+                </div>
+                <div>
+                  <label className="text-xs font-semibold text-gray-500 uppercase">ID</label>
+                  <p className="font-medium">{detailClient.id}</p>
+                </div>
+              </div>
+            </div>
+          )}
+        </ModalDetail>
       </div>
     </div>
   )

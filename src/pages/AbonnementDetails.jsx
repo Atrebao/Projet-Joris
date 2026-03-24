@@ -82,7 +82,7 @@ export default function Abonnement() {
 
   const [isDropdownOpen, setIsDropdownOpen] = useState(true);
   return (
-    <div className="min-h-screen py-16 bg-gradient-to-b from-purple-200 via-white to-purple-50">
+    <div className="min-h-screen py-16 bg-gradient-to-b from-slate-100 via-white to-slate-50">
       {/* Contenu principal */}
       <div
         className={`max-w-7xl mx-auto px-6 py-12 ${userProfile && userProfile.role === "client"

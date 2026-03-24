@@ -58,6 +58,8 @@ axiosInstance.interceptors.response.use(
         // Si le refresh échoue, déconnecter l'utilisateur
         localStorage.removeItem('token');
         localStorage.removeItem('refreshToken');
+        localStorage.removeItem('user');
+        localStorage.removeItem('infoUser');
         window.location.href = '/#/backoffice/login';
         return Promise.reject(refreshError);
       }

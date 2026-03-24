@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
-import { getSouscriptions } from "../services/SouscriptionService";
+import { useNavigate } from "react-router-dom";
 import SearchIcon from "@mui/icons-material/Search";
-import { ThreeDots, TailSpin } from "react-loader-spinner";
+import { TailSpin } from "react-loader-spinner";
 import Pagination from "@mui/material/Pagination";
 import SouscriptionCard from "../components/SouscriptionCard";
 import { useSouscriptionStore } from "../store/souscription";
@@ -11,7 +11,9 @@ import {
   HOMEADMIN,
   statutPaiementsListe,
 } from "../Utils/Utils";
+
 export default function Souscription() {
+  const navigate = useNavigate();
   const [data, setData] = useState([]);
   //const [souscriptions, setSouscriptions] = useState([]);
   const [inputs, setInputs] = useState("");
@@ -150,7 +152,7 @@ export default function Souscription() {
           <div className="w-full">
             <button
               className="w-14 h-11 bg-stone-800 text-white rounded-md flex items-center justify-center"
-              onClick={() => filteredData(inputs)}
+              onClick={() => filteredData()}
             >
               {!searchLoading ? (
                 <SearchIcon />

@@ -102,12 +102,12 @@ export default function Abonnements() {
         <input
           type="text"
           placeholder=" 🔍Rechercher un abonnement..."
-          className="w-full sm:w-96 px-4 py-3 rounded-lg border border-gray-300 shadow-sm focus:ring-2 focus:ring-purple-500 transition-all"
+          className="w-full sm:w-96 px-4 py-3 rounded-lg border border-gray-300 shadow-sm focus:ring-2 focus:ring-slate-500 transition-all"
           value={inputs}
           onChange={(e) => setInputs(e.target.value)}
         />
         <button
-          className=" bg-purple-600 hover:bg-purple-700 text-white p-2 rounded-md transition-all"
+          className=" bg-slate-600 hover:bg-slate-700 text-white p-2 rounded-md transition-all"
           onClick={() => filteredData(inputs)}
         >
           {!searchLoading ? (
@@ -120,7 +120,7 @@ export default function Abonnements() {
   
       {/* Bouton d'ajout */}
       <button
-        className="px-6 py-3 bg-purple-700 hover:bg-purple-800 text-white font-bold rounded-lg shadow-md transition-all"
+        className="px-6 py-3 bg-slate-700 hover:bg-slate-800 text-white font-bold rounded-lg shadow-md transition-all"
         onClick={showModalAdd}
       >
         ➕ Ajouter un abonnement

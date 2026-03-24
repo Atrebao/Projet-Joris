@@ -12,7 +12,8 @@ import {
   LogOut,
   ShoppingCart,
   Bell,
-  Search
+  Search,
+  Percent
 } from "lucide-react";
 
 export default function NavBarModerne() {
@@ -28,12 +29,19 @@ export default function NavBarModerne() {
     if (path.includes('/partenaire')) return 'partenaire';
     
     // Vérifier dans le localStorage si l'utilisateur est connecté
+    const partenaire = localStorage.getItem('partenaire');
+    if (partenaire) return 'partenaire';
+
     const user = localStorage.getItem('user');
-    if (user) {
+    const infoUser = localStorage.getItem('infoUser');
+    const data = infoUser ? (() => { try { return JSON.parse(infoUser); } catch { return null; } })() : null;
+    if (data?.partenaire) return 'partenaire';
+    if (user || data?.user) {
       try {
-        const userData = JSON.parse(user);
-        if (userData.role === 'admin') return 'admin';
-        if (userData.role === 'partenaire') return 'partenaire';
+        const userData = JSON.parse(user || JSON.stringify(data?.user || {}));
+        const role = userData?.role || data?.user?.role;
+        if (role === 'ADMIN' || role === 'SUPER_ADMIN' || role === 'admin' || role === 'super_admin') return 'admin';
+        if (role === 'PARTENAIRE' || role === 'partenaire') return 'partenaire';
       } catch (e) {
         console.error('Erreur parsing user data:', e);
       }
@@ -85,6 +93,7 @@ export default function NavBarModerne() {
     { to: "/partenaire/commandes", icon: ShoppingCart, label: "Commandes" },
     { to: "/partenaire/offres/nouvelle", icon: Package, label: "Nouvelle Offre" },
     { to: "/partenaire/clients", icon: Users, label: "Clients" },
+    { to: "/partenaire/promotions", icon: Percent, label: "Promotions" },
     { to: "/partenaire/stats", icon: BarChart3, label: "Statistiques" },
   ];
 
@@ -96,9 +105,9 @@ export default function NavBarModerne() {
   }
 
   // Couleurs sobres pour admin/partenaire
-  const themeColor = isPartenaire ? "text-purple-600" : "text-indigo-600";
-  const themeBg = isPartenaire ? "bg-purple-600" : "bg-indigo-600";
-  const themeHoverBg = isPartenaire ? "hover:bg-purple-50" : "hover:bg-indigo-50";
+  const themeColor = isPartenaire ? "text-slate-700" : "text-slate-700";
+  const themeBg = isPartenaire ? "bg-slate-700" : "bg-slate-700";
+  const themeHoverBg = isPartenaire ? "hover:bg-slate-50" : "hover:bg-slate-50";
 
   return (
     <nav className={`sticky top-0 z-50 transition-all duration-300 ${
@@ -169,7 +178,7 @@ export default function NavBarModerne() {
                 </div>
                 <div className="text-slate-500 text-xs">Connecté</div>
               </div>
-              <div className={`p-2 ${isPartenaire ? 'bg-purple-50' : 'bg-indigo-50'} ${themeColor} rounded-xl cursor-pointer hover:scale-110 transition-transform`}>
+              <div className={`p-2 ${isPartenaire ? 'bg-slate-100' : 'bg-slate-100'} ${themeColor} rounded-xl cursor-pointer hover:scale-105 transition-transform`}>
                 <UserCircle2 className="h-6 w-6" />
               </div>
             </div>

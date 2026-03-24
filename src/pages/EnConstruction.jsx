@@ -31,7 +31,7 @@ export default function EnConstruction({ titre = "Page en construction" }) {
         
         <button
           onClick={() => navigate(-1)}
-          className="inline-flex items-center gap-2 px-6 py-3 bg-indigo-600 text-white rounded-lg font-semibold hover:bg-indigo-700 transition-all"
+          className="inline-flex items-center gap-2 px-6 py-3 bg-slate-600 text-white rounded-lg font-semibold hover:bg-slate-700 transition-all"
         >
           <ArrowLeft className="h-5 w-5" />
           Retour

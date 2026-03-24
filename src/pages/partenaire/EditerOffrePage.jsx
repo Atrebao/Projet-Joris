@@ -1,43 +1,95 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import { ArrowLeft, Save, Loader } from 'lucide-react'
+import { ArrowLeft, Save, Loader, ImagePlus } from 'lucide-react'
+import { getPartenaireId } from '../../Utils/Utils'
+import { offresAPI } from '../../lib/api'
+import toast from 'react-hot-toast'
 
 export default function EditerOffrePage() {
   const navigate = useNavigate()
   const { id } = useParams()
+  const partenaireId = getPartenaireId()
   const [loading, setLoading] = useState(true)
+  const [submitting, setSubmitting] = useState(false)
+  const [imageFile, setImageFile] = useState(null)
+  const [imagePreview, setImagePreview] = useState(null)
+  const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:3000'
   const [formData, setFormData] = useState({
     nom: '',
     description: '',
     categorie: 'FILMS_SERIES',
-    prix: '',
+    prixOriginal: '',
+    prixVente: '',
     duree: '1',
-    stock: '',
+    stock: '0',
     imageUrl: ''
   })
 
   useEffect(() => {
-    // Simuler le chargement de l'offre
-    setTimeout(() => {
-      // Données mockées
-      setFormData({
-        nom: 'Netflix Premium',
-        description: 'Abonnement Netflix Premium avec 4 écrans simultanés et qualité 4K Ultra HD',
-        categorie: 'FILMS_SERIES',
-        prix: '7000',
-        duree: '1',
-        stock: '15',
-        imageUrl: 'https://picsum.photos/400/300'
-      })
-      setLoading(false)
-    }, 500)
-  }, [id])
+    if (!partenaireId) {
+      navigate('/backoffice/login')
+      return
+    }
+    const loadOffre = async () => {
+      try {
+        const { data } = await offresAPI.getOne(Number(id))
+        setFormData({
+          nom: data.nomService || '',
+          description: data.description || '',
+          categorie: data.categorie || 'FILMS_SERIES',
+          prixOriginal: String(data.prixOriginal ?? ''),
+          prixVente: String(data.prixVente ?? ''),
+          duree: String(data.duree ?? '1'),
+          stock: String(data.quantiteDisponible ?? '0'),
+          imageUrl: data.imageService || ''
+        })
+      } catch (error) {
+        toast.error('Offre introuvable')
+        navigate('/partenaire/dashboard')
+      } finally {
+        setLoading(false)
+      }
+    }
+    loadOffre()
+  }, [id, partenaireId, navigate])
 
-  const handleSubmit = (e) => {
+  const handleImageChange = (e) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    if (!/^image\/(jpeg|jpg|png|gif|webp)/i.test(file.type)) {
+      toast.error('Format image non supporté')
+      return
+    }
+    setImageFile(file)
+    setImagePreview(URL.createObjectURL(file))
+  }
+
+  const handleSubmit = async (e) => {
     e.preventDefault()
-    // TODO: Appel API pour mettre à jour l'offre
-    alert('Offre mise à jour : ' + formData.nom)
-    navigate('/partenaire')
+    setSubmitting(true)
+    try {
+      let imageService = formData.imageUrl?.trim() || 'https://via.placeholder.com/400x250'
+      if (imageFile) {
+        const { data: up } = await offresAPI.uploadImage(imageFile)
+        imageService = `${API_BASE}${up.url}`
+      }
+      await offresAPI.update(Number(id), {
+        nomService: formData.nom,
+        description: formData.description || undefined,
+        categorie: formData.categorie,
+        imageService,
+        prixOriginal: parseFloat(formData.prixOriginal) || 0,
+        prixVente: parseFloat(formData.prixVente) || 0,
+        duree: parseInt(formData.duree) || 1,
+        quantiteDisponible: parseInt(formData.stock) || 0
+      })
+      toast.success('Offre mise à jour')
+      navigate('/partenaire/dashboard')
+    } catch (error) {
+      toast.error(error?.response?.data?.message || 'Erreur lors de la mise à jour')
+    } finally {
+      setSubmitting(false)
+    }
   }
 
   const handleChange = (e) => {
@@ -51,7 +103,7 @@ export default function EditerOffrePage() {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
-          <Loader className="h-12 w-12 text-purple-600 animate-spin mx-auto mb-4" />
+          <Loader className="h-12 w-12 text-slate-600 animate-spin mx-auto mb-4" />
           <p className="text-gray-600">Chargement de l'offre...</p>
         </div>
       </div>
@@ -87,7 +139,7 @@ export default function EditerOffrePage() {
                 value={formData.nom}
                 onChange={handleChange}
                 placeholder="Ex: Netflix Premium 1 mois"
-                className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-purple-500 transition-all"
+                className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-slate-500 transition-all"
               />
             </div>
 
@@ -102,7 +154,7 @@ export default function EditerOffrePage() {
                 onChange={handleChange}
                 rows="4"
                 placeholder="Décrivez votre offre..."
-                className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-purple-500 transition-all"
+                className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-slate-500 transition-all"
               />
             </div>
 
@@ -116,7 +168,7 @@ export default function EditerOffrePage() {
                   required
                   value={formData.categorie}
                   onChange={handleChange}
-                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-purple-500 transition-all"
+                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-slate-500 transition-all"
                 >
                   <option value="FILMS_SERIES">Films & Séries</option>
                   <option value="MUSIQUE">Musique</option>
@@ -135,7 +187,7 @@ export default function EditerOffrePage() {
                   required
                   value={formData.duree}
                   onChange={handleChange}
-                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-purple-500 transition-all"
+                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-slate-500 transition-all"
                 >
                   <option value="1">1 mois</option>
                   <option value="3">3 mois</option>
@@ -148,16 +200,30 @@ export default function EditerOffrePage() {
             <div className="grid sm:grid-cols-2 gap-6">
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  Prix (FCFA) *
+                  Prix coûtant (FCFA) *
                 </label>
                 <input
                   type="number"
-                  name="prix"
+                  name="prixOriginal"
                   required
-                  value={formData.prix}
+                  value={formData.prixOriginal}
+                  onChange={handleChange}
+                  placeholder="5000"
+                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-slate-500 transition-all"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  Prix de vente (FCFA) *
+                </label>
+                <input
+                  type="number"
+                  name="prixVente"
+                  required
+                  value={formData.prixVente}
                   onChange={handleChange}
                   placeholder="7000"
-                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-purple-500 transition-all"
+                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-slate-500 transition-all"
                 />
               </div>
 
@@ -172,41 +238,49 @@ export default function EditerOffrePage() {
                   value={formData.stock}
                   onChange={handleChange}
                   placeholder="50"
-                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-purple-500 transition-all"
+                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-slate-500 transition-all"
                 />
               </div>
             </div>
 
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-2">
-                URL de l'image
+                Photo de l&apos;offre
               </label>
+              <div className="border-2 border-dashed border-gray-300 rounded-xl p-4 bg-gray-50 mb-3">
+                <input type="file" accept="image/*" onChange={handleImageChange} className="hidden" id="edit-offre-img" />
+                <label htmlFor="edit-offre-img" className="flex flex-col items-center cursor-pointer gap-2">
+                  {imagePreview ? (
+                    <img src={imagePreview} alt="" className="max-h-40 rounded-lg" />
+                  ) : formData.imageUrl ? (
+                    <img src={formData.imageUrl} alt="" className="max-h-40 rounded-lg object-contain" />
+                  ) : (
+                    <>
+                      <ImagePlus className="h-10 w-10 text-slate-400" />
+                      <span className="text-sm text-slate-600">Remplacer l&apos;image</span>
+                    </>
+                  )}
+                </label>
+              </div>
+              <label className="block text-xs text-gray-500 mb-1">Ou URL</label>
               <input
                 type="url"
                 name="imageUrl"
                 value={formData.imageUrl}
                 onChange={handleChange}
                 placeholder="https://..."
-                className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-purple-500 transition-all"
+                className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-slate-500 transition-all"
               />
-              {formData.imageUrl && (
-                <div className="mt-4">
-                  <img 
-                    src={formData.imageUrl} 
-                    alt="Aperçu" 
-                    className="w-48 h-32 object-cover rounded-lg border-2 border-gray-200"
-                  />
-                </div>
-              )}
             </div>
 
             <div className="flex gap-4 pt-6 border-t-2 border-gray-100">
               <button
                 type="submit"
-                className="flex-1 px-6 py-3 bg-purple-600 text-white rounded-lg font-semibold hover:bg-purple-700 transition-all flex items-center justify-center gap-2 shadow-lg hover:shadow-xl"
+                disabled={submitting}
+                className="flex-1 px-6 py-3 bg-slate-600 text-white rounded-lg font-semibold hover:bg-slate-700 transition-all flex items-center justify-center gap-2 shadow-lg hover:shadow-xl disabled:opacity-50"
               >
-                <Save className="h-5 w-5" />
-                Enregistrer les modifications
+                {submitting ? <Loader className="h-5 w-5 animate-spin" /> : <Save className="h-5 w-5" />}
+                {submitting ? 'Enregistrement...' : 'Enregistrer les modifications'}
               </button>
               <button
                 type="button"

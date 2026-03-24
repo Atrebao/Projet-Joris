@@ -1,55 +1,53 @@
 import { useState, useEffect } from 'react'
 import { Users, Search, Eye, Mail, Phone } from 'lucide-react'
+import { usersAPI } from '../../lib/api'
+import toast from 'react-hot-toast'
+import ModalDetail from '../../components/ModalDetail'
 
 export default function ClientsPage() {
   const [clients, setClients] = useState([])
   const [recherche, setRecherche] = useState('')
+  const [loading, setLoading] = useState(true)
+  const [detailClient, setDetailClient] = useState(null)
 
   useEffect(() => {
-    // Données mockées
-    setClients([
-      {
-        id: 1,
-        nom: 'Kouassi Jean',
-        email: 'jean.kouassi@example.ci',
-        telephone: '+225 07 12 34 56 78',
-        nbAchats: 8,
-        totalDepense: 56000,
-        derniereCommande: '2025-11-18',
-        statut: 'ACTIF'
-      },
-      {
-        id: 2,
-        nom: 'Diabate Marie',
-        email: 'marie.diabate@example.ci',
-        telephone: '+225 05 23 45 67 89',
-        nbAchats: 5,
-        totalDepense: 35000,
-        derniereCommande: '2025-11-15',
-        statut: 'ACTIF'
-      },
-      {
-        id: 3,
-        nom: 'Toure Ibrahim',
-        email: 'ibrahim.toure@example.ci',
-        telephone: '+225 01 98 76 54 32',
-        nbAchats: 12,
-        totalDepense: 84000,
-        derniereCommande: '2025-11-19',
-        statut: 'VIP'
-      },
-      {
-        id: 4,
-        nom: 'Kone Aminata',
-        email: 'aminata.kone@example.ci',
-        telephone: '+225 07 45 67 89 01',
-        nbAchats: 3,
-        totalDepense: 21000,
-        derniereCommande: '2025-10-28',
-        statut: 'INACTIF'
-      },
-    ])
+    loadClients()
   }, [])
+
+  const loadClients = async () => {
+    setLoading(true)
+    try {
+      const { data } = await usersAPI.getClients()
+      const formatted = (data || []).map(c => ({
+        id: c.id,
+        nom: c.nomPrenoms || `${c.nom || ''} ${c.prenoms || ''}`.trim() || 'Client',
+        email: c.email || '-',
+        telephone: c.numero || c.telephone || '-',
+        nbAchats: 0,
+        totalDepense: 0,
+        derniereCommande: c.dateCreation ? new Date(c.dateCreation).toISOString().split('T')[0] : '-',
+        statut: c.enabled !== false ? 'ACTIF' : 'INACTIF'
+      }))
+      setClients(formatted)
+    } catch (error) {
+      console.error('Erreur chargement clients:', error)
+      toast.error('Impossible de charger les clients')
+      setClients([])
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="inline-block h-12 w-12 border-4 border-slate-600 border-t-transparent rounded-full animate-spin"></div>
+          <p className="mt-4 text-gray-600">Chargement des clients...</p>
+        </div>
+      </div>
+    )
+  }
 
   const clientsFiltres = clients.filter(c => 
     c.nom.toLowerCase().includes(recherche.toLowerCase()) ||
@@ -62,7 +60,7 @@ export default function ClientsPage() {
         {/* En-tête */}
         <div className="mb-8">
           <h1 className="text-3xl font-bold mb-2 flex items-center gap-3">
-            <Users className="h-8 w-8 text-purple-600" />
+            <Users className="h-8 w-8 text-slate-600" />
             Mes Clients
           </h1>
           <p className="text-gray-600">{clients.length} clients au total</p>
@@ -80,11 +78,11 @@ export default function ClientsPage() {
             </div>
             <div className="text-green-100 text-sm">Clients Actifs</div>
           </div>
-          <div className="bg-gradient-to-br from-purple-500 to-purple-600 rounded-2xl p-6 text-white shadow-lg">
+          <div className="bg-gradient-to-br from-slate-500 to-slate-600 rounded-2xl p-6 text-white shadow-lg">
             <div className="text-3xl font-bold mb-1">
               {clients.filter(c => c.statut === 'VIP').length}
             </div>
-            <div className="text-purple-100 text-sm">Clients VIP</div>
+            <div className="text-slate-100 text-sm">Clients VIP</div>
           </div>
           <div className="bg-gradient-to-br from-orange-500 to-orange-600 rounded-2xl p-6 text-white shadow-lg">
             <div className="text-3xl font-bold mb-1">
@@ -103,7 +101,7 @@ export default function ClientsPage() {
               placeholder="Rechercher par nom ou email..."
               value={recherche}
               onChange={(e) => setRecherche(e.target.value)}
-              className="w-full pl-10 pr-4 py-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-purple-500 transition-all"
+              className="w-full pl-10 pr-4 py-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-slate-500 transition-all"
             />
           </div>
         </div>
@@ -112,7 +110,7 @@ export default function ClientsPage() {
         <div className="bg-white rounded-2xl border-2 border-gray-200 overflow-hidden shadow-lg">
           <div className="overflow-x-auto">
             <table className="w-full">
-              <thead className="bg-gradient-to-r from-purple-500 to-pink-500 text-white">
+              <thead className="bg-gradient-to-r from-slate-500 to-slate-500 text-white">
                 <tr>
                   <th className="text-left py-4 px-6 font-semibold">Client</th>
                   <th className="text-left py-4 px-6 font-semibold">Contact</th>
@@ -125,10 +123,10 @@ export default function ClientsPage() {
               </thead>
               <tbody>
                 {clientsFiltres.map((client) => (
-                  <tr key={client.id} className="border-b border-gray-100 hover:bg-purple-50 transition-all">
+                  <tr key={client.id} className="border-b border-gray-100 hover:bg-slate-50 transition-all">
                     <td className="py-4 px-6">
                       <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 bg-gradient-to-br from-purple-400 to-pink-400 rounded-full flex items-center justify-center text-white font-bold">
+                        <div className="w-10 h-10 bg-gradient-to-br from-slate-400 to-slate-400 rounded-full flex items-center justify-center text-white font-bold">
                           {client.nom.charAt(0)}
                         </div>
                         <div className="font-semibold">{client.nom}</div>
@@ -147,7 +145,7 @@ export default function ClientsPage() {
                       </div>
                     </td>
                     <td className="py-4 px-6">
-                      <span className="font-semibold text-purple-600">{client.nbAchats}</span>
+                      <span className="font-semibold text-slate-600">{client.nbAchats}</span>
                     </td>
                     <td className="py-4 px-6">
                       <span className="font-bold text-green-600">{client.totalDepense.toLocaleString()} F</span>
@@ -169,10 +167,11 @@ export default function ClientsPage() {
                     <td className="py-4 px-6">
                       <div className="flex items-center justify-center gap-2">
                         <button
-                          className="p-2 hover:bg-purple-50 rounded-lg transition-all"
+                          onClick={() => setDetailClient(client)}
+                          className="p-2 hover:bg-slate-50 rounded-lg transition-all"
                           title="Voir le profil"
                         >
-                          <Eye className="h-5 w-5 text-purple-600" />
+                          <Eye className="h-5 w-5 text-slate-600" />
                         </button>
                       </div>
                     </td>
@@ -189,6 +188,48 @@ export default function ClientsPage() {
             </div>
           )}
         </div>
+
+        <ModalDetail
+          open={!!detailClient}
+          onClose={() => setDetailClient(null)}
+          title="Détails du client"
+          loading={false}
+        >
+          {detailClient && (
+            <div className="space-y-4">
+              <div className="grid sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="text-xs font-semibold text-gray-500 uppercase">Nom</label>
+                  <p className="font-medium">{detailClient.nom}</p>
+                </div>
+                <div>
+                  <label className="text-xs font-semibold text-gray-500 uppercase">Email</label>
+                  <p className="font-medium">{detailClient.email}</p>
+                </div>
+                <div>
+                  <label className="text-xs font-semibold text-gray-500 uppercase">Téléphone</label>
+                  <p className="font-medium">{detailClient.telephone}</p>
+                </div>
+                <div>
+                  <label className="text-xs font-semibold text-gray-500 uppercase">Nombre d'achats</label>
+                  <p className="font-medium">{detailClient.nbAchats}</p>
+                </div>
+                <div>
+                  <label className="text-xs font-semibold text-gray-500 uppercase">Total dépensé</label>
+                  <p className="font-medium text-green-600">{detailClient.totalDepense?.toLocaleString()} F</p>
+                </div>
+                <div>
+                  <label className="text-xs font-semibold text-gray-500 uppercase">Dernière commande</label>
+                  <p className="font-medium">{detailClient.derniereCommande}</p>
+                </div>
+                <div>
+                  <label className="text-xs font-semibold text-gray-500 uppercase">Statut</label>
+                  <p><span className={`px-2 py-1 rounded-full text-xs font-semibold ${detailClient.statut === 'ACTIF' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-700'}`}>{detailClient.statut}</span></p>
+                </div>
+              </div>
+            </div>
+          )}
+        </ModalDetail>
       </div>
     </div>
   )

@@ -14,7 +14,7 @@ export default function ConfirmationPage() {
                     <h2 className="text-2xl font-bold mb-4">Aucune donnée de commande</h2>
                     <button
                         onClick={() => navigate('/')}
-                        className="px-6 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700"
+                        className="px-6 py-3 bg-slate-600 text-white rounded-lg hover:bg-slate-700"
                     >
                         Retour à l'accueil
                     </button>
@@ -95,7 +95,7 @@ export default function ConfirmationPage() {
                     <div className="flex flex-col sm:flex-row gap-4 justify-center">
                         <button
                             onClick={() => navigate('/')}
-                            className="flex items-center justify-center gap-2 px-6 py-3 bg-indigo-600 text-white rounded-xl font-semibold hover:bg-indigo-700 transition-all shadow-lg hover:shadow-xl"
+                            className="flex items-center justify-center gap-2 px-6 py-3 bg-slate-600 text-white rounded-xl font-semibold hover:bg-slate-700 transition-all shadow-lg hover:shadow-xl"
                         >
                             <Home className="h-5 w-5" />
                             Retour à l'accueil

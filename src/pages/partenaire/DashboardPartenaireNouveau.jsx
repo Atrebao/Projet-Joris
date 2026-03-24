@@ -14,88 +14,79 @@ import {
   BarChart3,
   AlertCircle
 } from 'lucide-react'
+import { getPartenaireId } from '../../Utils/Utils'
+import { statsAPI, offresAPI } from '../../lib/api'
+import toast from 'react-hot-toast'
 
 export default function DashboardPartenaireNouveau() {
   const navigate = useNavigate()
+  const partenaireId = getPartenaireId()
   const [stats, setStats] = useState(null)
   const [mesOffres, setMesOffres] = useState([])
   const [loading, setLoading] = useState(true)
 
-  // Charger les données (simulation)
   useEffect(() => {
-    const loadData = async () => {
-      setLoading(true)
+    if (!partenaireId) {
+      navigate('/backoffice/login')
+      return
+    }
+    loadData()
+  }, [partenaireId, navigate])
 
-      // Simulation données
-      await new Promise(resolve => setTimeout(resolve, 500))
-
-      setStats({
-        totalOffres: 15,
-        offresActives: 12,
-        totalVentes: 287,
-        revenuTotal: 2450000,
-        ventesAujourdhui: 12,
-        revenuMois: 1850000,
-        croissance: 18.5,
-        notePartenaire: 4.8
-      })
-
-      setMesOffres([
-        {
-          id: 1,
-          nom: 'Netflix Premium',
-          categorie: 'FILMS_SERIES',
-          prix: 7000,
-          duree: 1,
-          stock: 15,
-          ventes: 45,
-          revenu: 315000,
-          actif: true,
-          note: 4.8
-        },
-        {
-          id: 2,
-          nom: 'Netflix Standard',
-          categorie: 'FILMS_SERIES',
-          prix: 5000,
-          duree: 1,
-          stock: 20,
-          ventes: 32,
-          revenu: 160000,
-          actif: true,
-          note: 4.7
-        },
-        {
-          id: 3,
-          nom: 'Disney+ Family',
-          categorie: 'FILMS_SERIES',
-          prix: 6500,
-          duree: 1,
-          stock: 10,
-          ventes: 28,
-          revenu: 182000,
-          actif: true,
-          note: 4.9
-        },
-        {
-          id: 4,
-          nom: 'Prime Video',
-          categorie: 'FILMS_SERIES',
-          prix: 4500,
-          duree: 1,
-          stock: 0,
-          ventes: 18,
-          revenu: 81000,
-          actif: false,
-          note: 4.5
-        },
+  const loadData = async () => {
+    if (!partenaireId) return
+    setLoading(true)
+    try {
+      const [statsRes, offresRes] = await Promise.all([
+        statsAPI.partenaireDashboard(partenaireId),
+        offresAPI.getByPartenaire(partenaireId)
       ])
 
+      const s = statsRes?.data || {}
+      setStats({
+        totalOffres: s.totalOffres ?? 0,
+        offresActives: s.offresActives ?? 0,
+        totalVentes: s.souscriptionsActives ?? 0,
+        revenuTotal: s.revenusTotal ?? 0,
+        ventesAujourdhui: 0,
+        revenuMois: s.revenusMois ?? 0,
+        croissance: 0,
+        notePartenaire: 4.5,
+        enAttenteLivraison: s.enAttenteLivraison ?? 0,
+        clientsUniques: s.clientsUniques ?? 0
+      })
+
+      const offres = (offresRes?.data || []).map(o => ({
+        id: o.id,
+        nom: o.nomService,
+        categorie: o.categorie,
+        prix: parseFloat(o.prixVente) || 0,
+        duree: o.duree || 1,
+        stock: o.quantiteDisponible ?? 0,
+        ventes: 0,
+        revenu: 0,
+        actif: o.isActive !== false,
+        note: 4.5
+      }))
+      setMesOffres(offres)
+    } catch (error) {
+      console.error('Erreur chargement dashboard partenaire:', error)
+      toast.error('Impossible de charger les données')
+      setStats({
+        totalOffres: 0,
+        offresActives: 0,
+        totalVentes: 0,
+        revenuTotal: 0,
+        ventesAujourdhui: 0,
+        revenuMois: 0,
+        croissance: 0,
+        notePartenaire: 0
+      })
+      setMesOffres([])
+    } finally {
       setLoading(false)
     }
-
-    loadData()
-  }, [])
+  }
 
   const handleNouvelleOffre = () => {
     navigate('/partenaire/offres/nouvelle')
@@ -106,22 +97,31 @@ export default function DashboardPartenaireNouveau() {
   }
 
   const handleSupprimerOffre = async (offreId) => {
-    if (confirm('Êtes-vous sûr de vouloir supprimer cette offre ?')) {
-      // TODO: Appel API pour supprimer
-      alert(`Supprimer offre ${offreId}`)
+    if (!confirm('Êtes-vous sûr de vouloir supprimer cette offre ?')) return
+    try {
+      await offresAPI.delete(offreId)
+      toast.success('Offre supprimée')
+      loadData()
+    } catch (error) {
+      toast.error('Erreur lors de la suppression')
     }
   }
 
   const handleToggleActif = async (offreId, actif) => {
-    // TODO: Appel API pour activer/désactiver
-    alert(`${actif ? 'Désactiver' : 'Activer'} offre ${offreId}`)
+    try {
+      await offresAPI.toggleActive(offreId)
+      toast.success(actif ? 'Offre désactivée' : 'Offre activée')
+      loadData()
+    } catch (error) {
+      toast.error('Erreur lors de la modification')
+    }
   }
 
-  if (loading) {
+  if (loading || !stats) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
-          <div className="inline-block h-12 w-12 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
+          <div className="inline-block h-12 w-12 border-4 border-slate-600 border-t-transparent rounded-full animate-spin"></div>
           <p className="mt-4 text-gray-600">Chargement...</p>
         </div>
       </div>
@@ -131,16 +131,16 @@ export default function DashboardPartenaireNouveau() {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* En-tête */}
-      <div className="bg-gradient-to-r from-purple-600 to-pink-600 text-white">
+      <div className="bg-gradient-to-r from-slate-600 to-slate-600 text-white">
         <div className="container mx-auto px-4 py-8">
           <div className="flex items-center justify-between">
             <div>
               <h1 className="text-3xl font-bold mb-2">Dashboard Partenaire</h1>
-              <p className="text-purple-100">Gérez vos offres et suivez vos performances</p>
+              <p className="text-slate-100">Gérez vos offres et suivez vos performances</p>
             </div>
             <button
               onClick={handleNouvelleOffre}
-              className="px-6 py-3 bg-white text-purple-600 rounded-xl font-bold hover:bg-purple-50 transition-all shadow-lg flex items-center gap-2"
+              className="px-6 py-3 bg-white text-slate-600 rounded-xl font-bold hover:bg-slate-50 transition-all shadow-lg flex items-center gap-2"
             >
               <Plus className="h-5 w-5" />
               Nouvelle offre
@@ -155,8 +155,8 @@ export default function DashboardPartenaireNouveau() {
           {/* Total Offres */}
           <div className="bg-white rounded-2xl border-2 border-gray-200 p-6 hover:shadow-xl transition-all">
             <div className="flex items-center justify-between mb-4">
-              <div className="w-12 h-12 bg-purple-100 rounded-xl flex items-center justify-center">
-                <Package className="h-6 w-6 text-purple-600" />
+              <div className="w-12 h-12 bg-slate-100 rounded-xl flex items-center justify-center">
+                <Package className="h-6 w-6 text-slate-600" />
               </div>
               <span className="text-xs font-semibold px-2 py-1 bg-green-100 text-green-600 rounded-full">
                 {stats.offresActives} actives
@@ -234,7 +234,7 @@ export default function DashboardPartenaireNouveau() {
             </div>
             <button
               onClick={handleNouvelleOffre}
-              className="px-4 py-2 bg-purple-600 text-white rounded-lg font-semibold hover:bg-purple-700 transition-all flex items-center gap-2"
+              className="px-4 py-2 bg-slate-600 text-white rounded-lg font-semibold hover:bg-slate-700 transition-all flex items-center gap-2"
             >
               <Plus className="h-4 w-4" />
               Ajouter
@@ -247,7 +247,7 @@ export default function DashboardPartenaireNouveau() {
               <p className="mb-4">Vous n'avez pas encore d'offres</p>
               <button
                 onClick={handleNouvelleOffre}
-                className="px-6 py-3 bg-purple-600 text-white rounded-lg font-semibold hover:bg-purple-700 transition-all"
+                className="px-6 py-3 bg-slate-600 text-white rounded-lg font-semibold hover:bg-slate-700 transition-all"
               >
                 Créer ma première offre
               </button>
@@ -277,7 +277,7 @@ export default function DashboardPartenaireNouveau() {
                         </div>
                       </td>
                       <td className="py-4 px-4">
-                        <div className="font-semibold text-indigo-600">{offre.prix.toLocaleString()} F</div>
+                        <div className="font-semibold text-slate-600">{offre.prix.toLocaleString()} F</div>
                       </td>
                       <td className="py-4 px-4">
                         <div className="flex items-center gap-2">
@@ -316,7 +316,7 @@ export default function DashboardPartenaireNouveau() {
                       <td className="py-4 px-4">
                         <div className="flex items-center justify-center gap-2">
                           <button
-                            onClick={() => navigate(`/offre/${offre.id}`)}
+                            onClick={() => handleEditerOffre(offre.id)}
                             className="p-2 hover:bg-blue-50 rounded-lg transition-all"
                             title="Voir"
                           >
@@ -324,10 +324,10 @@ export default function DashboardPartenaireNouveau() {
                           </button>
                           <button
                             onClick={() => handleEditerOffre(offre.id)}
-                            className="p-2 hover:bg-purple-50 rounded-lg transition-all"
+                            className="p-2 hover:bg-slate-50 rounded-lg transition-all"
                             title="Éditer"
                           >
-                            <Edit className="h-4 w-4 text-purple-600" />
+                            <Edit className="h-4 w-4 text-slate-600" />
                           </button>
                           <button
                             onClick={() => handleSupprimerOffre(offre.id)}
@@ -350,9 +350,9 @@ export default function DashboardPartenaireNouveau() {
         <div className="mt-8 grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
           <button
             onClick={() => navigate('/partenaire/offres/nouvelle')}
-            className="p-6 bg-white rounded-2xl border-2 border-gray-200 hover:border-purple-500 hover:shadow-lg transition-all text-left"
+            className="p-6 bg-white rounded-2xl border-2 border-gray-200 hover:border-slate-500 hover:shadow-lg transition-all text-left"
           >
-            <Plus className="h-8 w-8 text-purple-600 mb-3" />
+            <Plus className="h-8 w-8 text-slate-600 mb-3" />
             <div className="font-bold mb-1">Créer une offre</div>
             <div className="text-sm text-gray-600">Ajouter une nouvelle offre</div>
           </button>

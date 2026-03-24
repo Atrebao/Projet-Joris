@@ -98,7 +98,7 @@ export default function CommandesPartenairePage() {
                             <input
                                 type="text"
                                 placeholder="Rechercher..."
-                                className="pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                                className="pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-500"
                             />
                             <Search className="h-5 w-5 text-gray-400 absolute left-3 top-2.5" />
                         </div>
@@ -110,7 +110,7 @@ export default function CommandesPartenairePage() {
                     <button
                         onClick={() => setActiveTab('attente')}
                         className={`pb-4 px-4 font-medium transition-all ${activeTab === 'attente'
-                            ? 'text-purple-600 border-b-2 border-purple-600'
+                            ? 'text-slate-600 border-b-2 border-slate-600'
                             : 'text-gray-500 hover:text-gray-700'
                             }`}
                     >
@@ -119,7 +119,7 @@ export default function CommandesPartenairePage() {
                     <button
                         onClick={() => setActiveTab('livrees')}
                         className={`pb-4 px-4 font-medium transition-all ${activeTab === 'livrees'
-                            ? 'text-purple-600 border-b-2 border-purple-600'
+                            ? 'text-slate-600 border-b-2 border-slate-600'
                             : 'text-gray-500 hover:text-gray-700'
                             }`}
                     >
@@ -128,7 +128,7 @@ export default function CommandesPartenairePage() {
                     <button
                         onClick={() => setActiveTab('tout')}
                         className={`pb-4 px-4 font-medium transition-all ${activeTab === 'tout'
-                            ? 'text-purple-600 border-b-2 border-purple-600'
+                            ? 'text-slate-600 border-b-2 border-slate-600'
                             : 'text-gray-500 hover:text-gray-700'
                             }`}
                     >
@@ -160,7 +160,7 @@ export default function CommandesPartenairePage() {
                                         <div className="text-sm text-gray-500">{cmd.client.email}</div>
                                     </td>
                                     <td className="py-4 px-6">
-                                        <div className="font-medium text-indigo-600">{cmd.offre.nom}</div>
+                                        <div className="font-medium text-slate-600">{cmd.offre.nom}</div>
                                         <div className="text-xs text-gray-500">{cmd.offre.duree}</div>
                                     </td>
                                     <td className="py-4 px-6 text-sm text-gray-600">
@@ -181,7 +181,7 @@ export default function CommandesPartenairePage() {
                                         {cmd.statut === 'EN_ATTENTE' ? (
                                             <button
                                                 onClick={() => handleLivrer(cmd)}
-                                                className="inline-flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-all font-medium text-sm shadow-sm"
+                                                className="inline-flex items-center gap-2 px-4 py-2 bg-slate-600 text-white rounded-lg hover:bg-slate-700 transition-all font-medium text-sm shadow-sm"
                                             >
                                                 <Send className="h-4 w-4" /> Livrer
                                             </button>
@@ -212,12 +212,12 @@ export default function CommandesPartenairePage() {
             {selectedCommande && (
                 <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
                     <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in duration-200">
-                        <div className="bg-purple-600 p-6 text-white">
+                        <div className="bg-slate-600 p-6 text-white">
                             <h3 className="text-xl font-bold flex items-center gap-2">
                                 <Send className="h-5 w-5" />
                                 Livrer la commande
                             </h3>
-                            <p className="text-purple-100 text-sm mt-1">
+                            <p className="text-slate-100 text-sm mt-1">
                                 {selectedCommande.offre.nom} pour {selectedCommande.client.nom}
                             </p>
                         </div>
@@ -239,7 +239,7 @@ export default function CommandesPartenairePage() {
                                     required
                                     value={livraisonForm.login}
                                     onChange={e => setLivraisonForm({ ...livraisonForm, login: e.target.value })}
-                                    className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                                    className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-slate-500 focus:border-slate-500"
                                     placeholder="ex: client@netflix.com"
                                 />
                             </div>
@@ -253,7 +253,7 @@ export default function CommandesPartenairePage() {
                                     required
                                     value={livraisonForm.password}
                                     onChange={e => setLivraisonForm({ ...livraisonForm, password: e.target.value })}
-                                    className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 font-mono"
+                                    className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-slate-500 focus:border-slate-500 font-mono"
                                     placeholder="ex: Pass123!"
                                 />
                             </div>
@@ -265,7 +265,7 @@ export default function CommandesPartenairePage() {
                                 <textarea
                                     value={livraisonForm.instructions}
                                     onChange={e => setLivraisonForm({ ...livraisonForm, instructions: e.target.value })}
-                                    className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                                    className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-slate-500 focus:border-slate-500"
                                     rows="3"
                                     placeholder="ex: Ne pas modifier le profil 1..."
                                 />
@@ -281,7 +281,7 @@ export default function CommandesPartenairePage() {
                                 </button>
                                 <button
                                     type="submit"
-                                    className="flex-1 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 font-medium shadow-lg"
+                                    className="flex-1 px-4 py-2 bg-slate-600 text-white rounded-lg hover:bg-slate-700 font-medium shadow-lg"
                                 >
                                     Envoyer au client
                                 </button>
