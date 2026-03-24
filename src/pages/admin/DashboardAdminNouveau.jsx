@@ -35,7 +35,7 @@ export default function DashboardAdminNouveau() {
 
         setStats({
           totalPartenaires: statsData.totalPartenaires || 0,
-          totalOffres: 0, // TODO: Ajouter dans l'API
+          totalOffres: statsData.totalOffres || 0,
           totalRevenu: statsData.revenusTotal || 0,
           totalClients: statsData.totalClients || 0,
           partenairesActifs: statsData.partenairesActifs || 0,
@@ -54,7 +54,7 @@ export default function DashboardAdminNouveau() {
         try {
           const { data: partenairesData } = await partenairesAPI.getAll()
           // Filtrer les partenaires en attente de validation
-          const enAttente = partenairesData.filter(p => !p.isValide)
+          const enAttente = (partenairesData || []).filter((p) => !p.isValidated)
           setPartenairesEnAttente(enAttente.slice(0, 3)) // Top 3
         } catch (error) {
           console.error('Erreur chargement partenaires:', error)
@@ -239,11 +239,16 @@ export default function DashboardAdminNouveau() {
                       <div className="flex items-center gap-4 text-sm mb-4">
                         <div className="flex items-center gap-1 text-gray-600">
                           <Package className="h-4 w-4" />
-                          <span>{partenaire.offresProposees} offres</span>
+                          <span>{partenaire.offresProposees ?? 0} offres</span>
                         </div>
                         <div className="flex items-center gap-1 text-gray-600">
                           <Clock className="h-4 w-4" />
-                          <span>Inscrit le {new Date(partenaire.dateInscription).toLocaleDateString('fr-FR')}</span>
+                          <span>
+                            Inscrit le{' '}
+                            {partenaire.dateCreation
+                              ? new Date(partenaire.dateCreation).toLocaleDateString('fr-FR')
+                              : '-'}
+                          </span>
                         </div>
                       </div>
 

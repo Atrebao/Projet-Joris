@@ -35,9 +35,9 @@ export default function CommandesPartenairePage() {
             const formattedCommandes = response.data.map(sub => ({
                 id: sub.id,
                 client: {
-                    nom: sub.user ? `${sub.user.nom} ${sub.user.prenoms}` : 'Client inconnu',
-                    email: sub.emailClient || (sub.user ? sub.user.email : ''),
-                    tel: sub.user ? sub.user.numero : ''
+                    nom: sub.client ? `${sub.client.nom} ${sub.client.prenoms}` : 'Client inconnu',
+                    email: sub.client ? sub.client.email : (sub.emailClient || ''),
+                    tel: sub.client ? sub.client.telephone : ''
                 },
                 offre: {
                     nom: sub.abonnement ? sub.abonnement.nom : 'Offre inconnue',

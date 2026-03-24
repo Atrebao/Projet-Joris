@@ -84,9 +84,9 @@ export default function FormsClient({ abonnement, userProfile, forfait }) {
               toast.success("Paiement effectué avec succès");
               setIsLoading(false);
               const dataMail = {
-                email: souscription.user.email,
+                email: souscription.client.email,
                 username:
-                  souscription.user.nom + " " + souscription.user.prenoms,
+                  souscription.client.nom + " " + souscription.client.prenoms,
                 abonnement:
                   souscription.abonnement.nom + " " + forfait.categorie,
               };
