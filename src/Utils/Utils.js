@@ -1,9 +1,13 @@
 export const HOMECLIENT = "/client";
 export const HOMEADMIN = "/backoffice";
 export const HOMEPARTENAIRE = "/partenaire";
-export const BASE_URL = "http://localhost:3001";
+// export const BASE_URL = "http://localhost:3001";
 
-export const BASE_URLS = "http://localhost:3000";
+// export const BASE_URLS = "http://localhost:3000";
+
+export const BASE_URL = "https://projet-joris-api.onrender.com/";
+
+export const BASE_URLS = "https://projet-joris-api.onrender.com/";
 
 export const resetStorage = () => {
   localStorage.removeItem("infoUser");
