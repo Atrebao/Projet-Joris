@@ -32,7 +32,7 @@ export default function LoginModerne() {
       if (loginType === "partenaire") {
         res = await authAPI.loginPartenaire({ email: data.email || data.username, password: data.password });
       } else {
-        res = await loginUser({ username: data.username || data.email, password: data.password });
+        res = await authAPI.loginAdmin({ username: data.username || data.email, password: data.password });
       }
       if (res?.data) {
         saveUserProfil(res.data);
