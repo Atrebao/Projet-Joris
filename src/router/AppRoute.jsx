@@ -40,6 +40,7 @@ import ClientsPage from "../pages/partenaire/ClientsPage";
 import StatsPage from "../pages/partenaire/StatsPage";
 import PromotionsPage from "../pages/partenaire/PromotionsPage";
 import CommandesPartenairePage from "../pages/partenaire/CommandesPartenairePage";
+import ForfaitsPage from "../pages/partenaire/ForfaitsPage";
 import EnConstruction from "../pages/EnConstruction";
 
 export const AppRoute = createHashRouter([
@@ -154,6 +155,10 @@ export const AppRoute = createHashRouter([
       {
         path: "offres/nouvelle",
         element: <NouvelleOffrePage />,
+      },
+      {
+        path: "forfaits",
+        element: <ForfaitsPage />,
       },
       {
         path: "offres/editer/:id",

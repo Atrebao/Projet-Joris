@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { ArrowLeft, Save, ImagePlus, Loader2 } from 'lucide-react'
 import { getPartenaireId } from '../../Utils/Utils'
-import { offresAPI } from '../../lib/api'
+import { offresAPI, forfaitsAPI } from '../../lib/api'
 import toast from 'react-hot-toast'
 
 export default function NouvelleOffrePage() {
@@ -10,8 +10,11 @@ export default function NouvelleOffrePage() {
   const partenaireId = getPartenaireId()
   const [loading, setLoading] = useState(false)
   const [uploadingImage, setUploadingImage] = useState(false)
+  const [loadingForfaits, setLoadingForfaits] = useState(false)
   const [imageFile, setImageFile] = useState(null)
   const [imagePreview, setImagePreview] = useState(null)
+  const [forfaitsDisponibles, setForfaitsDisponibles] = useState([])
+  const [selectedForfaitIds, setSelectedForfaitIds] = useState([])
   const [formData, setFormData] = useState({
     nom: '',
     description: '',
@@ -26,6 +29,21 @@ export default function NouvelleOffrePage() {
   useEffect(() => {
     if (!partenaireId) navigate('/backoffice/login')
   }, [partenaireId, navigate])
+
+  useEffect(() => {
+    const loadForfaits = async () => {
+      try {
+        setLoadingForfaits(true)
+        const { data } = await forfaitsAPI.getAll(formData.categorie)
+        setForfaitsDisponibles(Array.isArray(data) ? data : [])
+      } catch {
+        setForfaitsDisponibles([])
+      } finally {
+        setLoadingForfaits(false)
+      }
+    }
+    loadForfaits()
+  }, [formData.categorie])
 
   const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:3000'
 
@@ -44,11 +62,21 @@ export default function NouvelleOffrePage() {
     setImagePreview(URL.createObjectURL(file))
   }
 
+  const toggleForfait = (id) => {
+    setSelectedForfaitIds((prev) =>
+      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id],
+    )
+  }
+
   const handleSubmit = async (e) => {
     e.preventDefault()
     if (!partenaireId) return
     if (!imageFile && !formData.imageUrl?.trim()) {
       toast.error('Ajoutez une photo de l’offre ou une URL d’image')
+      return
+    }
+    if (selectedForfaitIds.length === 0) {
+      toast.error('Selectionnez au moins un forfait')
       return
     }
     setLoading(true)
@@ -78,7 +106,8 @@ export default function NouvelleOffrePage() {
         prixVente: prixV,
         duree: parseInt(formData.duree) || 1,
         typeCompte: 'Standard',
-        quantiteDisponible: parseInt(formData.stock) || 0
+        quantiteDisponible: parseInt(formData.stock) || 0,
+        forfaitIds: selectedForfaitIds,
       })
       toast.success('Offre créée avec succès')
       navigate('/partenaire/dashboard')
@@ -224,6 +253,35 @@ export default function NouvelleOffrePage() {
                   placeholder="50"
                   className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-slate-500"
                 />
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-2">
+                Forfaits lies *
+              </label>
+              <div className="border-2 border-gray-200 rounded-lg p-4 max-h-56 overflow-auto space-y-2">
+                {loadingForfaits ? (
+                  <div className="text-sm text-gray-500">Chargement des forfaits...</div>
+                ) : forfaitsDisponibles.length === 0 ? (
+                  <div className="text-sm text-gray-500">Aucun forfait disponible pour cette categorie.</div>
+                ) : (
+                  forfaitsDisponibles.map((f) => (
+                    <label key={f.id} className="flex items-center justify-between gap-3 p-2 rounded hover:bg-gray-50">
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="checkbox"
+                          checked={selectedForfaitIds.includes(f.id)}
+                          onChange={() => toggleForfait(f.id)}
+                        />
+                        <span className="text-sm font-medium">{f.plan}</span>
+                      </div>
+                      <span className="text-xs text-gray-600">
+                        {Number(f.prix || 0).toLocaleString()} FCFA / {f.duree} {f.periode || 'MOIS'}
+                      </span>
+                    </label>
+                  ))
+                )}
               </div>
             </div>
 

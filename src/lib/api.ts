@@ -1,6 +1,8 @@
 ﻿import axios from 'axios'
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000'
+// const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000'
+const API_URL = import.meta.env.VITE_API_URL || 'https://projet-joris-api.onrender.com/'
+
 
 export const api = axios.create({
   baseURL: API_URL,
@@ -44,6 +46,18 @@ const toNumber = (value, fallback = 0) => {
 }
 
 const normalizeOffre = (offre = {}) => {
+  const forfaitsFromRelations = Array.isArray(offre.forfaitOffres)
+    ? offre.forfaitOffres
+        .map((fo) => fo?.forfait)
+        .filter(Boolean)
+        .map((f) => ({
+          ...f,
+          id: f.id,
+          prix: toNumber(f.prix),
+          duree: toNumber(f.duree, 1),
+        }))
+    : []
+
   const fallbackForfait = {
     id: `offre-${offre.id || Math.random()}`,
     plan: offre.typeCompte || 'Standard',
@@ -52,9 +66,12 @@ const normalizeOffre = (offre = {}) => {
     periode: 'MOIS',
   }
 
-  const forfaits = Array.isArray(offre.forfaits) && offre.forfaits.length > 0
-    ? offre.forfaits
-    : [fallbackForfait]
+  const forfaits =
+    Array.isArray(offre.forfaits) && offre.forfaits.length > 0
+      ? offre.forfaits
+      : forfaitsFromRelations.length > 0
+        ? forfaitsFromRelations
+        : [fallbackForfait]
 
   return {
     ...offre,
@@ -145,6 +162,16 @@ export const offresAPI = {
   delete: (id) => api.delete(`/offres/${id}`),
 }
 
+export const forfaitsAPI = {
+  getAll: (categorie) =>
+    api.get('/forfaits/rechercher-forfaits', {
+      params: categorie ? { categorie } : {},
+    }),
+  getOne: (id) => api.get(`/forfaits/rechercher-forfait/${id}`),
+  create: (data) => api.post('/forfaits/enregistrer', data),
+  update: (id, data) => api.post(`/forfaits/modifier/${id}`, data),
+}
+
 // API Codes promo
 export const codesPromoAPI = {
   valider: (data) => api.post('/codes-promo/valider', data),
@@ -189,7 +216,7 @@ export const souscriptionsAPI = {
   getOne: (id) => withData(api.get(`/souscription/rechercher-souscription/${id}`), normalizeSouscription),
   getALivrer: () => withData(api.get('/souscription/a-livrer'), (data) => (Array.isArray(data) ? data.map(normalizeSouscription) : [])),
   getByEmail: (email) =>
-    withData(api.get(`/souscription/by-email/${encodeURIComponent(email)}`), (data) =>
+    withData(api.get(`/souscription/by-email?${encodeURIComponent(email)}`), (data) =>
       Array.isArray(data) ? data.map(normalizeSouscription) : []
     ),
   getByReference: (reference) =>

@@ -13,7 +13,8 @@ import {
   ShoppingCart,
   Bell,
   Search,
-  Percent
+  Percent,
+  Layers
 } from "lucide-react";
 
 export default function NavBarModerne() {
@@ -92,6 +93,7 @@ export default function NavBarModerne() {
     { to: "/partenaire", icon: LayoutDashboard, label: "Dashboard", exact: true },
     { to: "/partenaire/commandes", icon: ShoppingCart, label: "Commandes" },
     { to: "/partenaire/offres/nouvelle", icon: Package, label: "Nouvelle Offre" },
+    { to: "/partenaire/forfaits", icon: Layers, label: "Forfaits" },
     { to: "/partenaire/clients", icon: Users, label: "Clients" },
     { to: "/partenaire/promotions", icon: Percent, label: "Promotions" },
     { to: "/partenaire/stats", icon: BarChart3, label: "Statistiques" },

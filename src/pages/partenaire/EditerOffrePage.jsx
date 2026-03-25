@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { ArrowLeft, Save, Loader, ImagePlus } from 'lucide-react'
 import { getPartenaireId } from '../../Utils/Utils'
-import { offresAPI } from '../../lib/api'
+import { offresAPI, forfaitsAPI } from '../../lib/api'
 import toast from 'react-hot-toast'
 
 export default function EditerOffrePage() {
@@ -11,8 +11,11 @@ export default function EditerOffrePage() {
   const partenaireId = getPartenaireId()
   const [loading, setLoading] = useState(true)
   const [submitting, setSubmitting] = useState(false)
+  const [loadingForfaits, setLoadingForfaits] = useState(false)
   const [imageFile, setImageFile] = useState(null)
   const [imagePreview, setImagePreview] = useState(null)
+  const [forfaitsDisponibles, setForfaitsDisponibles] = useState([])
+  const [selectedForfaitIds, setSelectedForfaitIds] = useState([])
   const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:3000'
   const [formData, setFormData] = useState({
     nom: '',
@@ -43,6 +46,10 @@ export default function EditerOffrePage() {
           stock: String(data.quantiteDisponible ?? '0'),
           imageUrl: data.imageService || ''
         })
+        const currentForfaitIds = (data.forfaitOffres || [])
+          .map((fo) => fo?.forfait?.id)
+          .filter(Boolean)
+        setSelectedForfaitIds(currentForfaitIds)
       } catch (error) {
         toast.error('Offre introuvable')
         navigate('/partenaire/dashboard')
@@ -52,6 +59,21 @@ export default function EditerOffrePage() {
     }
     loadOffre()
   }, [id, partenaireId, navigate])
+
+  useEffect(() => {
+    const loadForfaits = async () => {
+      try {
+        setLoadingForfaits(true)
+        const { data } = await forfaitsAPI.getAll(formData.categorie)
+        setForfaitsDisponibles(Array.isArray(data) ? data : [])
+      } catch {
+        setForfaitsDisponibles([])
+      } finally {
+        setLoadingForfaits(false)
+      }
+    }
+    loadForfaits()
+  }, [formData.categorie])
 
   const handleImageChange = (e) => {
     const file = e.target.files?.[0]
@@ -64,8 +86,18 @@ export default function EditerOffrePage() {
     setImagePreview(URL.createObjectURL(file))
   }
 
+  const toggleForfait = (idValue) => {
+    setSelectedForfaitIds((prev) =>
+      prev.includes(idValue) ? prev.filter((x) => x !== idValue) : [...prev, idValue],
+    )
+  }
+
   const handleSubmit = async (e) => {
     e.preventDefault()
+    if (selectedForfaitIds.length === 0) {
+      toast.error('Selectionnez au moins un forfait')
+      return
+    }
     setSubmitting(true)
     try {
       let imageService = formData.imageUrl?.trim() || 'https://via.placeholder.com/400x250'
@@ -81,7 +113,8 @@ export default function EditerOffrePage() {
         prixOriginal: parseFloat(formData.prixOriginal) || 0,
         prixVente: parseFloat(formData.prixVente) || 0,
         duree: parseInt(formData.duree) || 1,
-        quantiteDisponible: parseInt(formData.stock) || 0
+        quantiteDisponible: parseInt(formData.stock) || 0,
+        forfaitIds: selectedForfaitIds,
       })
       toast.success('Offre mise à jour')
       navigate('/partenaire/dashboard')
@@ -194,6 +227,35 @@ export default function EditerOffrePage() {
                   <option value="6">6 mois</option>
                   <option value="12">12 mois</option>
                 </select>
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-2">
+                Forfaits lies *
+              </label>
+              <div className="border-2 border-gray-200 rounded-lg p-4 max-h-56 overflow-auto space-y-2">
+                {loadingForfaits ? (
+                  <div className="text-sm text-gray-500">Chargement des forfaits...</div>
+                ) : forfaitsDisponibles.length === 0 ? (
+                  <div className="text-sm text-gray-500">Aucun forfait disponible pour cette categorie.</div>
+                ) : (
+                  forfaitsDisponibles.map((f) => (
+                    <label key={f.id} className="flex items-center justify-between gap-3 p-2 rounded hover:bg-gray-50">
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="checkbox"
+                          checked={selectedForfaitIds.includes(f.id)}
+                          onChange={() => toggleForfait(f.id)}
+                        />
+                        <span className="text-sm font-medium">{f.plan}</span>
+                      </div>
+                      <span className="text-xs text-gray-600">
+                        {Number(f.prix || 0).toLocaleString()} FCFA / {f.duree} {f.periode || 'MOIS'}
+                      </span>
+                    </label>
+                  ))
+                )}
               </div>
             </div>
 
