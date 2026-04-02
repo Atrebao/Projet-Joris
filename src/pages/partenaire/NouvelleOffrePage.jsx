@@ -1,8 +1,8 @@
-import { useState, useEffect } from 'react'
+﻿import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { ArrowLeft, Save, ImagePlus, Loader2 } from 'lucide-react'
 import { getPartenaireId } from '../../Utils/Utils'
-import { offresAPI, forfaitsAPI } from '../../lib/api'
+import { offresAPI, forfaitsAPI, API_URL } from '../../lib/api'
 import toast from 'react-hot-toast'
 
 export default function NouvelleOffrePage() {
@@ -19,8 +19,6 @@ export default function NouvelleOffrePage() {
     nom: '',
     description: '',
     categorie: 'FILMS_SERIES',
-    prixOriginal: '',
-    prixVente: '',
     duree: '1',
     stock: '0',
     imageUrl: ''
@@ -45,13 +43,13 @@ export default function NouvelleOffrePage() {
     loadForfaits()
   }, [formData.categorie])
 
-  const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:3000'
+  //const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:3000'
 
   const handleImageChange = (e) => {
     const file = e.target.files?.[0]
     if (!file) return
     if (!/^image\/(jpeg|jpg|png|gif|webp)/i.test(file.type)) {
-      toast.error('Format image non supporté (jpg, png, gif, webp)')
+      toast.error('Format image non supportÃ© (jpg, png, gif, webp)')
       return
     }
     if (file.size > 5 * 1024 * 1024) {
@@ -72,7 +70,7 @@ export default function NouvelleOffrePage() {
     e.preventDefault()
     if (!partenaireId) return
     if (!imageFile && !formData.imageUrl?.trim()) {
-      toast.error('Ajoutez une photo de l’offre ou une URL d’image')
+      toast.error('Ajoutez une photo de lâ€™offre ou une URL dâ€™image')
       return
     }
     if (selectedForfaitIds.length === 0) {
@@ -85,34 +83,39 @@ export default function NouvelleOffrePage() {
       if (imageFile) {
         setUploadingImage(true)
         const { data: up } = await offresAPI.uploadImage(imageFile)
-        imageService = `${API_BASE}${up.url}`
+        imageService = `${API_URL}${up.url}`
         setUploadingImage(false)
       }
       if (!imageService) {
         imageService = 'https://via.placeholder.com/400x250?text=Offre'
       } else if (!imageService.startsWith('http')) {
-        imageService = `${API_BASE}${imageService.startsWith('/') ? '' : '/'}${imageService}`
+        imageService = `${API_URL}${imageService.startsWith('/') ? '' : '/'}${imageService}`
       }
 
-      const prixOrig = parseFloat(formData.prixOriginal) || 0
-      const prixV = parseFloat(formData.prixVente) || 0
+      const selectedForfaits = forfaitsDisponibles.filter((f) => selectedForfaitIds.includes(f.id))
+      const dureeOffre = selectedForfaits.length > 0
+        ? Math.min(...selectedForfaits.map((f) => Number(f.duree || 1)))
+        : parseInt(formData.duree) || 1
+      const prixBase = selectedForfaits.length > 0
+        ? Math.min(...selectedForfaits.map((f) => Number(f.prix || 0)))
+        : 0
       await offresAPI.create({
         partenaireId,
         nomService: formData.nom,
         categorie: formData.categorie,
         description: formData.description || undefined,
         imageService,
-        prixOriginal: prixOrig,
-        prixVente: prixV,
-        duree: parseInt(formData.duree) || 1,
+        prixOriginal: prixBase,
+        prixVente: prixBase,
+        duree: dureeOffre,
         typeCompte: 'Standard',
         quantiteDisponible: parseInt(formData.stock) || 0,
         forfaitIds: selectedForfaitIds,
       })
-      toast.success('Offre créée avec succès')
+      toast.success('Offre crÃ©Ã©e avec succÃ¨s')
       navigate('/partenaire/dashboard')
     } catch (error) {
-      toast.error(error?.response?.data?.message || 'Erreur lors de la création')
+      toast.error(error?.response?.data?.message || 'Erreur lors de la crÃ©ation')
     } finally {
       setUploadingImage(false)
       setLoading(false)
@@ -214,34 +217,6 @@ export default function NouvelleOffrePage() {
             <div className="grid sm:grid-cols-2 gap-6">
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  Prix coûtant (FCFA) *
-                </label>
-                <input
-                  type="number"
-                  name="prixOriginal"
-                  required
-                  value={formData.prixOriginal}
-                  onChange={handleChange}
-                  placeholder="5000"
-                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-slate-500"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  Prix de vente (FCFA) *
-                </label>
-                <input
-                  type="number"
-                  name="prixVente"
-                  required
-                  value={formData.prixVente}
-                  onChange={handleChange}
-                  placeholder="7000"
-                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-slate-500"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
                   Stock disponible *
                 </label>
                 <input
@@ -260,6 +235,7 @@ export default function NouvelleOffrePage() {
               <label className="block text-sm font-semibold text-gray-700 mb-2">
                 Forfaits lies *
               </label>
+              <p className="text-xs text-gray-500 mb-2">Le prix client est defini automatiquement par les forfaits lies.</p>
               <div className="border-2 border-gray-200 rounded-lg p-4 max-h-56 overflow-auto space-y-2">
                 {loadingForfaits ? (
                   <div className="text-sm text-gray-500">Chargement des forfaits...</div>
@@ -302,7 +278,7 @@ export default function NouvelleOffrePage() {
                   className="flex flex-col items-center justify-center cursor-pointer gap-2"
                 >
                   {imagePreview ? (
-                    <img src={imagePreview} alt="Aperçu" className="max-h-48 rounded-lg shadow-md object-contain" />
+                    <img src={imagePreview} alt="AperÃ§u" className="max-h-48 rounded-lg shadow-md object-contain" />
                   ) : (
                     <>
                       <ImagePlus className="h-12 w-12 text-slate-400" />
@@ -314,7 +290,7 @@ export default function NouvelleOffrePage() {
                   <p className="text-center text-xs text-gray-500 mt-2">{imageFile.name}</p>
                 )}
               </div>
-              <p className="text-xs text-gray-500 mt-2">Ou collez une URL (optionnel si vous avez déjà une image en ligne)</p>
+              <p className="text-xs text-gray-500 mt-2">Ou collez une URL (optionnel si vous avez dÃ©jÃ  une image en ligne)</p>
               <input
                 type="url"
                 name="imageUrl"
@@ -332,7 +308,7 @@ export default function NouvelleOffrePage() {
                 className="flex-1 px-6 py-3 bg-slate-600 text-white rounded-lg font-semibold hover:bg-slate-700 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
               >
                 {loading || uploadingImage ? <Loader2 className="h-5 w-5 animate-spin" /> : <Save className="h-5 w-5" />}
-                {uploadingImage ? "Envoi de l'image..." : loading ? 'Création...' : "Créer l'offre"}
+                {uploadingImage ? "Envoi de l'image..." : loading ? 'CrÃ©ation...' : "CrÃ©er l'offre"}
               </button>
               <button
                 type="button"
@@ -348,3 +324,5 @@ export default function NouvelleOffrePage() {
     </div>
   )
 }
+
+

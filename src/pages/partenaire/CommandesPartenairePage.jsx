@@ -3,12 +3,14 @@ import { Search, Filter, CheckCircle, Clock, AlertCircle, Send, Copy, Eye, EyeOf
 import toast from 'react-hot-toast'
 
 import { souscriptionsAPI } from '../../lib/api'
+import { getPartenaireId } from '../../Utils/Utils'
 
 export default function CommandesPartenairePage() {
     const [activeTab, setActiveTab] = useState('attente') // attente, livrees, tout
     const [commandes, setCommandes] = useState([])
     const [loading, setLoading] = useState(true)
     const [selectedCommande, setSelectedCommande] = useState(null)
+    const partenaireId = getPartenaireId()
 
     // État pour le formulaire de livraison
     const [livraisonForm, setLivraisonForm] = useState({
@@ -19,7 +21,7 @@ export default function CommandesPartenairePage() {
 
     useEffect(() => {
         loadCommandes()
-    }, [])
+    }, [partenaireId])
 
     const loadCommandes = async () => {
         setLoading(true)
@@ -30,9 +32,16 @@ export default function CommandesPartenairePage() {
 
             // Note: getALivrer ne retourne que les non-livrés. Pour voir l'historique, il faudrait un autre endpoint.
             // Je vais utiliser getALivrer pour l'instant.
-            const response = await souscriptionsAPI.getALivrer()
+            if (!partenaireId) {
+                toast.error("Partenaire non identifié")
+                setCommandes([])
+                return
+            }
+            const response = await souscriptionsAPI.getByPartenaire(partenaireId)
 
-            const formattedCommandes = response.data.map(sub => ({
+            const formattedCommandes = (response.data || [])
+            .filter(sub => sub?.statutPaiement === 'SUCCES')
+            .map(sub => ({
                 id: sub.id,
                 client: {
                     nom: sub.client ? `${sub.client.nom} ${sub.client.prenoms}` : 'Client inconnu',
@@ -144,6 +153,7 @@ export default function CommandesPartenairePage() {
                                 <th className="text-left py-4 px-6 font-semibold text-gray-600">Référence</th>
                                 <th className="text-left py-4 px-6 font-semibold text-gray-600">Client</th>
                                 <th className="text-left py-4 px-6 font-semibold text-gray-600">Offre</th>
+                                  <th className="text-left py-4 px-6 font-semibold text-gray-600">Montant</th>
                                 <th className="text-left py-4 px-6 font-semibold text-gray-600">Date</th>
                                 <th className="text-left py-4 px-6 font-semibold text-gray-600">Statut</th>
                                 <th className="text-right py-4 px-6 font-semibold text-gray-600">Action</th>
@@ -162,6 +172,9 @@ export default function CommandesPartenairePage() {
                                     <td className="py-4 px-6">
                                         <div className="font-medium text-slate-600">{cmd.offre.nom}</div>
                                         <div className="text-xs text-gray-500">{cmd.offre.duree}</div>
+                                    </td>
+                                    <td className="py-4 px-6 text-sm text-gray-600">
+                                        {cmd.montant} FCFA
                                     </td>
                                     <td className="py-4 px-6 text-sm text-gray-600">
                                         {cmd.date.toLocaleDateString()}

@@ -84,6 +84,7 @@ export default function NavBarModerne() {
     { to: "/backoffice", icon: LayoutDashboard, label: "Dashboard", exact: true },
     { to: "/backoffice/partenaires", icon: Users, label: "Partenaires" },
     { to: "/backoffice/offres", icon: Package, label: "Offres" },
+    { to: "/backoffice/commandes", icon: ShoppingCart, label: "Commandes" },
     { to: "/backoffice/clients", icon: ShoppingCart, label: "Clients" },
     { to: "/backoffice/stats", icon: BarChart3, label: "Stats" },
   ];

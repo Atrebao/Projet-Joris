@@ -28,7 +28,7 @@ src/
 ## Flux de données
 
 - **Catalogue / Offres** : `lib/api.ts` → `abonnementsAPI` → Backend `/abonnements`
-- **Paiements** : `services/StripeService`, `CinetPayService`, `BillMapService` → Backend
+- **Paiements** : `services/BillMapService` → Backend API BillMap (MTN, Moov, Orange, Wave)
 - **Auth** : `lib/api.ts` → `authAPI` → Backend `/auth`
 - **Stats** : `lib/api.ts` → `statsAPI` → Backend `/stats`
 

@@ -56,19 +56,23 @@ export default function DashboardPartenaireNouveau() {
         clientsUniques: s.clientsUniques ?? 0
       })
 
-      const offres = (offresRes?.data || []).map(o => ({
-        id: o.id,
-        nom: o.nomService,
-        categorie: o.categorie,
-        prix: parseFloat(o.prixVente) || 0,
-        duree: o.duree || 1,
-        stock: o.quantiteDisponible ?? 0,
-        ventes: 0,
-        revenu: 0,
-        actif: o.isActive !== false,
-        note: 4.5
-      }))
-      setMesOffres(offres)
+      const offresMapped = (offresRes?.data || []).map(o => {
+        const forfaits = Array.isArray(o.forfaits) ? o.forfaits : []
+        const firstForfait = forfaits[0] || null
+        return {
+          id: o.id,
+          nom: o.nomService,
+          categorie: o.categorie,
+          prix: Number(firstForfait?.prix || 0),
+          duree: Number(firstForfait?.duree || o.duree || 1),
+          stock: o.quantiteDisponible ?? 0,
+          ventes: 0,
+          revenu: 0,
+          actif: o.isActive !== false,
+          note: 4.5
+        }
+      })
+      setMesOffres(offresMapped)
     } catch (error) {
       console.error('Erreur chargement dashboard partenaire:', error)
       toast.error('Impossible de charger les données')

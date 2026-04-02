@@ -32,6 +32,7 @@ import DashboardAdminNouveau from "../pages/admin/DashboardAdminNouveau";
 import PartenairesPage from "../pages/admin/PartenairesPage";
 import OffresPage from "../pages/admin/OffresPage";
 import ClientsAdminPage from "../pages/admin/ClientsAdminPage";
+import CommandesAdminPage from "../pages/admin/CommandesAdminPage";
 import RegisterPartenaire from "../pages/RegisterPartenaire";
 import DashboardPartenaireNouveau from "../pages/partenaire/DashboardPartenaireNouveau";
 import NouvelleOffrePage from "../pages/partenaire/NouvelleOffrePage";
@@ -79,6 +80,10 @@ export const AppRoute = createHashRouter([
         element: <ConfirmationPage />,
       },
       {
+        path: "payment/success",
+        element: <ConfirmationPage />,
+      },
+      {
         path: "mes-abonnements",
         element: <MesAbonnements />,
       },
@@ -105,6 +110,10 @@ export const AppRoute = createHashRouter([
       {
         path: "offres",
         element: <OffresPage />,
+      },
+      {
+        path: "commandes",
+        element: <CommandesAdminPage />,
       },
       {
         path: "stats",

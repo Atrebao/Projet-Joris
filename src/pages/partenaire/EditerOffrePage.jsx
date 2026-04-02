@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+﻿import { useState, useEffect } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { ArrowLeft, Save, Loader, ImagePlus } from 'lucide-react'
 import { getPartenaireId } from '../../Utils/Utils'
@@ -21,8 +21,6 @@ export default function EditerOffrePage() {
     nom: '',
     description: '',
     categorie: 'FILMS_SERIES',
-    prixOriginal: '',
-    prixVente: '',
     duree: '1',
     stock: '0',
     imageUrl: ''
@@ -40,8 +38,6 @@ export default function EditerOffrePage() {
           nom: data.nomService || '',
           description: data.description || '',
           categorie: data.categorie || 'FILMS_SERIES',
-          prixOriginal: String(data.prixOriginal ?? ''),
-          prixVente: String(data.prixVente ?? ''),
           duree: String(data.duree ?? '1'),
           stock: String(data.quantiteDisponible ?? '0'),
           imageUrl: data.imageService || ''
@@ -79,7 +75,7 @@ export default function EditerOffrePage() {
     const file = e.target.files?.[0]
     if (!file) return
     if (!/^image\/(jpeg|jpg|png|gif|webp)/i.test(file.type)) {
-      toast.error('Format image non supporté')
+      toast.error('Format image non supportÃ©')
       return
     }
     setImageFile(file)
@@ -105,21 +101,29 @@ export default function EditerOffrePage() {
         const { data: up } = await offresAPI.uploadImage(imageFile)
         imageService = `${API_BASE}${up.url}`
       }
+      const selectedForfaits = forfaitsDisponibles.filter((f) => selectedForfaitIds.includes(f.id))
+      const dureeOffre = selectedForfaits.length > 0
+        ? Math.min(...selectedForfaits.map((f) => Number(f.duree || 1)))
+        : parseInt(formData.duree) || 1
+      const prixBase = selectedForfaits.length > 0
+        ? Math.min(...selectedForfaits.map((f) => Number(f.prix || 0)))
+        : 0
+
       await offresAPI.update(Number(id), {
         nomService: formData.nom,
         description: formData.description || undefined,
         categorie: formData.categorie,
         imageService,
-        prixOriginal: parseFloat(formData.prixOriginal) || 0,
-        prixVente: parseFloat(formData.prixVente) || 0,
-        duree: parseInt(formData.duree) || 1,
+        prixOriginal: prixBase,
+        prixVente: prixBase,
+        duree: dureeOffre,
         quantiteDisponible: parseInt(formData.stock) || 0,
         forfaitIds: selectedForfaitIds,
       })
-      toast.success('Offre mise à jour')
+      toast.success('Offre mise Ã  jour')
       navigate('/partenaire/dashboard')
     } catch (error) {
-      toast.error(error?.response?.data?.message || 'Erreur lors de la mise à jour')
+      toast.error(error?.response?.data?.message || 'Erreur lors de la mise Ã  jour')
     } finally {
       setSubmitting(false)
     }
@@ -186,7 +190,7 @@ export default function EditerOffrePage() {
                 value={formData.description}
                 onChange={handleChange}
                 rows="4"
-                placeholder="Décrivez votre offre..."
+                placeholder="DÃ©crivez votre offre..."
                 className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-slate-500 transition-all"
               />
             </div>
@@ -194,7 +198,7 @@ export default function EditerOffrePage() {
             <div className="grid sm:grid-cols-2 gap-6">
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  Catégorie *
+                  CatÃ©gorie *
                 </label>
                 <select
                   name="categorie"
@@ -203,7 +207,7 @@ export default function EditerOffrePage() {
                   onChange={handleChange}
                   className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-slate-500 transition-all"
                 >
-                  <option value="FILMS_SERIES">Films & Séries</option>
+                  <option value="FILMS_SERIES">Films & SÃ©ries</option>
                   <option value="MUSIQUE">Musique</option>
                   <option value="GAMING">Gaming</option>
                   <option value="EBOOKS">Ebooks</option>
@@ -213,7 +217,7 @@ export default function EditerOffrePage() {
 
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  Durée (mois) *
+                  DurÃ©e (mois) *
                 </label>
                 <select
                   name="duree"
@@ -234,6 +238,9 @@ export default function EditerOffrePage() {
               <label className="block text-sm font-semibold text-gray-700 mb-2">
                 Forfaits lies *
               </label>
+              <p className="text-xs text-gray-500 mb-2">
+                Le prix client est defini automatiquement par les forfaits lies.
+              </p>
               <div className="border-2 border-gray-200 rounded-lg p-4 max-h-56 overflow-auto space-y-2">
                 {loadingForfaits ? (
                   <div className="text-sm text-gray-500">Chargement des forfaits...</div>
@@ -260,34 +267,6 @@ export default function EditerOffrePage() {
             </div>
 
             <div className="grid sm:grid-cols-2 gap-6">
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  Prix coûtant (FCFA) *
-                </label>
-                <input
-                  type="number"
-                  name="prixOriginal"
-                  required
-                  value={formData.prixOriginal}
-                  onChange={handleChange}
-                  placeholder="5000"
-                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-slate-500 transition-all"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  Prix de vente (FCFA) *
-                </label>
-                <input
-                  type="number"
-                  name="prixVente"
-                  required
-                  value={formData.prixVente}
-                  onChange={handleChange}
-                  placeholder="7000"
-                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-slate-500 transition-all"
-                />
-              </div>
 
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-2">

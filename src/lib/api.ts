@@ -1,7 +1,7 @@
 ﻿import axios from 'axios'
 
-// const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000'
-const API_URL = import.meta.env.VITE_API_URL || 'https://projet-joris-api.onrender.com/'
+export const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000'
+//const API_URL = import.meta.env.VITE_API_URL || 'https://projet-joris-api.onrender.com/'
 
 
 export const api = axios.create({
@@ -61,7 +61,7 @@ const normalizeOffre = (offre = {}) => {
   const fallbackForfait = {
     id: `offre-${offre.id || Math.random()}`,
     plan: offre.typeCompte || 'Standard',
-    prix: toNumber(offre.prixVente),
+    prix: 0,
     duree: toNumber(offre.duree, 1),
     periode: 'MOIS',
   }
@@ -197,24 +197,41 @@ export const promotionsAPI = {
   supprimer: (id) => api.delete(`/promotions/supprimer/${id}`),
 }
 
-// API CinetPay
-export const cinetpayAPI = {
-  initiate: (data) => api.post('/cinetpay/initiate', data),
-  verify: (transactionId) => api.get(`/cinetpay/verify?transaction_id=${transactionId}`),
+// API Paiements BillMap (Unifiée)
+// Tous les paiements passent par BillMap: MTN, Moov, Orange, Wave
+export const billmapAPI = {
+  debitMTN: (data) => api.post('/billmap/mtn', data),
+  debitMoov: (data) => api.post('/billmap/moov', data),
+  debitOrange: (data) => api.post('/billmap/orange', data),
+  debitWave: (data) => api.post('/billmap/wave', data),
+}
+
+// API Paiements (alias pour retrocompatibilité)
+export const paymentsAPI = {
+  billmap: {
+    debitMTN: (data) => api.post('/billmap/mtn', data),
+    debitMoov: (data) => api.post('/billmap/moov', data),
+    debitOrange: (data) => api.post('/billmap/orange', data),
+    debitWave: (data) => api.post('/billmap/wave', data),
+  },
 }
 
 // API Souscriptions
 export const souscriptionsAPI = {
   getAll: (params) =>
-    withData(api.get('/souscription/rechercher-souscriptions', { params }), (data) =>
+    withData(api.get('/souscription/all', { params }), (data) =>
       Array.isArray(data) ? data.map(normalizeSouscription) : []
     ),
-  getByPartenaire: (_partenaireId) =>
-    withData(api.get('/souscription/rechercher-souscriptions'), (data) =>
+  getByPartenaire: (partenaireId, params) =>
+    withData(api.get(`/souscription/partenaire/${partenaireId}`, { params }), (data) =>
       Array.isArray(data) ? data.map(normalizeSouscription) : []
     ),
   getOne: (id) => withData(api.get(`/souscription/rechercher-souscription/${id}`), normalizeSouscription),
   getALivrer: () => withData(api.get('/souscription/a-livrer'), (data) => (Array.isArray(data) ? data.map(normalizeSouscription) : [])),
+  getAllByPartenaire: (partenaireId) =>
+    withData(api.get(`/souscription/partenaire/${partenaireId}`), (data) =>
+      Array.isArray(data) ? data.map(normalizeSouscription) : []
+    ),
   getByEmail: (email) =>
     withData(api.get(`/souscription/by-email?${encodeURIComponent(email)}`), (data) =>
       Array.isArray(data) ? data.map(normalizeSouscription) : []
@@ -224,6 +241,7 @@ export const souscriptionsAPI = {
   livrer: (id, data) => api.patch(`/souscription/livrer/${id}`, data),
   create: (data) => api.post('/souscription/souscrire', data),
   creerDepuisPaiement: (data) => api.post('/souscription/creer-depuis-paiement', data),
+  initierPaiement: (data) => api.post('/souscription/initier-paiement', data),
   updateEtat: (id, etat) => api.post(`/souscription/modifier-etat/${id}`, { etat }),
 }
 

@@ -4,7 +4,6 @@ import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
 import { Eye, EyeOff, Lock, Mail, Loader, Sparkles, TrendingUp, User, Store } from "lucide-react";
 import { getUserProfil, HOMEADMIN, HOMEPARTENAIRE, saveUserProfil, getPartenaireId } from "../Utils/Utils";
-import { loginUser } from "../services/LoginService";
 import { authAPI } from "../lib/api";
 
 export default function LoginModerne() {

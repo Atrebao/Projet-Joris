@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+﻿import { useState, useEffect } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import {
   CreditCard,
@@ -14,9 +14,6 @@ import orangeMoney from '../assets/images/orange-money.png'
 import mtnMobileMoney from '../assets/images/mtn-mobile-money.jpg'
 import moovMobileMoney from '../assets/images/moov-mobile-money.png'
 import waveMobileMoney from '../assets/images/wave-mobile-money.jpg'
-import StripeService from '../services/StripeService'
-import CinetPayService from '../services/CinetPayService'
-import BillMapService from '../services/BillMapService'
 import { souscriptionsAPI, codesPromoAPI } from '../lib/api'
 
 export default function PaiementNouveau() {
@@ -32,6 +29,7 @@ export default function PaiementNouveau() {
   const [phoneNumber, setPhoneNumber] = useState(telephone || '')
   const [isProcessing, setIsProcessing] = useState(false)
   const [paymentSuccess, setPaymentSuccess] = useState(false)
+  const [orangeOtp, setOrangeOtp] = useState('')
 
   const [montantApayer, setMontantApayer] = useState(baseMontantTotal)
   const [promoCodeInput, setPromoCodeInput] = useState('')
@@ -47,31 +45,14 @@ export default function PaiementNouveau() {
 
   const paymentMethods = [
     {
-      id: 'stripe',
-      name: 'Carte bancaire',
-      logo: null,
-      icon: 'CreditCard',
-      color: 'bg-slate-600',
-      description: 'Visa, Mastercard via Stripe',
-      requiresPhone: false,
-    },
-    {
-      id: 'orange',
-      name: 'Orange Money',
-      logo: orangeMoney,
-      icon: null,
-      color: 'bg-orange-500',
-      description: 'Paiement via CinetPay',
-      requiresPhone: true,
-    },
-    {
       id: 'mtn',
       name: 'MTN Mobile Money',
       logo: mtnMobileMoney,
       icon: null,
       color: 'bg-yellow-500',
-      description: 'Paiement via CinetPay',
+      description: 'Paiement via BillMap',
       requiresPhone: true,
+      operateur: 'MTN',
     },
     {
       id: 'moov',
@@ -81,6 +62,17 @@ export default function PaiementNouveau() {
       color: 'bg-blue-500',
       description: 'Paiement via BillMap',
       requiresPhone: true,
+      operateur: 'MOOV',
+    },
+    {
+      id: 'orange',
+      name: 'Orange Money',
+      logo: orangeMoney,
+      icon: null,
+      color: 'bg-orange-500',
+      description: 'Paiement via BillMap',
+      requiresPhone: true,
+      operateur: 'ORANGE',
     },
     {
       id: 'wave',
@@ -88,8 +80,9 @@ export default function PaiementNouveau() {
       logo: waveMobileMoney,
       icon: null,
       color: 'bg-slate-500',
-      description: 'Paiement via CinetPay',
+      description: 'Paiement via BillMap',
       requiresPhone: true,
+      operateur: 'WAVE',
     },
   ]
 
@@ -159,117 +152,79 @@ export default function PaiementNouveau() {
       return
     }
 
-    const reference = 'REF-' + Date.now()
     const description = `${offre?.nom || 'Abonnement'} - ${offre?.duree || 1} mois`
-
-    // ========== PAIEMENT STRIPE (CARTE BANCAIRE) ==========
-    if (selectedMethod === 'stripe') {
-      setIsProcessing(true)
-      try {
-        const { url } = await StripeService.createSession({
-          reference,
-          montant: montantApayer,
-          email,
-          description,
-          successUrl: window.location.origin + '/#/confirmation',
-          cancelUrl: window.location.origin + '/#/paiement',
-        })
-        if (url) window.location.href = url
-      } catch (error) {
-        console.error('Erreur Stripe:', error)
-        alert(error?.response?.data?.message || 'Erreur lors de la création du paiement Stripe')
-        setIsProcessing(false)
-      }
-      return
-    }
 
     setIsProcessing(true)
 
-    // ========== PAIEMENT MOOV (BillMap) ==========
-    if (selectedMethod === 'moov') {
-      try {
-        const result = await BillMapService.debitMoov(
-          {
-            montant: montantApayer,
-            numeroTelephone: phoneNumber.replace(/\s/g, ''),
-            reference,
-            description,
-            devise: 'XOF',
-          },
-          'uat',
-        )
-        // Créer la souscription côté backend
-        const forfait = offre?.selectedForfait || offre?.forfaits?.[0]
-        if (offre?.id && forfait?.id) {
-          try {
-            await souscriptionsAPI.creerDepuisPaiement({
-              abonnementId: offre.id,
-              forfaitId: forfait.id,
-              reference,
-              montant: montantApayer,
-              email,
-              telephone: phoneNumber.replace(/\s/g, ''),
-              modePaiement: 'MOBILE_MONEY',
-              codePromo: promoAppliquee?.codePromo,
-            })
-          } catch (err) {
-            console.warn('Souscription non créée:', err)
-          }
-        }
-        if (email) localStorage.setItem('customerEmail', email)
-        setPaymentSuccess(true)
-        setTimeout(() => {
-          navigate('/confirmation', {
-            state: {
-              offre,
-              montant: montantApayer,
-              reference,
-              billmapResponse: result,
-            },
-          })
-        }, 2000)
-      } catch (error) {
-        console.error('Erreur BillMap Moov:', error)
-        alert(error?.response?.data?.message || 'Erreur lors du paiement Moov. Veuillez réessayer.')
-        setIsProcessing(false)
-      }
-      return
-    }
+    try {
+      const numero = phoneNumber.replace(/\s/g, '')
 
-    // ========== PAIEMENT ORANGE / MTN / WAVE (CinetPay) ==========
-    if (['orange', 'mtn', 'wave'].includes(selectedMethod)) {
-      try {
-        const result = await CinetPayService.initiate({
+      if (selectedMethod === 'orange' && !orangeOtp.trim()) {
+        alert('Veuillez saisir le code OTP Orange')
+        setIsProcessing(false)
+        return
+      }
+
+      const forfait = offre?.selectedForfait || offre?.forfaits?.[0]
+      if (!offre?.id || !forfait?.id) {
+        alert("Offre ou forfait introuvable")
+        setIsProcessing(false)
+        return
+      }
+
+      const { data } = await souscriptionsAPI.initierPaiement({
+        abonnementId: offre.id,
+        forfaitId: forfait.id,
+        montant: montantApayer,
+        email,
+        telephone: numero,
+        operateur: methodConfig.operateur,
+        otp: selectedMethod === 'orange' ? orangeOtp.trim() : undefined,
+        codePromo: promoAppliquee?.codePromo,
+        description,
+        modePaiement: methodConfig.operateur,
+       
+      })
+
+      const reference = data?.reference
+      const redirectUrl = data?.redirectUrl
+
+      localStorage.setItem(
+        'pendingPayment',
+        JSON.stringify({
           reference,
           montant: montantApayer,
-          description,
-          clientNom: 'Client',
-          clientPrenom: '',
-          clientEmail: email,
-          clientTelephone: phoneNumber.replace(/\s/g, ''),
-        })
-        if (result?.success && result?.paymentUrl) {
-          window.location.href = result.paymentUrl
+          provider: selectedMethod,
+          offreId: offre.id,
+          offreNom: offre?.nom,
+          forfaitId: forfait.id,
+          email,
+          telephone: numero,
+          codePromo: promoAppliquee?.codePromo,
+        }),
+      )
+
+      if (email) localStorage.setItem('customerEmail', email)
+      setPaymentSuccess(true)
+      setTimeout(() => {
+        if (selectedMethod === 'wave' && redirectUrl) {
+          window.location.href = redirectUrl
           return
         }
-        if (!result?.success) {
-          throw new Error(result?.message || 'Échec de l\'initiation du paiement')
-        }
-        setPaymentSuccess(true)
-        setTimeout(() => {
-          navigate('/confirmation', {
-            state: {
-              offre,
-              montant: montantApayer,
-              reference,
-            },
-          })
-        }, 2000)
-      } catch (error) {
-        console.error('Erreur CinetPay:', error)
-        alert(error?.response?.data?.message || error?.message || 'Erreur lors du paiement. Veuillez réessayer.')
-        setIsProcessing(false)
-      }
+        navigate('/confirmation', {
+          state: {
+            offre,
+            montant: montantApayer,
+            reference,
+            paymentMethod: selectedMethod,
+            billmapResponse: data?.billmapResponse,
+          },
+        })
+      }, 2000)
+    } catch (error) {
+      console.error(`Erreur BillMap ${selectedMethod}:`, error)
+      alert(error?.response?.data?.message || `Erreur lors du paiement ${selectedMethod}. Veuillez réessayer.`)
+      setIsProcessing(false)
     }
   }
 
@@ -285,10 +240,10 @@ export default function PaiementNouveau() {
             <CheckCircle className="h-12 w-12 text-white" />
           </div>
           <h2 className="text-3xl font-bold text-gray-900 mb-4">
-            Paiement réussi ! 🎉
+            Demande de paiement envoyee
           </h2>
           <p className="text-gray-600 mb-8">
-            Votre paiement a été traité avec succès. Vous allez recevoir vos identifiants par email dans quelques instants.
+            Nous verifions maintenant le statut de votre paiement. Vous serez redirige vers la page de confirmation.
           </p>
           <div className="flex items-center justify-center gap-2 text-sm text-gray-500">
             <Clock className="h-4 w-4" />
@@ -364,12 +319,12 @@ export default function PaiementNouveau() {
                   </div>
                 </div>
 
-                {/* Numéro de téléphone - requis pour Mobile Money */}
-                <div className={`bg-white rounded-2xl border-2 border-gray-200 p-6 ${['orange', 'mtn', 'moov', 'wave'].includes(selectedMethod) ? '' : 'opacity-75'}`}>
+                {/* Numéro de téléphone - requis pour tous les modes BillMap */}
+                <div className={`bg-white rounded-2xl border-2 border-gray-200 p-6 ${selectedMethod ? '' : 'opacity-75'}`}>
                   <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
                     <Smartphone className="h-6 w-6 text-slate-700" />
                     Numéro de téléphone
-                    {['orange', 'mtn', 'moov', 'wave'].includes(selectedMethod) && (
+                    {selectedMethod && (
                       <span className="text-sm font-normal text-red-500">* requis</span>
                     )}
                   </h2>
@@ -380,7 +335,7 @@ export default function PaiementNouveau() {
                     </label>
                     <input
                       type="tel"
-                      required={['orange', 'mtn', 'moov', 'wave'].includes(selectedMethod)}
+                      required={selectedMethod ? true : false}
                       value={phoneNumber}
                       onChange={(e) => setPhoneNumber(e.target.value)}
                       placeholder="+225 XX XX XX XX XX"
@@ -392,6 +347,19 @@ export default function PaiementNouveau() {
                   </div>
                 </div>
 
+                {selectedMethod === 'orange' && (
+                  <div className="bg-white rounded-2xl border-2 border-gray-200 p-6">
+                    <h2 className="text-xl font-bold mb-4">Code OTP Orange</h2>
+                    <input
+                      type="text"
+                      value={orangeOtp}
+                      onChange={(e) => setOrangeOtp(e.target.value)}
+                      placeholder="Saisissez le code OTP"
+                      className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-slate-600 text-lg"
+                    />
+                  </div>
+                )}
+
                 {/* Infos de sécurité */}
                 <div className="bg-blue-50 rounded-2xl border-2 border-blue-200 p-6">
                   <div className="flex items-start gap-3">
@@ -401,8 +369,8 @@ export default function PaiementNouveau() {
                         Paiement 100% sécurisé
                       </h3>
                       <ul className="text-sm text-blue-800 space-y-1">
-                        <li>✓ Vos données sont cryptées</li>
-                        <li>✓ Transaction sécurisée (Stripe, CinetPay, BillMap)</li>
+                          <li>✓ Vos données sont cryptées</li>
+                          <li>✓ Transaction sécurisée via BillMap</li>
                         <li>✓ Identifiants envoyés immédiatement après paiement</li>
                       </ul>
                     </div>
