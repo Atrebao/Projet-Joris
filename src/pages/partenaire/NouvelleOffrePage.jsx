@@ -43,7 +43,6 @@ export default function NouvelleOffrePage() {
     loadForfaits()
   }, [formData.categorie])
 
-  //const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:3000'
 
   const handleImageChange = (e) => {
     const file = e.target.files?.[0]
