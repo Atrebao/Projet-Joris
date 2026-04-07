@@ -15,7 +15,7 @@ import {
   AlertCircle
 } from 'lucide-react'
 import { getPartenaireId } from '../../Utils/Utils'
-import { statsAPI, offresAPI } from '../../lib/api'
+import { statsAPI, offresAPI, souscriptionsAPI } from '../../lib/api'
 import toast from 'react-hot-toast'
 
 export default function DashboardPartenaireNouveau() {
@@ -37,28 +37,41 @@ export default function DashboardPartenaireNouveau() {
     if (!partenaireId) return
     setLoading(true)
     try {
-      const [statsRes, offresRes] = await Promise.all([
+      const [statsRes, offresRes, souscriptionsRes] = await Promise.all([
         statsAPI.partenaireDashboard(partenaireId),
-        offresAPI.getByPartenaire(partenaireId)
+        offresAPI.getByPartenaire(partenaireId),
+        souscriptionsAPI.getByPartenaire(partenaireId),
       ])
 
       const s = statsRes?.data || {}
+      const subs = (souscriptionsRes?.data || []).filter((x) => x?.statutPaiement === 'SUCCES')
       setStats({
         totalOffres: s.totalOffres ?? 0,
         offresActives: s.offresActives ?? 0,
-        totalVentes: s.souscriptionsActives ?? 0,
+        totalVentes: subs.length,
         revenuTotal: s.revenusTotal ?? 0,
-        ventesAujourdhui: 0,
+        ventesAujourdhui: s.ventesAujourdhui ?? 0,
         revenuMois: s.revenusMois ?? 0,
-        croissance: 0,
-        notePartenaire: 4.5,
+        croissance: s.croissance ?? 0,
+        notePartenaire: 0,
         enAttenteLivraison: s.enAttenteLivraison ?? 0,
         clientsUniques: s.clientsUniques ?? 0
+      })
+
+      const byOffre = new Map()
+      subs.forEach((sub) => {
+        const id = sub?.abonnement?.id || sub?.offrePartenaire?.id
+        if (!id) return
+        const current = byOffre.get(id) || { ventes: 0, revenu: 0 }
+        current.ventes += 1
+        current.revenu += Number(sub?.montantPartenaire || sub?.montant || 0)
+        byOffre.set(id, current)
       })
 
       const offresMapped = (offresRes?.data || []).map(o => {
         const forfaits = Array.isArray(o.forfaits) ? o.forfaits : []
         const firstForfait = forfaits[0] || null
+        const metrics = byOffre.get(o.id) || { ventes: 0, revenu: 0 }
         return {
           id: o.id,
           nom: o.nomService,
@@ -66,8 +79,8 @@ export default function DashboardPartenaireNouveau() {
           prix: Number(firstForfait?.prix || 0),
           duree: Number(firstForfait?.duree || o.duree || 1),
           stock: o.quantiteDisponible ?? 0,
-          ventes: 0,
-          revenu: 0,
+          ventes: metrics.ventes,
+          revenu: metrics.revenu,
           actif: o.isActive !== false,
           note: 4.5
         }

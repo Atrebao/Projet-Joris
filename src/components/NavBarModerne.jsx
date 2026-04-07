@@ -93,6 +93,7 @@ export default function NavBarModerne() {
   const partenaireLinks = [
     { to: "/partenaire", icon: LayoutDashboard, label: "Dashboard", exact: true },
     { to: "/partenaire/commandes", icon: ShoppingCart, label: "Commandes" },
+    { to: "/partenaire/identifiants", icon: UserCircle2, label: "Identifiants" },
     { to: "/partenaire/offres/nouvelle", icon: Package, label: "Nouvelle Offre" },
     { to: "/partenaire/forfaits", icon: Layers, label: "Forfaits" },
     { to: "/partenaire/clients", icon: Users, label: "Clients" },

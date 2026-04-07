@@ -21,7 +21,16 @@ export default function PaiementNouveau() {
   const navigate = useNavigate()
 
   // Récupérer les données de l'offre depuis la navigation
-  const { offre, quantity, montantTotal, email, telephone } = location.state || {}
+  const {
+    offre,
+    quantity,
+    montantTotal,
+    nom,
+    prenoms,
+    pseudo,
+    email,
+    telephone,
+  } = location.state || {}
 
   const baseMontantTotal = Number(montantTotal || 0)
 
@@ -176,6 +185,8 @@ export default function PaiementNouveau() {
         abonnementId: offre.id,
         forfaitId: forfait.id,
         montant: montantApayer,
+        nom,
+        prenoms: prenoms || pseudo || undefined,
         email,
         telephone: numero,
         operateur: methodConfig.operateur,
@@ -198,6 +209,8 @@ export default function PaiementNouveau() {
           offreId: offre.id,
           offreNom: offre?.nom,
           forfaitId: forfait.id,
+          nom,
+          prenoms: prenoms || pseudo || '',
           email,
           telephone: numero,
           codePromo: promoAppliquee?.codePromo,
@@ -474,13 +487,19 @@ export default function PaiementNouveau() {
                 {/* Contact */}
                 <div className="mt-6 pt-6 border-t">
                   <div className="text-sm space-y-2">
+                    {(nom || prenoms || pseudo) && (
+                      <div className="flex items-center gap-2 text-gray-600">
+                        <span>👤</span>
+                        <span className="truncate">{[nom, prenoms || pseudo].filter(Boolean).join(' ')}</span>
+                      </div>
+                    )}
                     <div className="flex items-center gap-2 text-gray-600">
                       <span>📧</span>
                       <span className="truncate">{email}</span>
                     </div>
                     <div className="flex items-center gap-2 text-gray-600">
                       <span>📱</span>
-                      <span>{telephone}</span>
+                      <span>{phoneNumber || telephone}</span>
                     </div>
                   </div>
                 </div>

@@ -1,7 +1,7 @@
 ﻿import axios from 'axios'
 
-export const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000'
-//const API_URL = import.meta.env.VITE_API_URL || 'https://projet-joris-api.onrender.com/'
+//export const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000'
+const API_URL = import.meta.env.VITE_API_URL || 'https://projet-joris-api.onrender.com/'
 
 
 export const api = axios.create({
@@ -283,6 +283,12 @@ export const clientsAPI = {
   getOne: (id) => api.get(`/clients/${id}`),
   getSouscriptions: (id) => api.get(`/clients/${id}/souscriptions`),
   getByEmail: (email) => api.post('/clients/get-by-email', { email }),
+}
+
+export const identifiantsStockAPI = {
+  createForOffre: (offreId, data) => api.post(`/identifiants-stock/offre/${offreId}`, data),
+  listByOffre: (offreId) => api.get(`/identifiants-stock/offre/${offreId}`),
+  listByPartenaire: (partenaireId) => api.get(`/identifiants-stock/partenaire/${partenaireId}`),
 }
 
 // API Stats

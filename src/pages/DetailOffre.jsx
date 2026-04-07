@@ -22,6 +22,9 @@ export default function DetailOffre() {
   const [loading, setLoading] = useState(true)
   const [selectedForfait, setSelectedForfait] = useState(null)
   const [quantity, setQuantity] = useState(1)
+  const [nom, setNom] = useState('')
+  const [prenoms, setPrenoms] = useState('')
+  const [pseudo, setPseudo] = useState('')
   const [email, setEmail] = useState('')
   const [telephone, setTelephone] = useState('')
   const [promotions, setPromotions] = useState([])
@@ -33,6 +36,27 @@ export default function DetailOffre() {
   }
 
   // Charger l'offre depuis l'API (comme Catalogue.jsx)
+  useEffect(() => {
+    const parseStoredUser = (value) => {
+      if (!value) return null
+      try {
+        return JSON.parse(value)
+      } catch {
+        return null
+      }
+    }
+
+    const user = parseStoredUser(localStorage.getItem('infoUser')) || parseStoredUser(localStorage.getItem('user'))
+
+    if (user) {
+      setNom(user.nom || user.lastName || '')
+      setPrenoms(user.prenoms || user.firstName || '')
+      setPseudo(user.pseudo || user.username || user.name || '')
+      setEmail(user.email || '')
+      setTelephone(user.telephone || user.phone || user.numero || '')
+    }
+  }, [])
+
   useEffect(() => {
     const loadOffre = async () => {
       setLoading(true)
@@ -110,7 +134,7 @@ export default function DetailOffre() {
     if (!offre) return
 
     // Validation basique
-    if (!email || !telephone) {
+    if (!nom || !email || !telephone) {
       toast.error('Veuillez remplir tous les champs')
       return
     }
@@ -131,6 +155,9 @@ export default function DetailOffre() {
         },
         quantity,
         montantTotal,
+        nom,
+        prenoms,
+        pseudo,
         email,
         telephone,
       },
@@ -382,6 +409,49 @@ export default function DetailOffre() {
                 </div> 
                 */}
 
+                {/* Nom */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Nom *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={nom}
+                    onChange={(e) => setNom(e.target.value)}
+                    placeholder="Votre nom"
+                    className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-slate-600"
+                  />
+                </div>
+
+                {/* Prénoms */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Prénoms
+                  </label>
+                  <input
+                    type="text"
+                    value={prenoms}
+                    onChange={(e) => setPrenoms(e.target.value)}
+                    placeholder="Vos prénoms"
+                    className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-slate-600"
+                  />
+                </div>
+
+                {/* Pseudo */}
+                {/* <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Pseudo (optionnel)
+                  </label>
+                  <input
+                    type="text"
+                    value={pseudo}
+                    onChange={(e) => setPseudo(e.target.value)}
+                    placeholder="Votre pseudo"
+                    className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-slate-600"
+                  />
+                </div> */}
+
                 {/* Email */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -410,7 +480,7 @@ export default function DetailOffre() {
                     required
                     value={telephone}
                     onChange={(e) => setTelephone(e.target.value)}
-                    placeholder="+225 XX XX XX XX XX"
+                    placeholder="0102030405"
                     className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-slate-600"
                   />
                   <p className="text-xs text-gray-500 mt-1">

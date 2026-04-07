@@ -11,7 +11,7 @@ import {
   ArrowUp,
   ArrowDown
 } from "lucide-react";
-import { statsAPI, abonnementsAPI, souscriptionsAPI } from "../lib/api";
+import { statsAPI, souscriptionsAPI } from "../lib/api";
 import toast from "react-hot-toast";
 
 export default function StatsModerne() {
@@ -29,6 +29,7 @@ export default function StatsModerne() {
   });
   const [revenusParMois, setRevenusParMois] = useState([]);
   const [transactionsRecentes, setTransactionsRecentes] = useState([]);
+  const [categoriesTop, setCategoriesTop] = useState([]);
 
   useEffect(() => {
     loadStats();
@@ -43,15 +44,11 @@ export default function StatsModerne() {
         revenueEvolution: dashboardData.evolutionRevenus || 0,
         totalPartenaires: dashboardData.totalPartenaires || 0,
         partenairesEvolution: 0,
-        totalOffres: 0,
+        totalOffres: dashboardData.totalOffres || 0,
         offresEvolution: 0,
         totalClients: dashboardData.totalClients || 0,
         clientsEvolution: 0,
       };
-      try {
-        const { data: abonnementsData } = await abonnementsAPI.getAll();
-        statsFormatted.totalOffres = Array.isArray(abonnementsData) ? abonnementsData.length : 0;
-      } catch (_) {}
       setStats(statsFormatted);
 
       try {
@@ -83,6 +80,24 @@ export default function StatsModerne() {
       } catch (_) {
         setTransactionsRecentes([]);
       }
+
+      try {
+        const { data: topOffres } = await statsAPI.topOffres(4);
+        const mapped = (topOffres || []).map((o) => ({
+          nom: o.nom || '-',
+          ventes: Number(o.ventes || 0),
+          pourcentage: 0,
+        }));
+        const totalVentes = mapped.reduce((acc, c) => acc + c.ventes, 0) || 1;
+        setCategoriesTop(
+          mapped.map((c) => ({
+            ...c,
+            pourcentage: Math.round((c.ventes / totalVentes) * 100),
+          })),
+        );
+      } catch (_) {
+        setCategoriesTop([]);
+      }
     } catch (error) {
       console.error("Erreur chargement stats:", error);
       toast.error("Impossible de charger les statistiques");
@@ -101,12 +116,7 @@ export default function StatsModerne() {
 
   // Données pour le graphique des revenus mensuels
   // Catégories top (données calculées ou mock)
-  const categoriesTop = [
-    { nom: "Films & Séries", ventes: 127, pourcentage: 44 },
-    { nom: "Musique", ventes: 89, pourcentage: 31 },
-    { nom: "Gaming", ventes: 52, pourcentage: 18 },
-    { nom: "Sport", ventes: 19, pourcentage: 7 },
-  ];
+  const categoriesTopAffichage = categoriesTop || [];
 
   const maxRevenu = Math.max(1, ...revenusAffichage.map(r => r.revenu));
 
@@ -244,7 +254,7 @@ export default function StatsModerne() {
             </h2>
 
             <div className="space-y-4">
-              {categoriesTop.map((cat, index) => (
+              {categoriesTopAffichage.map((cat, index) => (
                 <div key={index} className="space-y-2">
                   <div className="flex items-center justify-between text-sm">
                     <span className="font-semibold text-gray-700">{cat.nom}</span>
@@ -325,3 +335,5 @@ export default function StatsModerne() {
     </div>
   );
 }
+
+
