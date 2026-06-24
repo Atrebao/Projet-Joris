@@ -28,7 +28,7 @@ export default function LayoutAdmin() {
 
   return (
     <>
-      <SaasTopBar active="admin" />
+      {/* <SaasTopBar active="admin" /> */}
       <DashboardShell
         brand="AbonéPlus Admin"
         brandIcon={ShieldCheck}

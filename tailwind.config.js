@@ -6,6 +6,7 @@ export default {
       fontFamily: {
         'brightersans': ['MTNBrighterSans'],
         'worksans': ['WorkSans'],
+        'inter': ['Inter var', 'Inter', 'sans-serif'],
       },
       colors: {
         background: 'var(--background)',

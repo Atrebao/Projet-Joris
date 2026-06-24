@@ -2,6 +2,8 @@ import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { BookOpen, Gamepad2, Gift, Headphones, Loader, Search, ShieldCheck, Sparkles, Tv, Zap } from 'lucide-react'
 import { abonnementsAPI } from '../lib/api'
+import { Store, ShoppingBag, Tag } from 'lucide-react'; // Vérifiez que 'Store' est présent
+
 import toast from 'react-hot-toast'
 
 const CATEGORIES = [
@@ -172,7 +174,10 @@ export function OfferCard({ offer, onBuy }) {
         <div className="min-w-0 flex-1">
           <h3 className="truncate font-semibold leading-tight">{offer.nom}</h3>
           <p className="text-sm text-muted-foreground">{offer.duree} mois</p>
-          <p className="mt-1 text-xs text-muted-foreground">{offer.partenaire}</p>
+          <p className="mt-1 flex items-center gap-1 text-xs text-muted-foreground">
+                      <Store className="size-6" />
+                      {offer.partenaire}
+          </p>
         </div>
         {lowStock && (
           <span className="flex items-center gap-1 rounded-md bg-destructive/10 px-1.5 py-0.5 text-[10px] font-semibold text-destructive">
@@ -182,15 +187,15 @@ export function OfferCard({ offer, onBuy }) {
         )}
       </div>
 
-      <p className="line-clamp-2 px-4 text-sm text-muted-foreground">{offer.description}</p>
+      <p className="line-clamp-2 px-4 py-2 text-sm text-muted-foreground">{offer.description}</p>
 
-      <div className="mt-3 flex items-center gap-1.5 px-4">
+      {/* <div className="mt-3 flex items-center gap-1.5 px-4">
         {OPERATOR_BADGES.slice(0, offer.id % 2 === 0 ? 4 : 3).map((operator) => (
           <span key={operator.label} className={`rounded px-1.5 py-0.5 text-[10px] font-semibold ${operator.className}`}>
             {operator.label}
           </span>
         ))}
-      </div>
+      </div> */}
 
       <div className="mt-auto flex items-center justify-between border-t border-border p-4">
         <div>

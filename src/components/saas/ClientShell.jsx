@@ -10,7 +10,7 @@ function cn(...classes) {
 
 const navItems = [
   { to: '/', label: 'Accueil', icon: Home, exact: true },
-  { to: '/catalogue', label: 'Catalogue', icon: ShoppingBag },
+//   { to: '/catalogue', label: 'Catalogue', icon: ShoppingBag },
   { to: '/mes-abonnements', label: 'Mes abonnements', icon: User },
   { to: '/conditions', label: 'Conditions', icon: FileText },
 ]
@@ -23,7 +23,7 @@ export default function ClientShell({ children }) {
       <header className="sticky top-0 z-50 border-b border-border bg-background/95 backdrop-blur-xl shadow-sm">
         <div className="mx-auto flex max-w-7xl items-center justify-between gap-3 px-4 py-3 sm:px-6 lg:px-8">
           <NavLink to="/" className="flex items-center gap-3">
-            <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-slate-900 text-lg font-black text-white shadow-md">
+            <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-primary text-lg font-black text-white shadow-md">
               R
             </div>
             <div className="hidden sm:block">
@@ -41,7 +41,7 @@ export default function ClientShell({ children }) {
                 className={({ isActive }) =>
                   cn(
                     'inline-flex items-center gap-2 rounded-2xl px-4 py-2 text-sm font-semibold transition',
-                    isActive ? 'bg-slate-900 text-white shadow-sm' : 'text-foreground hover:bg-slate-800 hover:text-white',
+                    isActive ? 'bg-primary text-white shadow-sm' : 'text-foreground hover:bg-slate-300',
                   )
                 }
               >
@@ -51,19 +51,19 @@ export default function ClientShell({ children }) {
             ))}
           </div>
 
-          <div className="hidden items-center gap-3 sm:flex">
+          {/* <div className="hidden items-center gap-3 sm:flex">
             <button className="inline-flex h-11 items-center gap-2 rounded-2xl border border-border bg-slate-900 px-4 text-sm font-semibold text-foreground transition hover:border-slate-700 hover:bg-slate-800">
               <Search className="h-4 w-4" /> Rechercher
             </button>
             <Button variant="secondary" className="hidden sm:inline-flex" onClick={() => window.location.assign('/register')}>
               Créer un compte
             </Button>
-          </div>
+          </div> */}
 
           <button
             type="button"
             onClick={() => setMobileOpen((current) => !current)}
-            className="inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-border bg-slate-900 text-foreground transition hover:border-slate-700 hover:bg-slate-800 md:hidden"
+            className="inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-border bg-primary text-foreground transition hover:border-slate-700 hover:bg-slate-800 md:hidden"
             aria-label={mobileOpen ? 'Fermer le menu' : 'Ouvrir le menu'}
           >
             {mobileOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
@@ -81,7 +81,7 @@ export default function ClientShell({ children }) {
                   className={({ isActive }) =>
                     cn(
                       'flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-semibold transition',
-                      isActive ? 'bg-slate-900 text-white' : 'text-foreground hover:bg-slate-800',
+                      isActive ? 'bg-primary text-white' : 'text-foreground hover:bg-slate-300',
                     )
                   }
                   onClick={() => setMobileOpen(false)}
@@ -90,9 +90,9 @@ export default function ClientShell({ children }) {
                   {item.label}
                 </NavLink>
               ))}
-              <Button variant="secondary" className="w-full" onClick={() => window.location.assign('/register')}>
+              {/* <Button variant="secondary" className="w-full" onClick={() => window.location.assign('/register')}>
                 Créer un compte
-              </Button>
+              </Button> */}
             </div>
           </div>
         )}
