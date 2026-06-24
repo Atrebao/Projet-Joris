@@ -2,7 +2,7 @@ import React, { useEffect } from 'react'
 import { Outlet, useNavigate } from "react-router-dom";
 import { getPartenaireId } from '../Utils/Utils'
 import { Boxes, LayoutDashboard, Package, Receipt, Store, Tag, Users, Percent, BarChart3 } from 'lucide-react'
-import { DashboardShell } from '../components/saas/SaasPrimitives'
+import { DashboardShell, SaasTopBar } from '../components/saas/SaasPrimitives'
 
 export default function LayoutPartenaire() {
   const navigate = useNavigate()
@@ -25,16 +25,19 @@ export default function LayoutPartenaire() {
   }, [partenaireId, navigate])
 
   return (
-    <DashboardShell
-      brand="RICHESSES Partner"
-      brandIcon={Store}
-      role="Espace Partenaire"
-      nav={nav}
-      user={{ name: 'Partenaire', initials: 'PT' }}
-    >
-      <div className="mx-auto max-w-[1200px] space-y-6 p-4 sm:p-6">
-        <Outlet />
-      </div>
-    </DashboardShell>
+    <>
+      {/* <SaasTopBar active="partner" /> */}
+      <DashboardShell
+        brand="RICHESSES Partner"
+        brandIcon={Store}
+        role="Espace Partenaire"
+        nav={nav}
+        user={{ name: 'Partenaire', initials: 'PT' }}
+      >
+        <div className="mx-auto max-w-[1200px] space-y-6 p-4 sm:p-6">
+          <Outlet />
+        </div>
+      </DashboardShell>
+    </>
   )
 }

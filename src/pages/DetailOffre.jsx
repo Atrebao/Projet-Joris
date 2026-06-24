@@ -4,13 +4,9 @@ import { ArrowLeft, CheckCircle2, Loader, Smartphone, X } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { abonnementsAPI, codesPromoAPI, souscriptionsAPI } from '../lib/api'
 import { ServiceLogo } from './HomeNouvelle'
+import { OPERATOR_BADGES } from '@/Utils/Utils'
 
-const OPERATORS = [
-  { id: 'orange', label: 'Orange Money', operateur: 'ORANGE', dot: 'bg-orange-500' },
-  { id: 'mtn', label: 'MTN MoMo', operateur: 'MTN', dot: 'bg-yellow-400' },
-  { id: 'wave', label: 'Wave', operateur: 'WAVE', dot: 'bg-sky-400' },
-  { id: 'moov', label: 'Moov Money', operateur: 'MOOV', dot: 'bg-blue-700' }
-]
+
 
 const formatFCFA = (value) => `${new Intl.NumberFormat('fr-FR').format(Number(value) || 0)} FCFA`
 
@@ -105,7 +101,7 @@ export default function DetailOffre() {
       return
     }
 
-    const operator = OPERATORS.find((item) => item.id === selectedOperator)
+    const operator = OPERATOR_BADGES.find((item) => item.id === selectedOperator)
     setSubmitting(true)
     try {
       const { data } = await souscriptionsAPI.initierPaiement({
@@ -223,24 +219,53 @@ export default function DetailOffre() {
               </div>
             )}
 
-            <div>
-              <label className="mb-2 block text-sm font-medium">Choisissez votre opérateur</label>
-              <div className="grid grid-cols-2 gap-2">
-                {OPERATORS.map((operator) => (
+           <div>
+            <label className="mb-2 block text-sm font-semibold text-slate-900">
+              Choisissez votre opérateur
+            </label>
+            
+            <div className="grid grid-cols-2 gap-3">
+              {OPERATOR_BADGES.map((operator) => {
+                const isSelected = selectedOperator === operator.id;
+                
+                return (
                   <button
-                    key={operator.id}
+                    key={operator.id} // La clé est uniquement sur l'élément racine de la boucle
                     type="button"
                     onClick={() => setSelectedOperator(operator.id)}
-                    className={`flex h-11 items-center gap-2 rounded-lg border px-3 text-left text-sm transition ${
-                      selectedOperator === operator.id ? 'border-primary bg-primary/5' : 'border-border bg-card hover:bg-muted'
+                    className={`flex h-14 items-center gap-3 rounded-xl border p-3 text-left transition-all duration-200 outline-none ${
+                      isSelected 
+                        ? 'border-primary bg-primary/5 ring-2 ring-primary/10' 
+                        : 'border-border bg-card hover:bg-slate-50 hover:border-slate-300'
                     }`}
                   >
-                    <span className={`h-3 w-3 rounded-full ${operator.dot}`} />
-                    {operator.label}
+                    {/* Logo officiel de l'opérateur intégré directement dans le bouton cliquable */}
+                    <div className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-md border p-0.5 shadow-sm bg-white ${operator.className}`}>
+                      <img 
+                        src={operator.logoUrl} 
+                        alt={operator.label} 
+                        className="h-full w-full object-contain rounded" 
+                      />
+                    </div>
+
+                    {/* Contenu textuel */}
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-bold text-slate-900 leading-tight">
+                        {operator.label}
+                      </p>
+                     
+                    </div>
+
+                    {/* Pastille de sélection dynamique */}
+                    <span className={`h-3 w-3 rounded-full border transition-colors ${
+                      isSelected ? 'bg-primary border-primary' : 'bg-transparent border-slate-300'
+                    }`} />
                   </button>
-                ))}
-              </div>
+                );
+              })}
             </div>
+          </div>
+
 
             <div className="grid gap-2 sm:grid-cols-2">
               <input value={nom} onChange={(event) => setNom(event.target.value)} placeholder="Nom" className="h-10 rounded-lg border border-input bg-card px-3 text-sm outline-none" />

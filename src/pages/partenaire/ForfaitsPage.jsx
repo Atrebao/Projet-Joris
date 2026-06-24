@@ -1,7 +1,8 @@
-﻿import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import toast from 'react-hot-toast'
-import { Plus, Edit3, Save, X } from 'lucide-react'
+import { Edit3, Layers, Plus, Save, Tag, X } from 'lucide-react'
 import { forfaitsAPI } from '../../lib/api'
+import { Button, Card, DataTable, EmptyState, Input, KpiCard, PageHeader, Select, formatFCFA } from '../../components/saas/SaasPrimitives'
 
 const CATEGORIES = [
   { value: 'FILMS_SERIES', label: 'Films & Series' },
@@ -57,6 +58,15 @@ export default function ForfaitsPage() {
     [forfaits],
   )
 
+  const stats = useMemo(() => {
+    const prix = sortedForfaits.map((f) => Number(f.prix || 0)).filter(Boolean)
+    return {
+      total: sortedForfaits.length,
+      min: prix.length ? Math.min(...prix) : 0,
+      max: prix.length ? Math.max(...prix) : 0,
+    }
+  }, [sortedForfaits])
+
   const onChange = (e) => {
     setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }))
   }
@@ -87,9 +97,10 @@ export default function ForfaitsPage() {
       }
 
       resetForm()
+      setCategorieFiltre(form.categorie)
       await loadForfaits(form.categorie)
     } catch (e2) {
-      toast.error(e2?.response?.data?.message || 'Erreur lors de lenregistrement du forfait')
+      toast.error(e2?.response?.data?.message || "Erreur lors de l'enregistrement du forfait")
     } finally {
       setSubmitting(false)
     }
@@ -108,125 +119,107 @@ export default function ForfaitsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-8">
-      <div className="max-w-6xl mx-auto">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold mb-2">Mes Forfaits</h1>
-          <p className="text-gray-600">Cree et gere les forfaits que tu peux lier a tes offres.</p>
-        </div>
+    <div className="space-y-6">
+      <PageHeader
+        title="Forfaits"
+        description="Creez les plans que vous pourrez lier a vos offres."
+        action={
+          form.id ? (
+            <Button variant="secondary" onClick={resetForm}><X className="h-4 w-4" /> Annuler</Button>
+          ) : null
+        }
+      />
 
-        <div className="grid lg:grid-cols-2 gap-6">
-          <div className="bg-white border-2 border-gray-200 rounded-2xl p-6">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-xl font-bold">{form.id ? 'Modifier un forfait' : 'Nouveau forfait'}</h2>
-              {form.id ? (
-                <button onClick={resetForm} className="text-sm text-gray-600 hover:text-gray-900 flex items-center gap-1">
-                  <X className="h-4 w-4" /> Annuler
-                </button>
-              ) : null}
+      <div className="grid gap-4 sm:grid-cols-3">
+        <KpiCard label="Forfaits dans la categorie" value={String(stats.total)} icon={Layers} />
+        <KpiCard label="Prix minimum" value={formatFCFA(stats.min)} icon={Tag} accent="chart3" />
+        <KpiCard label="Prix maximum" value={formatFCFA(stats.max)} icon={Tag} accent="accent" />
+      </div>
+
+      <div className="grid gap-6 lg:grid-cols-[0.85fr_1.15fr]">
+        <Card className="p-5">
+          <div className="mb-4">
+            <h2 className="font-semibold text-foreground">{form.id ? 'Modifier un forfait' : 'Nouveau forfait'}</h2>
+            <p className="text-sm text-muted-foreground">Nom, prix, duree et categorie du plan.</p>
+          </div>
+          <form onSubmit={onSubmit} className="space-y-4">
+            <div>
+              <label className="text-sm font-medium text-foreground">Categorie</label>
+              <Select name="categorie" value={form.categorie} onChange={onChange} className="mt-1 w-full">
+                {CATEGORIES.map((c) => <option key={c.value} value={c.value}>{c.label}</option>)}
+              </Select>
             </div>
-
-            <form onSubmit={onSubmit} className="space-y-4">
+            <div>
+              <label className="text-sm font-medium text-foreground">Nom du plan</label>
+              <Input name="plan" value={form.plan} onChange={onChange} required className="mt-1" />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="text-sm font-semibold text-gray-700">Categorie</label>
-                <select
-                  name="categorie"
-                  value={form.categorie}
-                  onChange={onChange}
-                  className="w-full mt-1 px-4 py-2 border-2 border-gray-200 rounded-lg"
-                >
-                  {CATEGORIES.map((c) => (
-                    <option key={c.value} value={c.value}>{c.label}</option>
-                  ))}
-                </select>
+                <label className="text-sm font-medium text-foreground">Prix FCFA</label>
+                <Input type="number" name="prix" value={form.prix} onChange={onChange} required className="mt-1" />
               </div>
-
               <div>
-                <label className="text-sm font-semibold text-gray-700">Nom du plan</label>
-                <input name="plan" value={form.plan} onChange={onChange} required className="w-full mt-1 px-4 py-2 border-2 border-gray-200 rounded-lg" />
+                <label className="text-sm font-medium text-foreground">Duree</label>
+                <Input type="number" name="duree" value={form.duree} onChange={onChange} required className="mt-1" />
               </div>
+            </div>
+            <div>
+              <label className="text-sm font-medium text-foreground">Periode</label>
+              <Select name="periode" value={form.periode} onChange={onChange} className="mt-1 w-full">
+                {PERIODES.map((p) => <option key={p.value} value={p.value}>{p.label}</option>)}
+              </Select>
+            </div>
+            <div>
+              <label className="text-sm font-medium text-foreground">Description</label>
+              <textarea
+                name="description"
+                value={form.description}
+                onChange={onChange}
+                rows={3}
+                className="mt-1 w-full rounded-lg border border-input bg-card px-3 py-2 text-sm outline-none transition focus:ring-2 focus:ring-ring/20"
+              />
+            </div>
+            <Button type="submit" className="w-full" disabled={submitting}>
+              {form.id ? <Save className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
+              {submitting ? 'Enregistrement...' : form.id ? 'Mettre a jour' : 'Creer le forfait'}
+            </Button>
+          </form>
+        </Card>
 
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="text-sm font-semibold text-gray-700">Prix (FCFA)</label>
-                  <input type="number" name="prix" value={form.prix} onChange={onChange} required className="w-full mt-1 px-4 py-2 border-2 border-gray-200 rounded-lg" />
-                </div>
-                <div>
-                  <label className="text-sm font-semibold text-gray-700">Duree</label>
-                  <input type="number" name="duree" value={form.duree} onChange={onChange} required className="w-full mt-1 px-4 py-2 border-2 border-gray-200 rounded-lg" />
-                </div>
-              </div>
-
-              <div>
-                <label className="text-sm font-semibold text-gray-700">Periode</label>
-                <select
-                  name="periode"
-                  value={form.periode}
-                  onChange={onChange}
-                  className="w-full mt-1 px-4 py-2 border-2 border-gray-200 rounded-lg"
-                >
-                  {PERIODES.map((p) => (
-                    <option key={p.value} value={p.value}>{p.label}</option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <label className="text-sm font-semibold text-gray-700">Description</label>
-                <textarea name="description" value={form.description} onChange={onChange} rows={3} className="w-full mt-1 px-4 py-2 border-2 border-gray-200 rounded-lg" />
-              </div>
-
-              <button
-                type="submit"
-                disabled={submitting}
-                className="w-full px-4 py-3 bg-slate-700 text-white rounded-lg font-semibold hover:bg-slate-800 disabled:opacity-50 flex items-center justify-center gap-2"
-              >
-                {form.id ? <Save className="h-4 w-4" /> : <Plus className="h-4 w-4" />} {submitting ? 'Enregistrement...' : form.id ? 'Mettre a jour' : 'Creer le forfait'}
-              </button>
-            </form>
+        <Card className="p-5">
+          <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <h2 className="font-semibold text-foreground">Forfaits disponibles</h2>
+              <p className="text-sm text-muted-foreground">Classement par prix croissant.</p>
+            </div>
+            <Select value={categorieFiltre} onChange={(e) => setCategorieFiltre(e.target.value)}>
+              {CATEGORIES.map((c) => <option key={c.value} value={c.value}>{c.label}</option>)}
+            </Select>
           </div>
 
-          <div className="bg-white border-2 border-gray-200 rounded-2xl p-6">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-xl font-bold">Forfaits disponibles</h2>
-              <select
-                value={categorieFiltre}
-                onChange={(e) => setCategorieFiltre(e.target.value)}
-                className="px-3 py-2 border-2 border-gray-200 rounded-lg"
-              >
-                {CATEGORIES.map((c) => (
-                  <option key={c.value} value={c.value}>{c.label}</option>
-                ))}
-              </select>
-            </div>
-
-            {loading ? (
-              <div className="text-gray-500">Chargement...</div>
-            ) : sortedForfaits.length === 0 ? (
-              <div className="text-gray-500">Aucun forfait dans cette categorie.</div>
-            ) : (
-              <div className="space-y-3 max-h-[520px] overflow-auto">
-                {sortedForfaits.map((f) => (
-                  <div key={f.id} className="border border-gray-200 rounded-lg p-4">
-                    <div className="flex justify-between items-start gap-3">
-                      <div>
-                        <div className="font-semibold">{f.plan}</div>
-                        <div className="text-sm text-gray-600">{Number(f.prix || 0).toLocaleString()} FCFA • {f.duree} {f.periode || 'MOIS'}</div>
-                        <div className="text-xs text-gray-500 mt-1">{f.description || '-'}</div>
-                      </div>
-                      <button
-                        onClick={() => startEdit(f)}
-                        className="px-3 py-2 border border-gray-200 rounded-lg hover:bg-gray-50 flex items-center gap-2 text-sm"
-                      >
-                        <Edit3 className="h-4 w-4" /> Modifier
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        </div>
+          {loading ? (
+            <div className="rounded-xl border border-dashed border-border p-10 text-center text-sm text-muted-foreground">Chargement...</div>
+          ) : sortedForfaits.length === 0 ? (
+            <EmptyState icon={Layers} title="Aucun forfait" description="Creez un forfait pour cette categorie." />
+          ) : (
+            <DataTable
+              data={sortedForfaits}
+              columns={[
+                { key: 'plan', label: 'Plan', render: (f) => <span className="font-medium text-foreground">{f.plan}</span> },
+                { key: 'prix', label: 'Prix', render: (f) => <span className="font-semibold">{formatFCFA(f.prix)}</span> },
+                { key: 'duree', label: 'Duree', render: (f) => `${f.duree} ${f.periode || 'MOIS'}` },
+                { key: 'description', label: 'Description', render: (f) => <span className="text-muted-foreground">{f.description || '-'}</span> },
+                {
+                  key: 'actions',
+                  label: '',
+                  className: 'text-right',
+                  cellClassName: 'text-right',
+                  render: (f) => <Button size="sm" variant="secondary" onClick={() => startEdit(f)}><Edit3 className="h-4 w-4" /> Modifier</Button>,
+                },
+              ]}
+            />
+          )}
+        </Card>
       </div>
     </div>
   )

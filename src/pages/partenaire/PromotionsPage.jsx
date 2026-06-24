@@ -223,11 +223,11 @@ export default function PromotionsPage() {
   const codesOfExpanded = expandedPromotionId ? codesByPromotion[expandedPromotionId] || [] : []
 
   return (
-    <div className="min-h-screen bg-gray-50 p-8">
-      <div className="max-w-6xl mx-auto">
-        <div className="mb-8">
+    <div className="space-y-6">
+      <div className="mx-auto max-w-6xl">
+        <div className="mb-6">
           <h1 className="text-3xl font-bold mb-2 flex items-center gap-3">
-            <Tags className="h-8 w-8 text-slate-700" />
+            <Tags className="h-8 w-8 text-primary" />
             Promotions & Codes promo
           </h1>
           <p className="text-gray-600">Gérez les réductions de vos offres (optionnellement liées à une offre précise).</p>
@@ -240,11 +240,11 @@ export default function PromotionsPage() {
         ) : (
           <div className="grid lg:grid-cols-2 gap-8">
             {/* Formulaire */}
-            <div className="bg-white rounded-2xl border-2 border-gray-200 p-6 shadow-sm">
+            <div className="rounded-xl border border-border bg-card p-6 shadow-sm">
               <div className="flex items-center justify-between mb-4">
                 <h2 className="text-xl font-bold">{promoForm.id ? 'Modifier promotion' : 'Créer promotion'}</h2>
                 {promoForm.id ? (
-                  <button onClick={cancelEdit} className="text-sm text-slate-600 hover:text-slate-900">
+                  <button onClick={cancelEdit} className="text-sm font-medium text-muted-foreground hover:text-foreground">
                     Annuler
                   </button>
                 ) : null}
@@ -254,7 +254,7 @@ export default function PromotionsPage() {
                 <div>
                   <label className="block text-sm font-semibold text-gray-700 mb-2">Nom *</label>
                   <input
-                    className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-slate-600"
+                    className="w-full rounded-lg border border-input bg-card px-4 py-3 text-sm outline-none transition focus:ring-2 focus:ring-ring/20"
                     value={promoForm.nom}
                     onChange={(e) => setPromoForm((s) => ({ ...s, nom: e.target.value }))}
                     required
@@ -264,7 +264,7 @@ export default function PromotionsPage() {
                 <div>
                   <label className="block text-sm font-semibold text-gray-700 mb-2">Description</label>
                   <textarea
-                    className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-slate-600"
+                    className="w-full rounded-lg border border-input bg-card px-4 py-3 text-sm outline-none transition focus:ring-2 focus:ring-ring/20"
                     value={promoForm.description}
                     onChange={(e) => setPromoForm((s) => ({ ...s, description: e.target.value }))}
                     rows={3}
@@ -275,7 +275,7 @@ export default function PromotionsPage() {
                   <div>
                     <label className="block text-sm font-semibold text-gray-700 mb-2">Type *</label>
                     <select
-                      className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-slate-600"
+                      className="w-full rounded-lg border border-input bg-card px-4 py-3 text-sm outline-none transition focus:ring-2 focus:ring-ring/20"
                       value={promoForm.type}
                       onChange={(e) => setPromoForm((s) => ({ ...s, type: e.target.value }))}
                     >
@@ -288,7 +288,7 @@ export default function PromotionsPage() {
                     <label className="block text-sm font-semibold text-gray-700 mb-2">Valeur *</label>
                     <input
                       type="number"
-                      className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-slate-600"
+                      className="w-full rounded-lg border border-input bg-card px-4 py-3 text-sm outline-none transition focus:ring-2 focus:ring-ring/20"
                       value={promoForm.valeur}
                       onChange={(e) => setPromoForm((s) => ({ ...s, valeur: e.target.value }))}
                       required
@@ -301,7 +301,7 @@ export default function PromotionsPage() {
                     <label className="block text-sm font-semibold text-gray-700 mb-2">Date début *</label>
                     <input
                       type="date"
-                      className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-slate-600"
+                      className="w-full rounded-lg border border-input bg-card px-4 py-3 text-sm outline-none transition focus:ring-2 focus:ring-ring/20"
                       value={promoForm.dateDebut}
                       onChange={(e) => setPromoForm((s) => ({ ...s, dateDebut: e.target.value }))}
                       required
@@ -311,7 +311,7 @@ export default function PromotionsPage() {
                     <label className="block text-sm font-semibold text-gray-700 mb-2">Date fin *</label>
                     <input
                       type="date"
-                      className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-slate-600"
+                      className="w-full rounded-lg border border-input bg-card px-4 py-3 text-sm outline-none transition focus:ring-2 focus:ring-ring/20"
                       value={promoForm.dateFin}
                       onChange={(e) => setPromoForm((s) => ({ ...s, dateFin: e.target.value }))}
                       required
@@ -324,7 +324,7 @@ export default function PromotionsPage() {
                     Offre concernée (optionnel)
                   </label>
                   <select
-                    className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-slate-600"
+                    className="w-full rounded-lg border border-input bg-card px-4 py-3 text-sm outline-none transition focus:ring-2 focus:ring-ring/20"
                     value={promoForm.abonnementId}
                     onChange={(e) => setPromoForm((s) => ({ ...s, abonnementId: e.target.value }))}
                   >
@@ -340,7 +340,7 @@ export default function PromotionsPage() {
                 <button
                   disabled={promoSubmitting}
                   type="submit"
-                  className="w-full px-4 py-3 bg-slate-700 text-white rounded-lg font-semibold hover:bg-slate-800 disabled:opacity-50 transition-all flex items-center justify-center gap-2"
+                  className="flex w-full items-center justify-center gap-2 rounded-lg bg-primary px-4 py-3 font-semibold text-primary-foreground transition hover:bg-primary/90 disabled:opacity-50"
                 >
                   {promoSubmitting ? '...' : promoForm.id ? 'Enregistrer' : 'Créer'}
                 </button>
@@ -350,14 +350,14 @@ export default function PromotionsPage() {
             {/* Liste promotions */}
             <div className="space-y-4">
               {promotions.length === 0 ? (
-                <div className="bg-white rounded-2xl border-2 border-gray-200 p-6 text-center text-gray-600">
+                  <div className="rounded-xl border border-border bg-card p-6 text-center text-muted-foreground">
                   Aucune promotion pour le moment.
                 </div>
               ) : (
                 promotions.map((p) => {
                   const connectedOffre = p.abonnementId ? offreLabelById(p.abonnementId) : 'Toutes offres'
                   return (
-                    <div key={p.id} className="bg-white rounded-2xl border-2 border-gray-200 p-6 shadow-sm">
+                    <div key={p.id} className="rounded-xl border border-border bg-card p-6 shadow-sm">
                       <div className="flex items-start justify-between gap-4 mb-3">
                         <div className="min-w-0">
                           <div className="flex items-center gap-2">
@@ -384,14 +384,14 @@ export default function PromotionsPage() {
                         <div className="flex items-center gap-2">
                           <button
                             onClick={() => editPromotion(p)}
-                            className="p-2 hover:bg-slate-50 rounded-lg transition-all"
+                            className="rounded-lg p-2 transition hover:bg-muted"
                             title="Modifier"
                           >
                             <Edit3 className="h-5 w-5 text-slate-700" />
                           </button>
                           <button
                             onClick={() => togglePromoActive(p, !p.enabled)}
-                            className="p-2 hover:bg-slate-50 rounded-lg transition-all"
+                            className="rounded-lg p-2 transition hover:bg-muted"
                             title={p.enabled ? 'Désactiver' : 'Activer'}
                           >
                             {p.enabled ? <XCircle className="h-5 w-5 text-orange-600" /> : <CheckCircle2 className="h-5 w-5 text-green-600" />}
@@ -410,7 +410,7 @@ export default function PromotionsPage() {
                         <button
                           type="button"
                           onClick={() => toggleExpanded(p.id)}
-                          className="flex items-center gap-2 text-slate-700 hover:text-slate-900 font-semibold"
+                          className="flex items-center gap-2 font-semibold text-primary hover:text-primary/80"
                         >
                           <Code className="h-4 w-4" />
                           {expandedPromotionId === p.id ? 'Masquer codes' : 'Gérer codes'}
@@ -429,28 +429,28 @@ export default function PromotionsPage() {
                               {/* Form code */}
                               <div className="flex flex-col sm:flex-row gap-2 mb-3">
                                 <input
-                                  className="flex-1 px-4 py-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-slate-600"
+                                  className="flex-1 rounded-lg border border-input bg-card px-4 py-3 text-sm outline-none transition focus:ring-2 focus:ring-ring/20"
                                   placeholder="Code (ex: SAVE20)"
                                   value={codeForm.code}
                                   onChange={(e) => setCodeForm((s) => ({ ...s, code: e.target.value }))}
                                 />
                                 <input
                                   type="number"
-                                  className="w-full sm:w-40 px-4 py-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-slate-600"
+                                  className="w-full rounded-lg border border-input bg-card px-4 py-3 text-sm outline-none transition focus:ring-2 focus:ring-ring/20 sm:w-40"
                                   value={codeForm.nbUtilisationsMax}
                                   onChange={(e) => setCodeForm((s) => ({ ...s, nbUtilisationsMax: e.target.value }))}
                                   title="Limite d'utilisations (-1 = illimité)"
                                 />
                                 <input
                                   type="date"
-                                  className="w-full sm:w-44 px-4 py-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-slate-600"
+                                  className="w-full rounded-lg border border-input bg-card px-4 py-3 text-sm outline-none transition focus:ring-2 focus:ring-ring/20 sm:w-44"
                                   value={codeForm.dateExpiration}
                                   onChange={(e) => setCodeForm((s) => ({ ...s, dateExpiration: e.target.value }))}
                                 />
                                 <button
                                   type="button"
                                   onClick={() => submitCode(p.id)}
-                                  className="px-4 py-3 bg-slate-700 text-white rounded-lg font-semibold hover:bg-slate-800 transition-all flex items-center gap-2"
+                                  className="flex items-center gap-2 rounded-lg bg-primary px-4 py-3 font-semibold text-primary-foreground transition hover:bg-primary/90"
                                 >
                                   <Plus className="h-4 w-4" />
                                   Ajouter
@@ -463,7 +463,7 @@ export default function PromotionsPage() {
                                   <div className="text-sm text-gray-600">Aucun code pour cette promotion.</div>
                                 ) : (
                                   (codesByPromotion[p.id] || []).map((cp) => (
-                                    <div key={cp.id} className="flex items-center justify-between gap-3 p-3 bg-gray-50 rounded-lg border border-gray-100">
+                                    <div key={cp.id} className="flex items-center justify-between gap-3 rounded-lg border border-border bg-muted/30 p-3">
                                       <div className="min-w-0">
                                         <div className="font-semibold truncate">{cp.code}</div>
                                         <div className="text-xs text-gray-500">

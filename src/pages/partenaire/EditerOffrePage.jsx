@@ -138,36 +138,43 @@ export default function EditerOffrePage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="flex min-h-80 items-center justify-center">
         <div className="text-center">
-          <Loader className="h-12 w-12 text-slate-600 animate-spin mx-auto mb-4" />
+          <Loader className="mx-auto mb-4 h-12 w-12 animate-spin text-primary" />
           <p className="text-gray-600">Chargement de l'offre...</p>
         </div>
       </div>
     )
   }
 
-  return (
-    <div className="min-h-screen bg-gray-50 p-8">
-      <div className="max-w-4xl mx-auto">
-        <button
-          onClick={() => navigate(-1)}
-          className="flex items-center gap-2 text-gray-600 hover:text-gray-900 mb-6 transition-all"
-        >
-          <ArrowLeft className="h-5 w-5" />
-          Retour
-        </button>
+return (
+  <div className="space-y-6">
+    <div className="mx-auto max-w-6xl">
+      {/* Bouton Retour */}
+      <button
+        onClick={() => navigate(-1)}
+        className="mb-6 flex items-center gap-2 text-sm text-muted-foreground transition hover:text-foreground font-medium"
+      >
+        <ArrowLeft className="h-4 w-4" />
+        Retour
+      </button>
 
-        <div className="bg-white rounded-2xl border-2 border-gray-200 shadow-lg p-8">
-          <div className="mb-8">
-            <h1 className="text-3xl font-bold mb-2">Modifier l'offre</h1>
-            <p className="text-gray-600">Offre ID: #{id}</p>
-          </div>
+      {/* En-tête du formulaire */}
+      <div className="mb-8">
+        <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight">Modifier l&apos;offre</h1>
+        <p className="text-slate-500 text-sm mt-1">Offre ID: <code className="bg-slate-100 font-mono text-xs px-1.5 py-0.5 rounded text-slate-700">#{id}</code></p>
+      </div>
 
-          <form onSubmit={handleSubmit} className="space-y-6">
+      <form onSubmit={handleSubmit} className="grid grid-cols-1 gap-8 lg:grid-cols-3">
+        
+        {/* COLONNE GAUCHE : Informations principales (2/3) */}
+        <div className="lg:col-span-2 space-y-6">
+          <div className="rounded-xl border border-border bg-card p-6 shadow-sm sm:p-8 space-y-6">
+            
+            {/* Nom de l'offre */}
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">
-                Nom de l'offre *
+              <label className="block text-sm font-semibold text-slate-900 mb-2">
+                Nom de l&apos;offre <span className="text-destructive">*</span>
               </label>
               <input
                 type="text"
@@ -176,38 +183,40 @@ export default function EditerOffrePage() {
                 value={formData.nom}
                 onChange={handleChange}
                 placeholder="Ex: Netflix Premium 1 mois"
-                className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-slate-500 transition-all"
+                className="w-full rounded-lg border border-input bg-card px-4 py-3 text-sm outline-none transition focus:ring-2 focus:ring-primary/20"
               />
             </div>
 
+            {/* Description */}
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">
-                Description *
+              <label className="block text-sm font-semibold text-slate-900 mb-2">
+                Description <span className="text-destructive">*</span>
               </label>
               <textarea
                 name="description"
                 required
                 value={formData.description}
                 onChange={handleChange}
-                rows="4"
-                placeholder="DÃ©crivez votre offre..."
-                className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-slate-500 transition-all"
+                rows="5"
+                placeholder="Décrivez votre offre..."
+                className="w-full rounded-lg border border-input bg-card px-4 py-3 text-sm outline-none transition focus:ring-2 focus:ring-primary/20 resize-none"
               />
             </div>
 
+            {/* Catégorie & Durée */}
             <div className="grid sm:grid-cols-2 gap-6">
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  CatÃ©gorie *
+                <label className="block text-sm font-semibold text-slate-900 mb-2">
+                  Catégorie <span className="text-destructive">*</span>
                 </label>
                 <select
                   name="categorie"
                   required
                   value={formData.categorie}
                   onChange={handleChange}
-                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-slate-500 transition-all"
+                  className="w-full rounded-lg border border-input bg-card px-4 py-3 text-sm outline-none transition focus:ring-2 focus:ring-primary/20"
                 >
-                  <option value="FILMS_SERIES">Films & SÃ©ries</option>
+                  <option value="FILMS_SERIES">Films & Séries</option>
                   <option value="MUSIQUE">Musique</option>
                   <option value="GAMING">Gaming</option>
                   <option value="EBOOKS">Ebooks</option>
@@ -216,15 +225,15 @@ export default function EditerOffrePage() {
               </div>
 
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  DurÃ©e (mois) *
+                <label className="block text-sm font-semibold text-slate-900 mb-2">
+                  Durée (mois) <span className="text-destructive">*</span>
                 </label>
                 <select
                   name="duree"
                   required
                   value={formData.duree}
                   onChange={handleChange}
-                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-slate-500 transition-all"
+                  className="w-full rounded-lg border border-input bg-card px-4 py-3 text-sm outline-none transition focus:ring-2 focus:ring-primary/20"
                 >
                   <option value="1">1 mois</option>
                   <option value="3">3 mois</option>
@@ -234,31 +243,43 @@ export default function EditerOffrePage() {
               </div>
             </div>
 
+            {/* Section Forfaits liés */}
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">
-                Forfaits lies *
-              </label>
-              <p className="text-xs text-gray-500 mb-2">
-                Le prix client est defini automatiquement par les forfaits lies.
-              </p>
-              <div className="border-2 border-gray-200 rounded-lg p-4 max-h-56 overflow-auto space-y-2">
+              <div className="mb-2">
+                <label className="block text-sm font-semibold text-slate-900">
+                  Forfaits liés <span className="text-destructive">*</span>
+                </label>
+                <p className="text-xs text-slate-500 mt-0.5">Le prix client est défini automatiquement par les forfaits liés.</p>
+              </div>
+              
+              <div className="max-h-56 space-y-2 overflow-auto rounded-lg border border-border bg-slate-50/50 p-4">
                 {loadingForfaits ? (
-                  <div className="text-sm text-gray-500">Chargement des forfaits...</div>
+                  <div className="text-sm text-slate-500 flex items-center gap-2 py-2">
+                    <Loader className="h-4 w-4 animate-spin text-primary" /> Chargement des forfaits...
+                  </div>
                 ) : forfaitsDisponibles.length === 0 ? (
-                  <div className="text-sm text-gray-500">Aucun forfait disponible pour cette categorie.</div>
+                  <div className="text-sm text-slate-500 py-2">Aucun forfait disponible pour cette catégorie.</div>
                 ) : (
                   forfaitsDisponibles.map((f) => (
-                    <label key={f.id} className="flex items-center justify-between gap-3 p-2 rounded hover:bg-gray-50">
-                      <div className="flex items-center gap-2">
+                    <label 
+                      key={f.id} 
+                      className={`flex items-center justify-between gap-3 rounded-lg border p-3 cursor-pointer transition ${
+                        selectedForfaitIds.includes(f.id) 
+                          ? 'border-primary bg-primary/5' 
+                          : 'border-transparent bg-card hover:bg-muted/50'
+                      }`}
+                    >
+                      <div className="flex items-center gap-3">
                         <input
                           type="checkbox"
+                          className="h-4 w-4 rounded border-input text-primary focus:ring-primary/20"
                           checked={selectedForfaitIds.includes(f.id)}
                           onChange={() => toggleForfait(f.id)}
                         />
-                        <span className="text-sm font-medium">{f.plan}</span>
+                        <span className="text-sm font-semibold text-slate-900">{f.plan}</span>
                       </div>
-                      <span className="text-xs text-gray-600">
-                        {Number(f.prix || 0).toLocaleString()} FCFA / {f.duree} {f.periode || 'MOIS'}
+                      <span className="text-sm font-bold text-slate-900 bg-slate-100 px-2.5 py-1 rounded-md">
+                        {Number(f.prix || 0).toLocaleString()} FCFA <span className="text-xs font-normal text-slate-500">/ {f.duree} {f.periode || 'MOIS'}</span>
                       </span>
                     </label>
                   ))
@@ -266,74 +287,144 @@ export default function EditerOffrePage() {
               </div>
             </div>
 
-            <div className="grid sm:grid-cols-2 gap-6">
+          </div>
+        </div>
 
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  Stock disponible *
-                </label>
-                <input
-                  type="number"
-                  name="stock"
-                  required
-                  value={formData.stock}
-                  onChange={handleChange}
-                  placeholder="50"
-                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-slate-500 transition-all"
-                />
-              </div>
+        {/* COLONNE DROITE : Paramètres & Médias (1/3) */}
+        <div className="space-y-6 lg:sticky lg:top-6 h-fit">
+          <div className="rounded-xl border border-border bg-card p-6 shadow-sm space-y-6">
+            
+            {/* Stock disponible */}
+            <div>
+              <label className="block text-sm font-semibold text-slate-900 mb-2">
+                Stock disponible <span className="text-destructive">*</span>
+              </label>
+              <input
+                type="number"
+                name="stock"
+                required
+                value={formData.stock}
+                onChange={handleChange}
+                placeholder="50"
+                className="w-full rounded-lg border border-input bg-card px-4 py-3 text-sm outline-none transition focus:ring-2 focus:ring-primary/20"
+              />
             </div>
 
+            {/* Photo de l'offre */}
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">
+              <label className="block text-sm font-semibold text-slate-900 mb-2">
                 Photo de l&apos;offre
               </label>
-              <div className="border-2 border-dashed border-gray-300 rounded-xl p-4 bg-gray-50 mb-3">
+              
+              <div className="rounded-xl border border-dashed border-slate-300 bg-slate-50/50 p-4 transition-colors hover:border-primary/50">
                 <input type="file" accept="image/*" onChange={handleImageChange} className="hidden" id="edit-offre-img" />
-                <label htmlFor="edit-offre-img" className="flex flex-col items-center cursor-pointer gap-2">
+                <label htmlFor="edit-offre-img" className="flex flex-col items-center justify-center cursor-pointer gap-2 py-4">
                   {imagePreview ? (
-                    <img src={imagePreview} alt="" className="max-h-40 rounded-lg" />
+                    <div className="relative group w-full">
+                      <img src={imagePreview} alt="Aperçu" className="max-h-40 w-full rounded-lg object-contain shadow-sm" />
+                      <div className="absolute inset-0 bg-black/40 rounded-lg flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                        <span className="text-white text-xs font-medium">Remplacer la nouvelle image</span>
+                      </div>
+                    </div>
                   ) : formData.imageUrl ? (
-                    <img src={formData.imageUrl} alt="" className="max-h-40 rounded-lg object-contain" />
+                    <div className="relative group w-full">
+                      <img src={formData.imageUrl} alt="Actuelle" className="max-h-40 w-full rounded-lg object-contain shadow-sm" />
+                      <div className="absolute inset-0 bg-black/40 rounded-lg flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                        <span className="text-white text-xs font-medium">Changer l&apos;image actuelle</span>
+                      </div>
+                    </div>
                   ) : (
                     <>
-                      <ImagePlus className="h-10 w-10 text-slate-400" />
-                      <span className="text-sm text-slate-600">Remplacer l&apos;image</span>
+                      <div className="p-3 bg-white rounded-full shadow-sm border border-slate-100">
+                        <ImagePlus className="h-6 w-6 text-slate-500" />
+                      </div>
+                      <span className="text-xs font-semibold text-slate-700">Ajouter une image</span>
                     </>
                   )}
                 </label>
               </div>
-              <label className="block text-xs text-gray-500 mb-1">Ou URL</label>
-              <input
-                type="url"
-                name="imageUrl"
-                value={formData.imageUrl}
-                onChange={handleChange}
-                placeholder="https://..."
-                className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-slate-500 transition-all"
-              />
+              
+              {/* URL alternative */}
+              <div className="mt-4">
+                <label className="block text-[11px] font-medium text-slate-500 mb-1">Ou modifier par URL</label>
+                <input
+                                    type="url"
+                  name="imageUrl"
+                  value={formData.imageUrl}
+                  onChange={handleChange}
+                  placeholder="https://exemple.com/image.jpg"
+                  className="w-full rounded-lg border border-input bg-card px-4 py-3 text-sm outline-none transition focus:ring-2 focus:ring-primary/20"
+                />
+              </div>
             </div>
 
-            <div className="flex gap-4 pt-6 border-t-2 border-gray-100">
-              <button
-                type="submit"
-                disabled={submitting}
-                className="flex-1 px-6 py-3 bg-slate-600 text-white rounded-lg font-semibold hover:bg-slate-700 transition-all flex items-center justify-center gap-2 shadow-lg hover:shadow-xl disabled:opacity-50"
-              >
-                {submitting ? <Loader className="h-5 w-5 animate-spin" /> : <Save className="h-5 w-5" />}
-                {submitting ? 'Enregistrement...' : 'Enregistrer les modifications'}
-              </button>
-              <button
-                type="button"
-                onClick={() => navigate(-1)}
-                className="px-6 py-3 border-2 border-gray-200 rounded-lg font-semibold hover:border-gray-300 transition-all"
-              >
-                Annuler
-              </button>
+            {/* Statut / Informations supplémentaires */}
+            <div>
+              <label className="block text-sm font-semibold text-slate-900 mb-2">
+                Statut de l&apos;offre
+              </label>
+              <div className="flex items-center gap-3 p-3 bg-slate-50 rounded-lg border border-slate-100">
+                <div className={`h-2.5 w-2.5 rounded-full ${formData.statut === 'ACTIVE' ? 'bg-emerald-500' : 'bg-slate-400'}`} />
+                <span className="text-sm font-medium text-slate-700">
+                  {formData.statut === 'ACTIVE' ? 'Active' : 'Inactive'}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => {/* Logique toggle statut */}}
+                  className="ml-auto text-xs text-primary font-semibold hover:underline"
+                >
+                  Changer
+                </button>
+              </div>
             </div>
-          </form>
+
+            {/* Date de création / modification */}
+            <div className="border-t border-border pt-4 space-y-2">
+              <div className="flex justify-between text-xs text-slate-500">
+                <span>Créé le</span>
+                <span className="font-mono">{new Date(formData.createdAt).toLocaleDateString('fr-FR')}</span>
+              </div>
+              <div className="flex justify-between text-xs text-slate-500">
+                <span>Dernière modification</span>
+                <span className="font-mono">{new Date(formData.updatedAt).toLocaleDateString('fr-FR')}</span>
+              </div>
+            </div>
+
+          </div>
+
+          {/* Bloc des actions */}
+          <div className="rounded-xl border border-border bg-card p-6 shadow-sm space-y-4">
+            <button
+              type="submit"
+              disabled={submitting}
+              className="w-full flex items-center justify-center gap-2 rounded-lg bg-primary px-6 py-3.5 font-semibold text-primary-foreground transition hover:bg-primary/90 hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {submitting ? <Loader className="h-5 w-5 animate-spin" /> : <Save className="h-5 w-5" />}
+              {submitting ? 'Enregistrement...' : 'Enregistrer les modifications'}
+            </button>
+            
+            <button
+              type="button"
+              onClick={() => navigate(-1)}
+              className="w-full rounded-lg border border-border bg-card px-6 py-3.5 font-semibold text-slate-700 transition hover:bg-slate-50 hover:border-slate-300"
+            >
+              Annuler
+            </button>
+
+            {/* Bouton de suppression (optionnel) */}
+            <button
+              type="button"
+              onClick={() => {/* Logique suppression */}}
+              className="w-full rounded-lg border border-destructive/20 bg-destructive/5 px-6 py-3 font-semibold text-destructive transition hover:bg-destructive/10 hover:border-destructive/30 text-sm"
+            >
+              Supprimer l&apos;offre
+            </button>
+          </div>
         </div>
-      </div>
+
+      </form>
     </div>
-  )
+  </div>
+);
+
 }

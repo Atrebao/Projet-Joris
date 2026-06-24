@@ -1,3 +1,4 @@
+import { BookOpen, Gamepad2, Gift, Headphones, Loader, Search, ShieldCheck, Sparkles, Tv, Zap } from 'lucide-react'
 export const HOMECLIENT = "/client";
 export const HOMEADMIN = "/backoffice";
 export const HOMEPARTENAIRE = "/partenaire";
@@ -95,44 +96,46 @@ export const months = [
   { code: 12, name: "Décembre" },
 ];
 
+export const CATEGORIES = [
+  { value: '', label: 'Tout', icon: Sparkles },
+  { value: 'FILMS_SERIES', label: 'Streaming', icon: Tv },
+  { value: 'MUSIQUE', label: 'Musique', icon: Headphones },
+  { value: 'GAMING', label: 'Gaming', icon: Gamepad2 },
+  { value: 'EBOOKS', label: 'Cartes Cadeaux', icon: Gift },
+  { value: 'SPORT', label: 'Ebooks', icon: BookOpen }
+]
 
-// export const paymentMethods = [
-//   {
-//     id: "wave",
-//     name: "Wave",
-//     value: "WAVE",
-//     icon: "", // Vous pouvez remplacer par une vraie image
-//     color: "blue-500",
-//   },
-//   {
-//     id: "orange",
-//     name: "Orange Money",
-//     value: "OM_SKAN",
-//     icon: "",
-//     color: "orange-500",
-//   },
-//   {
-//     id: "mtn",
-//     name: "MTN Money",
-//     value: "MTN_SKAN",
-//     icon: "",
-//     color: "yellow-500",
-//   },
-//   {
-//     id: "moov",
-//     name: "Moov Money",
-//     value: "MOOV_SKAN",
-//     icon: "",
-//     color: "yellow-500",
-//   },
-//   {
-//     id: "visa",
-//     name: "Visa",
-//     icon: "",
-//     value: "VISA",
-//     color: "slate-600",
-//   },
-// ];
+export const OPERATOR_BADGES = [
+  { 
+    id: 'orange',
+    label: 'Orange', 
+    logoUrl: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRiNkcP-3jO9hJmuSHaXVo8yEzdoy-lOy8NcQgBHvbqCw&s=10',
+    className: 'border-orange-500 bg-black p-0.5', // Fond noir car le logo Orange est transparent/blanc parfois, ou 'bg-orange-500' selon le fichier,
+    operateur: 'ORANGE'
+  },
+  { 
+    id: 'mtn',
+    label: 'MTN', 
+    logoUrl: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTlqaD_Qzu_IV_656Imb1VC9S9ik-48CY-SEyRKzdKOVw&s=10',
+    className: 'bg-[#FFCC00] p-0.5 border-[#FFCC00]' ,
+    operateur: 'MTN'
+  },
+  { 
+    id: 'moov',
+    label: 'Moov', 
+    logoUrl: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQ7iEvNAHsFlwe7yYgXHjcZif32WIRTgyLKb8jvuaJiaA&s=10',
+    className: 'bg-white p-0.5 border-slate-200' ,
+    operateur: 'MOOV'
+    
+  },
+  { 
+    id: 'wave',
+    label: 'Wave', 
+    logoUrl: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSZaeFi3xAkC86Ui29AojMASpYfFMPLDzf-1hTcDVS-0Q&s=10',
+    className: 'bg-[#00B4D8] p-1 border-[#00B4D8]' ,
+    operateur: 'WAVE'
+  }
+];
 
 
 export const paymentMethods = [

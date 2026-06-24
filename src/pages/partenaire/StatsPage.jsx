@@ -1,9 +1,10 @@
-import { useState, useEffect } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { TrendingUp, DollarSign, Package, ShoppingCart, Calendar, BarChart3 } from 'lucide-react'
+import { BarChart3, Calendar, Package, ShoppingCart, TrendingUp, Users, Wallet } from 'lucide-react'
+import toast from 'react-hot-toast'
 import { getPartenaireId } from '../../Utils/Utils'
 import { statsAPI, offresAPI, souscriptionsAPI } from '../../lib/api'
-import toast from 'react-hot-toast'
+import { Badge, Card, DataTable, KpiCard, LoadingState, PageHeader, Select, formatFCFA } from '../../components/saas/SaasPrimitives'
 
 export default function StatsPage() {
   const navigate = useNavigate()
@@ -17,7 +18,7 @@ export default function StatsPage() {
     clientsMois: 0,
     tendance: '+0%',
     meilleurOffre: '-',
-    categorieTop: '-'
+    categorieTop: '-',
   })
   const [ventesParJour, setVentesParJour] = useState([])
   const [offreTop, setOffreTop] = useState([])
@@ -49,10 +50,7 @@ export default function StatsPage() {
             c.setHours(0, 0, 0, 0)
             return c.getTime() === d.getTime()
           }).length
-          days.push({
-            jour: d.toLocaleDateString('fr-FR', { weekday: 'short' }),
-            ventes: dayCount,
-          })
+          days.push({ jour: d.toLocaleDateString('fr-FR', { weekday: 'short' }), ventes: dayCount })
         }
         setVentesParJour(days)
 
@@ -64,10 +62,7 @@ export default function StatsPage() {
           current.revenu += Number(sub?.montantPartenaire || sub?.montant || 0)
           byOffre.set(nom, current)
         })
-        const top = Array.from(byOffre.values())
-          .sort((a, b) => b.ventes - a.ventes)
-          .slice(0, 5)
-        setOffreTop(top)
+        setOffreTop(Array.from(byOffre.values()).sort((a, b) => b.ventes - a.ventes).slice(0, 5))
 
         setStats({
           ventesMois: subs.length,
@@ -75,10 +70,11 @@ export default function StatsPage() {
           offresMois: s.offresActives ?? 0,
           clientsMois: s.clientsUniques ?? 0,
           tendance: `${(s.croissance ?? 0) >= 0 ? '+' : ''}${Number(s.croissance ?? 0).toFixed(1)}%`,
-          meilleurOffre: offresRes?.data?.[0]?.nomService || '-',
-          categorieTop: offresRes?.data?.[0]?.categorie || '-'
+          meilleurOffre: offresRes?.data?.[0]?.nomService || offresRes?.data?.[0]?.nom || '-',
+          categorieTop: offresRes?.data?.[0]?.categorie || '-',
         })
       } catch (error) {
+        console.error(error)
         toast.error('Impossible de charger les statistiques')
         setVentesParJour([])
         setOffreTop([])
@@ -98,155 +94,97 @@ export default function StatsPage() {
     { jour: 'Sam', ventes: 0 },
     { jour: 'Dim', ventes: 0 },
   ]
-  const offreTopAffichage = offreTop.length > 0 ? offreTop : []
-  const maxVentes = Math.max(1, ...ventesParJourAffichage.map(v => v.ventes))
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="inline-block h-12 w-12 border-4 border-slate-600 border-t-transparent rounded-full animate-spin"></div>
-          <p className="mt-4 text-gray-600">Chargement des statistiques...</p>
-        </div>
-      </div>
-    )
-  }
+  const maxVentes = Math.max(1, ...ventesParJourAffichage.map((v) => v.ventes))
+  const totalTopRevenue = useMemo(() => offreTop.reduce((sum, offre) => sum + Number(offre.revenu || 0), 0), [offreTop])
+
+  if (loading) return <LoadingState label="Chargement des statistiques..." />
 
   return (
-    <div className="min-h-screen bg-gray-50 p-8">
-      <div className="max-w-7xl mx-auto">
-        {/* En-tête */}
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4">
-          <div>
-            <h1 className="text-3xl font-bold mb-2 flex items-center gap-3">
-              <BarChart3 className="h-8 w-8 text-slate-600" />
-              Statistiques & Performance
-            </h1>
-            <p className="text-gray-600">Analysez vos performances</p>
-          </div>
-          
-          <select
-            value={periode}
-            onChange={(e) => setPeriode(e.target.value)}
-            className="px-4 py-2 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-slate-500 font-semibold"
-          >
+    <div className="space-y-6">
+      <PageHeader
+        title="Statistiques"
+        description="Analyse de vos ventes, revenus et offres les plus performantes."
+        action={
+          <Select value={periode} onChange={(e) => setPeriode(e.target.value)}>
             <option value="semaine">Cette semaine</option>
             <option value="mois">Ce mois</option>
             <option value="trimestre">Ce trimestre</option>
-            <option value="annee">Cette année</option>
-          </select>
-        </div>
+            <option value="annee">Cette annee</option>
+          </Select>
+        }
+      />
 
-        {/* KPIs Principaux */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl p-6 text-white shadow-lg hover:shadow-xl transition-all">
-            <div className="flex items-center justify-between mb-4">
-              <ShoppingCart className="h-10 w-10 text-blue-100" />
-              <span className="text-blue-100 text-sm font-semibold">{stats.tendance}</span>
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <KpiCard label="Ventes ce mois" value={String(stats.ventesMois)} icon={ShoppingCart} trend={stats.tendance} />
+        <KpiCard label="Revenu ce mois" value={formatFCFA(stats.revenuMois)} icon={Wallet} accent="chart3" />
+        <KpiCard label="Offres actives" value={String(stats.offresMois)} icon={Package} accent="accent" />
+        <KpiCard label="Clients actifs" value={String(stats.clientsMois)} icon={Users} accent="chart4" />
+      </div>
+
+      <div className="grid gap-6 lg:grid-cols-2">
+        <Card className="p-5">
+          <div className="mb-5 flex items-center justify-between gap-3">
+            <div>
+              <h2 className="font-semibold text-foreground">Ventes par jour</h2>
+              <p className="text-sm text-muted-foreground">Les 7 derniers jours.</p>
             </div>
-            <div className="text-3xl font-bold mb-1">{stats.ventesMois}</div>
-            <div className="text-blue-100 text-sm">Ventes ce mois</div>
+            <BarChart3 className="h-5 w-5 text-primary" />
           </div>
-
-          <div className="bg-gradient-to-br from-green-500 to-green-600 rounded-2xl p-6 text-white shadow-lg hover:shadow-xl transition-all">
-            <div className="flex items-center justify-between mb-4">
-              <DollarSign className="h-10 w-10 text-green-100" />
-              <TrendingUp className="h-6 w-6 text-green-100" />
-            </div>
-            <div className="text-3xl font-bold mb-1">{(stats.revenuMois / 1000).toFixed(0)}K F</div>
-            <div className="text-green-100 text-sm">Revenu ce mois</div>
-          </div>
-
-          <div className="bg-gradient-to-br from-slate-500 to-slate-600 rounded-2xl p-6 text-white shadow-lg hover:shadow-xl transition-all">
-            <div className="flex items-center justify-between mb-4">
-              <Package className="h-10 w-10 text-slate-100" />
-              <Calendar className="h-6 w-6 text-slate-100" />
-            </div>
-            <div className="text-3xl font-bold mb-1">{stats.offresMois}</div>
-            <div className="text-slate-100 text-sm">Offres actives</div>
-          </div>
-
-          <div className="bg-gradient-to-br from-orange-500 to-orange-600 rounded-2xl p-6 text-white shadow-lg hover:shadow-xl transition-all">
-            <div className="flex items-center justify-between mb-4">
-              <TrendingUp className="h-10 w-10 text-orange-100" />
-              <span className="text-orange-100 text-sm font-semibold">{stats.tendance}</span>
-            </div>
-            <div className="text-3xl font-bold mb-1">{stats.clientsMois}</div>
-            <div className="text-orange-100 text-sm">Clients actifs</div>
-          </div>
-        </div>
-
-        <div className="grid lg:grid-cols-2 gap-6 mb-8">
-          {/* Graphique Ventes par jour */}
-          <div className="bg-white rounded-2xl border-2 border-gray-200 p-6 shadow-lg">
-            <h2 className="text-xl font-bold mb-6 flex items-center gap-2">
-              <BarChart3 className="h-6 w-6 text-slate-600" />
-              Ventes par jour (7 derniers jours)
-            </h2>
-            <div className="space-y-3">
-              {ventesParJourAffichage.map((jour, index) => (
-                <div key={index} className="flex items-center gap-4">
-                  <div className="w-12 text-sm font-semibold text-gray-600">{jour.jour}</div>
-                  <div className="flex-1">
-                    <div className="bg-gray-100 rounded-full h-8 overflow-hidden">
-                      <div 
-                        className="bg-gradient-to-r from-slate-500 to-slate-500 h-full flex items-center justify-end pr-3 text-white text-sm font-semibold transition-all"
-                        style={{ width: `${(jour.ventes / maxVentes) * 100}%` }}
-                      >
-                        {jour.ventes > 0 && jour.ventes}
-                      </div>
-                    </div>
+          <div className="space-y-3">
+            {ventesParJourAffichage.map((jour) => (
+              <div key={jour.jour} className="grid grid-cols-[3rem_1fr_2rem] items-center gap-3">
+                <span className="text-sm font-medium text-muted-foreground">{jour.jour}</span>
+                <div className="h-8 overflow-hidden rounded-full bg-muted">
+                  <div
+                    className="flex h-full items-center justify-end rounded-full bg-primary pr-3 text-xs font-semibold text-primary-foreground"
+                    style={{ width: `${Math.max(8, (jour.ventes / maxVentes) * 100)}%` }}
+                  >
+                    {jour.ventes > 0 ? jour.ventes : ''}
                   </div>
                 </div>
-              ))}
+                <span className="text-right text-sm font-semibold">{jour.ventes}</span>
+              </div>
+            ))}
+          </div>
+        </Card>
+
+        <Card className="p-5">
+          <div className="mb-5 flex items-center justify-between gap-3">
+            <div>
+              <h2 className="font-semibold text-foreground">Top offres</h2>
+              <p className="text-sm text-muted-foreground">{formatFCFA(totalTopRevenue)} sur les meilleures offres.</p>
             </div>
+            <TrendingUp className="h-5 w-5 text-primary" />
           </div>
+          <DataTable
+            data={offreTop}
+            emptyLabel="Aucune vente disponible"
+            columns={[
+              { key: 'nom', label: 'Offre', render: (offre) => <span className="font-medium text-foreground">{offre.nom}</span> },
+              { key: 'ventes', label: 'Ventes', render: (offre) => <Badge tone="muted">{offre.ventes}</Badge> },
+              { key: 'revenu', label: 'Revenu', render: (offre) => <span className="font-semibold">{formatFCFA(offre.revenu)}</span> },
+            ]}
+          />
+        </Card>
+      </div>
 
-          {/* Top 5 Offres */}
-          <div className="bg-white rounded-2xl border-2 border-gray-200 p-6 shadow-lg">
-            <h2 className="text-xl font-bold mb-6 flex items-center gap-2">
-              <TrendingUp className="h-6 w-6 text-green-600" />
-              Top 5 Offres
-            </h2>
-            <div className="space-y-4">
-              {offreTopAffichage.map((offre, index) => (
-                <div key={index} className="flex items-center gap-4 p-4 bg-gray-50 rounded-xl hover:bg-slate-50 transition-all">
-                  <div className="flex-shrink-0 w-8 h-8 bg-gradient-to-br from-slate-500 to-slate-500 rounded-full flex items-center justify-center text-white font-bold">
-                    {index + 1}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="font-semibold text-gray-900 truncate">{offre.nom}</div>
-                    <div className="text-sm text-gray-500">{offre.ventes} ventes</div>
-                  </div>
-                  <div className="text-right">
-                    <div className="font-bold text-green-600">{(offre.revenu / 1000).toFixed(0)}K</div>
-                    <div className="text-xs text-gray-500">FCFA</div>
-                  </div>
-                </div>
-              ))}
-              {offreTopAffichage.length === 0 && (
-                <div className="text-sm text-gray-500">Aucune vente disponible</div>
-              )}
-            </div>
+      <div className="grid gap-4 md:grid-cols-2">
+        <Card className="p-5">
+          <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 text-primary">
+            <TrendingUp className="h-5 w-5" />
           </div>
-        </div>
-
-        {/* Informations supplémentaires */}
-        <div className="grid md:grid-cols-2 gap-6">
-          <div className="bg-gradient-to-br from-slate-500 to-slate-600 rounded-2xl p-6 text-white shadow-lg">
-            <h3 className="text-lg font-bold mb-2">🏆 Meilleure Offre</h3>
-            <p className="text-2xl font-bold mb-1">{stats.meilleurOffre}</p>
-            <p className="text-slate-100 text-sm">Top ventes du partenaire</p>
+          <p className="text-sm text-muted-foreground">Meilleure offre</p>
+          <p className="mt-1 text-xl font-bold text-foreground">{stats.meilleurOffre}</p>
+        </Card>
+        <Card className="p-5">
+          <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-lg bg-accent text-accent-foreground">
+            <Calendar className="h-5 w-5" />
           </div>
-
-          <div className="bg-gradient-to-br from-slate-500 to-rose-600 rounded-2xl p-6 text-white shadow-lg">
-            <h3 className="text-lg font-bold mb-2">📊 Catégorie Leader</h3>
-            <p className="text-2xl font-bold mb-1">{stats.categorieTop}</p>
-            <p className="text-slate-100 text-sm">Categorie la plus representee</p>
-          </div>
-        </div>
+          <p className="text-sm text-muted-foreground">Categorie leader</p>
+          <p className="mt-1 text-xl font-bold text-foreground">{stats.categorieTop}</p>
+        </Card>
       </div>
     </div>
   )
 }
-

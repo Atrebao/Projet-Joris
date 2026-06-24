@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { NavLink, useLocation, useNavigate } from 'react-router-dom'
-import { Menu, X, LogOut, Moon, ShieldCheck, Store, Users } from 'lucide-react'
+import { Menu, X, LogOut, Sun, ShieldCheck, Store, Users } from 'lucide-react'
 import { resetStorage } from '../../Utils/Utils'
 
 export function cn(...classes) {
@@ -129,9 +129,9 @@ export function ServiceLogo({ name = 'Service', color, size = 'md', image }) {
 
 export function StatusBadge({ status }) {
   const normalized = String(status || '').toUpperCase()
-  if (['ACTIF', 'SUCCES', 'SUCCESS', 'LIVRE', 'LIVREE', 'VALIDATED'].includes(normalized)) return <Badge tone="success">Actif</Badge>
-  if (['EN_ATTENTE', 'PENDING', 'ATTENTE'].includes(normalized)) return <Badge tone="warning">En attente</Badge>
-  if (['SUSPENDU', 'FAILED', 'ECHEC', 'INACTIF'].includes(normalized)) return <Badge tone="danger">Suspendu</Badge>
+  if (['ACTIF', 'SUCCES', 'SUCCESS', 'LIVRE', 'LIVREE', 'VALIDATED'].includes(normalized)) return <Badge tone="success">SUCCES</Badge>
+  if (['EN_ATTENTE', 'PENDING', 'ATTENTE'].includes(normalized)) return <Badge tone="warning">EN ATTENTE</Badge>
+  if (['SUSPENDU', 'FAILED', 'ECHEC', 'INACTIF'].includes(normalized)) return <Badge tone="danger">ECHEC</Badge>
   return <Badge tone="muted">{status || '-'}</Badge>
 }
 
@@ -319,7 +319,7 @@ export function SaasTopBar({ active = 'admin' }) {
         </nav>
 
         <button className="flex h-8 w-8 items-center justify-center rounded-lg text-foreground transition hover:bg-muted" aria-label="Thème clair">
-          <Moon className="h-4 w-4" />
+          <Sun className="h-4 w-4" />
         </button>
       </div>
     </header>

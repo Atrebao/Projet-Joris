@@ -1,7 +1,20 @@
 import { useEffect, useMemo, useState } from 'react'
 import toast from 'react-hot-toast'
+import { Boxes, CheckCircle2, KeyRound, Plus, Upload, XCircle } from 'lucide-react'
 import { getPartenaireId } from '../../Utils/Utils'
 import { offresAPI, identifiantsStockAPI } from '../../lib/api'
+import {
+  Badge,
+  Button,
+  Card,
+  DataTable,
+  EmptyState,
+  Input,
+  KpiCard,
+  PageHeader,
+  Select,
+  ServiceLogo,
+} from '../../components/saas/SaasPrimitives'
 
 export default function IdentifiantsStockPage() {
   const partenaireId = getPartenaireId()
@@ -11,6 +24,19 @@ export default function IdentifiantsStockPage() {
   const [loading, setLoading] = useState(false)
   const [form, setForm] = useState({ login: '', password: '', instructions: '' })
   const [bulk, setBulk] = useState('')
+
+  const loadStock = async (id = offreId) => {
+    if (!id) return
+    setLoading(true)
+    try {
+      const { data } = await identifiantsStockAPI.listByOffre(Number(id))
+      setStocks(Array.isArray(data) ? data : [])
+    } catch {
+      setStocks([])
+    } finally {
+      setLoading(false)
+    }
+  }
 
   useEffect(() => {
     const loadOffres = async () => {
@@ -28,20 +54,11 @@ export default function IdentifiantsStockPage() {
   }, [partenaireId])
 
   useEffect(() => {
-    const loadStock = async () => {
-      if (!offreId) return
-      setLoading(true)
-      try {
-        const { data } = await identifiantsStockAPI.listByOffre(Number(offreId))
-        setStocks(Array.isArray(data) ? data : [])
-      } catch {
-        setStocks([])
-      } finally {
-        setLoading(false)
-      }
-    }
-    loadStock()
+    loadStock(offreId)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [offreId])
+
+  const selectedOffre = offres.find((o) => String(o.id) === String(offreId))
 
   const stats = useMemo(() => {
     const total = stocks.length
@@ -55,10 +72,9 @@ export default function IdentifiantsStockPage() {
     if (!offreId) return
     try {
       await identifiantsStockAPI.createForOffre(Number(offreId), form)
-      toast.success('Identifiant ajouté au stock')
+      toast.success('Identifiant ajoute au stock')
       setForm({ login: '', password: '', instructions: '' })
-      const { data } = await identifiantsStockAPI.listByOffre(Number(offreId))
-      setStocks(Array.isArray(data) ? data : [])
+      await loadStock(offreId)
     } catch (error) {
       toast.error(error?.response?.data?.message || 'Erreur ajout identifiant')
     }
@@ -66,10 +82,7 @@ export default function IdentifiantsStockPage() {
 
   const onAddBulk = async () => {
     if (!offreId || !bulk.trim()) return
-    const lines = bulk
-      .split('\n')
-      .map((l) => l.trim())
-      .filter(Boolean)
+    const lines = bulk.split('\n').map((l) => l.trim()).filter(Boolean)
 
     let success = 0
     for (const line of lines) {
@@ -84,112 +97,95 @@ export default function IdentifiantsStockPage() {
         success += 1
       } catch {}
     }
-    toast.success(`${success} identifiant(s) ajouté(s)`)
+    toast.success(`${success} identifiant(s) ajoute(s)`)
     setBulk('')
-    const { data } = await identifiantsStockAPI.listByOffre(Number(offreId))
-    setStocks(Array.isArray(data) ? data : [])
+    await loadStock(offreId)
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-8">
-      <div className="max-w-6xl mx-auto">
-        <h1 className="text-3xl font-bold mb-2">Stock d'identifiants</h1>
-        <p className="text-gray-600 mb-6">
-          Le stock sera utilisé automatiquement après paiement réussi. Livraison manuelle reste possible.
-        </p>
+    <div className="space-y-6">
+      <PageHeader
+        title="Stocks & Identifiants"
+        description="Ajoutez les comptes qui seront livres automatiquement apres paiement."
+        action={<Button variant="secondary" onClick={() => loadStock(offreId)}>Actualiser</Button>}
+      />
 
-        <div className="bg-white rounded-xl border p-4 mb-6 flex flex-wrap items-center gap-4">
-          <label className="font-semibold">Offre</label>
-          <select
-            value={offreId}
-            onChange={(e) => setOffreId(e.target.value)}
-            className="px-3 py-2 border rounded-lg min-w-64"
-          >
+      <Card className="p-4">
+        <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+          <div className="flex min-w-0 items-center gap-3">
+            <ServiceLogo name={selectedOffre?.nom || 'Offre'} image={selectedOffre?.image} />
+            <div>
+              <p className="text-sm font-semibold text-foreground">{selectedOffre?.nom || 'Selectionnez une offre'}</p>
+              <p className="text-xs text-muted-foreground">Stock de livraison associe a une offre partenaire.</p>
+            </div>
+          </div>
+          <Select value={offreId} onChange={(e) => setOffreId(e.target.value)} className="w-full lg:w-80">
             {offres.map((o) => (
-              <option key={o.id} value={o.id}>
-                {o.nomService || o.nom}
-              </option>
+              <option key={o.id} value={o.id}>{o.nomService || o.nom}</option>
             ))}
-          </select>
-          <div className="text-sm text-gray-600">Total: {stats.total}</div>
-          <div className="text-sm text-green-700">Disponibles: {stats.disponibles}</div>
-          <div className="text-sm text-orange-700">Utilisés: {stats.utilises}</div>
+          </Select>
         </div>
+      </Card>
 
-        <div className="grid lg:grid-cols-2 gap-6 mb-6">
-          <form onSubmit={onAddOne} className="bg-white rounded-xl border p-4 space-y-3">
-            <h2 className="font-bold">Ajouter un identifiant</h2>
-            <input
-              value={form.login}
-              onChange={(e) => setForm((s) => ({ ...s, login: e.target.value }))}
-              placeholder="Login / email"
-              className="w-full px-3 py-2 border rounded-lg"
-              required
-            />
-            <input
-              value={form.password}
-              onChange={(e) => setForm((s) => ({ ...s, password: e.target.value }))}
-              placeholder="Mot de passe"
-              className="w-full px-3 py-2 border rounded-lg"
-              required
-            />
+      <div className="grid gap-4 sm:grid-cols-3">
+        <KpiCard label="Identifiants total" value={String(stats.total)} icon={Boxes} />
+        <KpiCard label="Disponibles" value={String(stats.disponibles)} icon={CheckCircle2} accent="chart3" />
+        <KpiCard label="Utilises" value={String(stats.utilises)} icon={XCircle} accent="chart4" />
+      </div>
+
+      <div className="grid gap-6 lg:grid-cols-2">
+        <Card className="p-5">
+          <div className="mb-4">
+            <h2 className="font-semibold text-foreground">Ajouter un identifiant</h2>
+            <p className="text-sm text-muted-foreground">Un compte pret a etre livre au client.</p>
+          </div>
+          <form onSubmit={onAddOne} className="space-y-3">
+            <Input value={form.login} onChange={(e) => setForm((s) => ({ ...s, login: e.target.value }))} placeholder="Login / email" required />
+            <Input value={form.password} onChange={(e) => setForm((s) => ({ ...s, password: e.target.value }))} placeholder="Mot de passe" required />
             <textarea
               value={form.instructions}
               onChange={(e) => setForm((s) => ({ ...s, instructions: e.target.value }))}
-              placeholder="Instructions (optionnel)"
-              className="w-full px-3 py-2 border rounded-lg"
-              rows={3}
+              placeholder="Instructions optionnelles"
+              className="w-full rounded-lg border border-input bg-card px-3 py-2 text-sm outline-none transition focus:ring-2 focus:ring-ring/20"
+              rows={4}
             />
-            <button className="px-4 py-2 bg-slate-700 text-white rounded-lg">Ajouter</button>
+            <Button type="submit" className="w-full"><Plus className="h-4 w-4" /> Ajouter au stock</Button>
           </form>
+        </Card>
 
-          <div className="bg-white rounded-xl border p-4 space-y-3">
-            <h2 className="font-bold">Import en lot</h2>
-            <p className="text-sm text-gray-600">Format: `login;password;instructions` (une ligne par identifiant)</p>
-            <textarea
-              value={bulk}
-              onChange={(e) => setBulk(e.target.value)}
-              placeholder="exemple@site.com;Pass123;Profil 1 uniquement"
-              className="w-full px-3 py-2 border rounded-lg"
-              rows={7}
-            />
-            <button onClick={onAddBulk} className="px-4 py-2 bg-slate-700 text-white rounded-lg">
-              Importer
-            </button>
+        <Card className="p-5">
+          <div className="mb-4">
+            <h2 className="font-semibold text-foreground">Import en lot</h2>
+            <p className="text-sm text-muted-foreground">Format: login;password;instructions, une ligne par identifiant.</p>
           </div>
-        </div>
-
-        <div className="bg-white rounded-xl border overflow-hidden">
-          <table className="w-full">
-            <thead className="bg-gray-50 border-b">
-              <tr>
-                <th className="text-left py-3 px-4">Login</th>
-                <th className="text-left py-3 px-4">Instructions</th>
-                <th className="text-left py-3 px-4">Statut</th>
-                <th className="text-left py-3 px-4">Souscription</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y">
-              {!loading &&
-                stocks.map((s) => (
-                  <tr key={s.id}>
-                    <td className="py-3 px-4">{s.login}</td>
-                    <td className="py-3 px-4 text-sm text-gray-600">{s.instructions || '-'}</td>
-                    <td className="py-3 px-4">
-                      {s.isUsed ? (
-                        <span className="px-2 py-1 bg-orange-100 text-orange-700 rounded-full text-xs">Utilisé</span>
-                      ) : (
-                        <span className="px-2 py-1 bg-green-100 text-green-700 rounded-full text-xs">Disponible</span>
-                      )}
-                    </td>
-                    <td className="py-3 px-4 text-sm text-gray-600">{s?.souscription?.reference || '-'}</td>
-                  </tr>
-                ))}
-            </tbody>
-          </table>
-          {!loading && stocks.length === 0 && <div className="p-6 text-gray-500 text-sm">Aucun identifiant en stock</div>}
-        </div>
+          <textarea
+            value={bulk}
+            onChange={(e) => setBulk(e.target.value)}
+            placeholder="exemple@site.com;Pass123;Profil 1 uniquement"
+            className="h-40 w-full rounded-lg border border-input bg-card px-3 py-2 text-sm outline-none transition focus:ring-2 focus:ring-ring/20"
+          />
+          <Button type="button" onClick={onAddBulk} className="mt-3 w-full"><Upload className="h-4 w-4" /> Importer</Button>
+        </Card>
       </div>
+
+      {stocks.length === 0 && !loading ? (
+        <EmptyState icon={KeyRound} title="Aucun identifiant en stock" description="Ajoutez des identifiants pour automatiser les livraisons." />
+      ) : (
+        <DataTable
+          data={stocks}
+          emptyLabel={loading ? 'Chargement...' : 'Aucun identifiant en stock'}
+          columns={[
+            { key: 'login', label: 'Login', render: (stock) => <span className="font-medium text-foreground">{stock.login}</span> },
+            { key: 'instructions', label: 'Instructions', render: (stock) => <span className="text-muted-foreground">{stock.instructions || '-'}</span> },
+            {
+              key: 'statut',
+              label: 'Statut',
+              render: (stock) => stock.isUsed ? <Badge tone="warning">Utilise</Badge> : <Badge tone="success">Disponible</Badge>,
+            },
+            { key: 'souscription', label: 'Souscription', render: (stock) => stock?.souscription?.reference || '-' },
+          ]}
+        />
+      )}
     </div>
   )
 }

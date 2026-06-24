@@ -1,5 +1,5 @@
 import { NavLink, useLocation, useNavigate } from 'react-router-dom'
-import { Moon, ShieldCheck, Store, Users } from 'lucide-react'
+import { ShieldCheck, Store, Sun, Users } from 'lucide-react'
 
 export default function NavBarClient() {
   const navigate = useNavigate()
@@ -49,13 +49,34 @@ export default function NavBarClient() {
           </button>
         </nav>
 
-        <button className="flex h-8 w-8 items-center justify-center rounded-lg text-foreground transition hover:bg-muted" aria-label="Thème">
-          <Moon className="h-4 w-4" />
+        <button className="flex h-8 w-8 items-center justify-center rounded-lg text-foreground transition hover:bg-muted" aria-label="Thème clair">
+          <Sun className="h-4 w-4" />
         </button>
       </div>
 
       <div className="border-t border-border/70 bg-card/70">
-        <div className="mx-auto flex max-w-[1400px] items-center gap-1 px-4">
+        <div className="mx-auto flex max-w-[1400px] flex-col gap-2 px-4 py-2 md:flex-row md:items-center md:justify-between md:py-0">
+          <nav className="grid grid-cols-3 gap-1 rounded-xl border border-border bg-background p-1 md:hidden">
+            {[
+              { label: 'Client', to: '/', icon: Users, active: true },
+              { label: 'Partenaire', to: '/partenaire', icon: Store },
+              { label: 'Admin', to: '/backoffice', icon: ShieldCheck },
+            ].map((item) => (
+              <button
+                key={item.label}
+                type="button"
+                onClick={() => navigate(item.to)}
+                className={`inline-flex h-8 items-center justify-center gap-1 rounded-lg text-xs font-semibold ${
+                  item.active ? 'bg-card text-foreground shadow-sm' : 'text-muted-foreground'
+                }`}
+              >
+                <item.icon className="h-3.5 w-3.5" />
+                {item.label}
+              </button>
+            ))}
+          </nav>
+
+          <nav className="flex items-center gap-1 overflow-x-auto">
           <NavLink
             to="/"
             className={`border-b-2 px-3 py-3 text-sm font-medium transition-colors ${
@@ -72,6 +93,7 @@ export default function NavBarClient() {
           >
             Espace Client
           </NavLink>
+          </nav>
         </div>
       </div>
     </header>

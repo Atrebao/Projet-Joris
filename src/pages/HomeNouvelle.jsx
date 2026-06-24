@@ -5,22 +5,10 @@ import { abonnementsAPI } from '../lib/api'
 import { Store, ShoppingBag, Tag } from 'lucide-react'; // Vérifiez que 'Store' est présent
 
 import toast from 'react-hot-toast'
+import { CATEGORIES, OPERATOR_BADGES } from '@/Utils/Utils';
 
-const CATEGORIES = [
-  { value: '', label: 'Tout', icon: Sparkles },
-  { value: 'FILMS_SERIES', label: 'Streaming', icon: Tv },
-  { value: 'MUSIQUE', label: 'Musique', icon: Headphones },
-  { value: 'GAMING', label: 'Gaming', icon: Gamepad2 },
-  { value: 'EBOOKS', label: 'Cartes Cadeaux', icon: Gift },
-  { value: 'SPORT', label: 'Ebooks', icon: BookOpen }
-]
 
-const OPERATOR_BADGES = [
-  { label: 'Orange', className: 'bg-orange-500 text-white' },
-  { label: 'MTN', className: 'bg-yellow-400 text-slate-950' },
-  { label: 'Moov', className: 'bg-blue-700 text-white' },
-  { label: 'Wave', className: 'bg-sky-400 text-slate-950' }
-]
+
 
 const formatFCFA = (value) => `${new Intl.NumberFormat('fr-FR').format(Number(value) || 0)} FCFA`
 
@@ -104,13 +92,22 @@ export default function HomeNouvelle() {
                 <ShieldCheck className="h-4 w-4 text-primary" />
                 Paiement sécurisé
               </span>
-              <span className="flex items-center gap-1.5">
+              <span className="flex items-center gap-2">
                 {OPERATOR_BADGES.map((operator) => (
-                  <span key={operator.label} className={`rounded px-1.5 py-0.5 text-[10px] font-semibold ${operator.className}`}>
-                    {operator.label}
-                  </span>
+                  <div 
+                    key={operator.label} 
+                    title={operator.label} // Affiche le nom du réseau au survol
+                    className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-md border shadow-sm transition-transform hover:scale-110 `}
+                  >
+                    <img 
+                      src={operator.logoUrl} 
+                      alt={operator.label} 
+                      className="h-full w-full object-contain  rounded"
+                    />
+                  </div>
                 ))}
               </span>
+
             </div>
           </div>
         </div>
@@ -167,47 +164,72 @@ export default function HomeNouvelle() {
 export function OfferCard({ offer, onBuy }) {
   const lowStock = Number(offer.stock) <= 5
 
-  return (
-    <article className="group flex min-h-[210px] flex-col overflow-hidden rounded-xl border border-border bg-card p-0 transition-shadow hover:shadow-lg">
-      <div className="flex items-start gap-3 p-4">
-        <ServiceLogo offer={offer} size="lg" />
-        <div className="min-w-0 flex-1">
-          <h3 className="truncate font-semibold leading-tight">{offer.nom}</h3>
-          <p className="text-sm text-muted-foreground">{offer.duree} mois</p>
-          <p className="mt-1 flex items-center gap-1 text-xs text-muted-foreground">
-                      <Store className="size-6" />
-                      {offer.partenaire}
-          </p>
-        </div>
-        {lowStock && (
-          <span className="flex items-center gap-1 rounded-md bg-destructive/10 px-1.5 py-0.5 text-[10px] font-semibold text-destructive">
-            <Zap className="h-3 w-3" />
-            Stock bas
-          </span>
-        )}
+
+return (
+  <article className="group flex min-h-[220px] flex-col overflow-hidden rounded-xl border border-border bg-card p-0 transition-all duration-200 hover:shadow-md hover:border-slate-300">
+    
+    {/* En-tête de la carte */}
+    <div className="flex items-start gap-3.5 p-4 pb-2">
+      <ServiceLogo offer={offer} size="lg" />
+      <div className="min-w-0 flex-1">
+        <h3 className="truncate text-base font-bold text-slate-900 leading-tight tracking-tight group-hover:text-primary transition-colors">
+          {offer.nom}
+        </h3>
+        <p className="text-xs font-semibold text-slate-500 mt-0.5">{offer.duree} mois</p>
+        <p className="mt-1 flex items-center gap-1 text-xs text-slate-500 font-medium">
+          {/* Correction du plantage : l'icône a maintenant une taille harmonieuse */}
+          <Store className="h-3.5 w-3.5 text-slate-400" />
+          {offer.partenaire}
+        </p>
       </div>
+      
+      {/* Badge Alerte Stock */}
+      {lowStock && (
+        <span className="flex items-center gap-1 rounded-md bg-destructive/10 px-2 py-0.5 text-[10px] font-bold text-destructive whitespace-nowrap">
+          <Zap className="h-3 w-3 fill-current" />
+          Stock bas
+        </span>
+      )}
+    </div>
 
-      <p className="line-clamp-2 px-4 py-2 text-sm text-muted-foreground">{offer.description}</p>
+    {/* Description du produit */}
+    <p className="line-clamp-2 px-4 py-1 text-xs text-slate-500 leading-relaxed">
+      {offer.description}
+    </p>
 
-      {/* <div className="mt-3 flex items-center gap-1.5 px-4">
-        {OPERATOR_BADGES.slice(0, offer.id % 2 === 0 ? 4 : 3).map((operator) => (
-          <span key={operator.label} className={`rounded px-1.5 py-0.5 text-[10px] font-semibold ${operator.className}`}>
-            {operator.label}
-          </span>
-        ))}
-      </div> */}
+    {/* Badges Opérateurs mobiles (Orange, MTN, Wave...) réactivés et épurés */}
+    {/* <div className="mt-2 flex flex-wrap items-center gap-1 px-4">
+      {(offer.operators || ['Orange', 'MTN', 'Wave']).map((operator, idx) => (
+        <span 
+          key={idx} 
+          className="rounded bg-slate-100 px-1.5 py-0.5 text-[9px] font-bold text-slate-600 tracking-wider uppercase"
+        >
+          {operator}
+        </span>
+      ))}
+    </div> */}
 
-      <div className="mt-auto flex items-center justify-between border-t border-border p-4">
-        <div>
-          <p className="text-lg font-bold text-foreground">{formatFCFA(offer.prix)}</p>
-          <p className="text-[11px] text-muted-foreground">{offer.stock} en stock</p>
-        </div>
-        <button onClick={onBuy} className="h-9 rounded-lg bg-primary px-4 text-sm font-semibold text-primary-foreground transition hover:bg-primary/90">
-          Acheter
-        </button>
+    {/* Pied de carte : Prix et Action */}
+    <div className="mt-auto flex items-center justify-between border-t border-slate-100 bg-slate-50/30 p-4">
+      <div>
+        <p className="text-base font-extrabold text-slate-950 tracking-tight">
+          {formatFCFA(offer.prix)}
+        </p>
+        <p className="text-[10px] font-medium text-slate-400 mt-0.5">
+          {offer.stock} en stock
+        </p>
       </div>
-    </article>
-  )
+      
+      <button 
+        onClick={onBuy} 
+        className="h-9 rounded-lg bg-primary px-4 text-xs font-bold text-primary-foreground shadow-sm transition-all hover:bg-primary/90 active:scale-95"
+      >
+        Acheter
+      </button>
+    </div>
+  </article>
+);
+
 }
 
 export function ServiceLogo({ offer, size = 'md' }) {

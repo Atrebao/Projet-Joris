@@ -18,7 +18,6 @@ export default function NouvelleOffrePage() {
   const [formData, setFormData] = useState({
     nom: '',
     description: '',
-    categorie: 'FILMS_SERIES',
     duree: '1',
     stock: '0',
     imageUrl: ''
@@ -101,7 +100,6 @@ export default function NouvelleOffrePage() {
       await offresAPI.create({
         partenaireId,
         nomService: formData.nom,
-        categorie: formData.categorie,
         description: formData.description || undefined,
         imageService,
         prixOriginal: prixBase,
@@ -128,25 +126,34 @@ export default function NouvelleOffrePage() {
     })
   }
 
-  return (
-    <div className="min-h-screen bg-gray-50 p-8">
-      <div className="max-w-4xl mx-auto">
-        <button
-          onClick={() => navigate(-1)}
-          className="flex items-center gap-2 text-gray-600 hover:text-gray-900 mb-6"
-        >
-          <ArrowLeft className="h-5 w-5" />
-          Retour
-        </button>
+return (
+  <div className="space-y-6">
+    <div className="mx-auto max-w-6xl">
+      {/* Bouton Retour */}
+      <button
+        onClick={() => navigate(-1)}
+        className="mb-6 flex items-center gap-2 text-sm text-muted-foreground transition hover:text-foreground font-medium"
+      >
+        <ArrowLeft className="h-4 w-4" />
+        Retour
+      </button>
 
-        <div className="bg-white rounded-2xl border-2 border-gray-200 p-8">
-          <h1 className="text-3xl font-bold mb-2">Créer une nouvelle offre</h1>
-          <p className="text-gray-600 mb-8">Remplissez les informations de votre offre</p>
+      {/* En-tête du formulaire */}
+      <div className="mb-8">
+        <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight">Créer une nouvelle offre</h1>
+        <p className="text-slate-500 text-sm mt-1">Remplissez les informations essentielles de votre offre de marketplace.</p>
+      </div>
 
-          <form onSubmit={handleSubmit} className="space-y-6">
+      <form onSubmit={handleSubmit} className="grid grid-cols-1 gap-8 lg:grid-cols-3">
+        
+        {/* COLONNE GAUCHE : Informations principales (Prend 2/3 de l'espace) */}
+        <div className="lg:col-span-2 space-y-6">
+          <div className="rounded-xl border border-border bg-card p-6 shadow-sm sm:p-8 space-y-6">
+            
+            {/* Nom de l'offre */}
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">
-                Nom de l'offre *
+              <label className="block text-sm font-semibold text-slate-900 mb-2">
+                Nom de l&apos;offre <span className="text-destructive">*</span>
               </label>
               <input
                 type="text"
@@ -155,104 +162,63 @@ export default function NouvelleOffrePage() {
                 value={formData.nom}
                 onChange={handleChange}
                 placeholder="Ex: Netflix Premium 1 mois"
-                className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-slate-500"
+                className="w-full rounded-lg border border-input bg-card px-4 py-3 text-sm outline-none transition focus:ring-2 focus:ring-primary/20"
               />
             </div>
 
+            {/* Description */}
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">
-                Description *
+              <label className="block text-sm font-semibold text-slate-900 mb-2">
+                Description <span className="text-destructive">*</span>
               </label>
               <textarea
                 name="description"
                 required
                 value={formData.description}
                 onChange={handleChange}
-                rows="4"
-                placeholder="Décrivez votre offre..."
-                className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-slate-500"
+                rows="6"
+                placeholder="Décrivez précisément ce que contient votre offre (nombre d'écrans, qualité, validité...)"
+                className="w-full rounded-lg border border-input bg-card px-4 py-3 text-sm outline-none transition focus:ring-2 focus:ring-primary/20 resize-none"
               />
             </div>
 
-            <div className="grid sm:grid-cols-2 gap-6">
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  Catégorie *
-                </label>
-                <select
-                  name="categorie"
-                  required
-                  value={formData.categorie}
-                  onChange={handleChange}
-                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-slate-500"
-                >
-                  <option value="FILMS_SERIES">Films & Séries</option>
-                  <option value="MUSIQUE">Musique</option>
-                  <option value="GAMING">Gaming</option>
-                  <option value="EBOOKS">Ebooks</option>
-                  <option value="SPORT">Sport</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  Durée (mois) *
-                </label>
-                <select
-                  name="duree"
-                  required
-                  value={formData.duree}
-                  onChange={handleChange}
-                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-slate-500"
-                >
-                  <option value="1">1 mois</option>
-                  <option value="3">3 mois</option>
-                  <option value="6">6 mois</option>
-                  <option value="12">12 mois</option>
-                </select>
-              </div>
-            </div>
-
-            <div className="grid sm:grid-cols-2 gap-6">
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  Stock disponible *
-                </label>
-                <input
-                  type="number"
-                  name="stock"
-                  required
-                  value={formData.stock}
-                  onChange={handleChange}
-                  placeholder="50"
-                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-slate-500"
-                />
-              </div>
-            </div>
-
+            {/* Section Forfaits liés */}
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">
-                Forfaits lies *
-              </label>
-              <p className="text-xs text-gray-500 mb-2">Le prix client est defini automatiquement par les forfaits lies.</p>
-              <div className="border-2 border-gray-200 rounded-lg p-4 max-h-56 overflow-auto space-y-2">
+              <div className="mb-2">
+                <label className="block text-sm font-semibold text-slate-900">
+                  Forfaits liés <span className="text-destructive">*</span>
+                </label>
+                <p className="text-xs text-slate-500 mt-0.5">Le prix client est défini automatiquement par les forfaits liés.</p>
+              </div>
+              
+              <div className="max-h-60 space-y-2 overflow-auto rounded-lg border border-border bg-slate-50/50 p-4">
                 {loadingForfaits ? (
-                  <div className="text-sm text-gray-500">Chargement des forfaits...</div>
+                  <div className="text-sm text-slate-500 flex items-center gap-2 py-2">
+                    <Loader2 className="h-4 w-4 animate-spin text-primary" /> Chargement des forfaits...
+                  </div>
                 ) : forfaitsDisponibles.length === 0 ? (
-                  <div className="text-sm text-gray-500">Aucun forfait disponible pour cette categorie.</div>
+                  <div className="text-sm text-slate-500 py-2">Aucun forfait disponible pour cette catégorie.</div>
                 ) : (
                   forfaitsDisponibles.map((f) => (
-                    <label key={f.id} className="flex items-center justify-between gap-3 p-2 rounded hover:bg-gray-50">
-                      <div className="flex items-center gap-2">
+                    <label 
+                      key={f.id} 
+                      className={`flex items-center justify-between gap-3 rounded-lg border p-3 cursor-pointer transition ${
+                        selectedForfaitIds.includes(f.id) 
+                          ? 'border-primary bg-primary/5' 
+                          : 'border-transparent bg-card hover:bg-muted/50'
+                      }`}
+                    >
+                      <div className="flex items-center gap-3">
                         <input
                           type="checkbox"
+                          className="h-4 w-4 rounded border-input text-primary focus:ring-primary/20"
                           checked={selectedForfaitIds.includes(f.id)}
                           onChange={() => toggleForfait(f.id)}
                         />
-                        <span className="text-sm font-medium">{f.plan}</span>
+                        <span className="text-sm font-semibold text-slate-900">{f.plan}</span>
                       </div>
-                      <span className="text-xs text-gray-600">
-                        {Number(f.prix || 0).toLocaleString()} FCFA / {f.duree} {f.periode || 'MOIS'}
+                      <span className="text-sm font-bold text-slate-900 bg-slate-100 px-2.5 py-1 rounded-md">
+                        {Number(f.prix || 0).toLocaleString()} FCFA <span className="text-xs font-normal text-slate-500">/ {f.duree} {f.periode || 'MOIS'}</span>
                       </span>
                     </label>
                   ))
@@ -260,11 +226,36 @@ export default function NouvelleOffrePage() {
               </div>
             </div>
 
+          </div>
+        </div>
+
+        {/* COLONNE DROITE : Média & Stockage (Prend 1/3 de l'espace, collante au défilement) */}
+        <div className="space-y-6 lg:sticky lg:top-6 h-fit">
+          <div className="rounded-xl border border-border bg-card p-6 shadow-sm space-y-6">
+            
+            {/* Stock disponible */}
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">
-                Photo de l&apos;offre *
+              <label className="block text-sm font-semibold text-slate-900 mb-2">
+                Stock disponible <span className="text-destructive">*</span>
               </label>
-              <div className="border-2 border-dashed border-gray-300 rounded-xl p-6 bg-gray-50 hover:border-slate-400 transition-colors">
+              <input
+                type="number"
+                name="stock"
+                required
+                value={formData.stock}
+                onChange={handleChange}
+                placeholder="50"
+                className="w-full rounded-lg border border-input bg-card px-4 py-3 text-sm outline-none transition focus:ring-2 focus:ring-primary/20"
+              />
+            </div>
+
+            {/* Photo de l'offre */}
+            <div>
+              <label className="block text-sm font-semibold text-slate-900 mb-2">
+                Photo de l&apos;offre <span className="text-destructive">*</span>
+              </label>
+              
+              <div className="rounded-xl border border-dashed border-slate-300 bg-slate-50/50 p-4 transition-colors hover:border-primary/50">
                 <input
                   type="file"
                   accept="image/jpeg,image/png,image/gif,image/webp"
@@ -274,54 +265,70 @@ export default function NouvelleOffrePage() {
                 />
                 <label
                   htmlFor="offre-image-input"
-                  className="flex flex-col items-center justify-center cursor-pointer gap-2"
+                  className="flex flex-col items-center justify-center cursor-pointer gap-2 py-4"
                 >
                   {imagePreview ? (
-                    <img src={imagePreview} alt="AperÃ§u" className="max-h-48 rounded-lg shadow-md object-contain" />
+                    <div className="relative group w-full">
+                      <img src={imagePreview} alt="Aperçu" className="max-h-40 w-full rounded-lg object-cover shadow-sm" />
+                      <div className="absolute inset-0 bg-black/40 rounded-lg flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                        <span className="text-white text-xs font-medium">Changer d&apos;image</span>
+                      </div>
+                    </div>
                   ) : (
                     <>
-                      <ImagePlus className="h-12 w-12 text-slate-400" />
-                      <span className="text-sm font-medium text-slate-600">Cliquez pour choisir une image (max 5 Mo)</span>
+                      <div className="p-3 bg-white rounded-full shadow-sm border border-slate-100">
+                        <ImagePlus className="h-6 w-6 text-slate-500" />
+                      </div>
+                      <span className="text-xs font-semibold text-slate-700 text-center">Cliquez pour téléverser</span>
+                      <span className="text-[10px] text-slate-400">PNG, JPG, WEBP jusqu&apos;à 5 Mo</span>
                     </>
                   )}
                 </label>
-                {imageFile && (
-                  <p className="text-center text-xs text-gray-500 mt-2">{imageFile.name}</p>
+                {imageFile && !imagePreview && (
+                  <p className="text-center text-xs font-medium text-slate-600 mt-2 truncate">{imageFile.name}</p>
                 )}
               </div>
-              <p className="text-xs text-gray-500 mt-2">Ou collez une URL (optionnel si vous avez dÃ©jÃ  une image en ligne)</p>
-              <input
-                type="url"
-                name="imageUrl"
-                value={formData.imageUrl}
-                onChange={handleChange}
-                placeholder="https://... (optionnel)"
-                className="w-full mt-2 px-4 py-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-slate-500"
-              />
+
+              {/* URL Alternative */}
+              <div className="mt-4">
+                <label className="block text-[11px] font-medium text-slate-500 mb-1">
+                  Ou coller le lien d&apos;une image existante
+                </label>
+                <input
+                  type="url"
+                  name="imageUrl"
+                  value={formData.imageUrl}
+                  onChange={handleChange}
+                  placeholder="https://exemple.com"
+                  className="w-full rounded-lg border border-input bg-card px-3 py-2 text-xs outline-none transition focus:ring-2 focus:ring-primary/20"
+                />
+              </div>
             </div>
 
-            <div className="flex gap-4 pt-6">
+            {/* Bouton d'action principal */}
+            <div className="pt-2">
               <button
                 type="submit"
                 disabled={loading || uploadingImage}
-                className="flex-1 px-6 py-3 bg-slate-600 text-white rounded-lg font-semibold hover:bg-slate-700 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+                className="flex w-full items-center justify-center gap-2 rounded-lg bg-primary px-6 py-3.5 font-bold text-primary-foreground transition hover:bg-primary/90 shadow-sm disabled:opacity-50"
               >
-                {loading || uploadingImage ? <Loader2 className="h-5 w-5 animate-spin" /> : <Save className="h-5 w-5" />}
-                {uploadingImage ? "Envoi de l'image..." : loading ? 'CrÃ©ation...' : "CrÃ©er l'offre"}
-              </button>
-              <button
-                type="button"
-                onClick={() => navigate(-1)}
-                className="px-6 py-3 border-2 border-gray-200 rounded-lg font-semibold hover:border-gray-300 transition-all"
-              >
-                Annuler
+                {loading || uploadingImage ? (
+                  <Loader2 className="h-5 w-5 animate-spin" />
+                ) : (
+                  <Save className="h-5 w-5" />
+                )}
+                {loading || uploadingImage ? "Enregistrement..." : "Enregistrer l'offre"}
               </button>
             </div>
-          </form>
+
+          </div>
         </div>
-      </div>
+
+      </form>
     </div>
-  )
+  </div>
+);
+
 }
 
 
