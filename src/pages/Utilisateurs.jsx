@@ -133,7 +133,7 @@ export default function Utilisateurs() {
                     <button className="bg-gray-100 text-gray-600 w-fit h-10 px-4 rounded-md flex items-center justify-center font-semibold">
                       Annuler
                     </button>
-                    <button className="bg-red-600 text-white w-fit h-10 px-4 rounded-md flex items-center justify-center font-semibold">
+                    <button className="bg-destructive text-white w-fit h-10 px-4 rounded-md flex items-center justify-center font-semibold">
                       Désactiver
                     </button>
                   </form>
@@ -148,7 +148,7 @@ export default function Utilisateurs() {
   return (
     <div className="w-11/12 h-full mx-auto pt-14">
       <h1 className="text-4xl font-bold">Utilisateurs</h1>
-      <div className="w-full p-5 bg-white rounded-md mt-10">
+      <div className="w-full p-5 bg-card border border-border rounded-xl mt-10 shadow-sm">
         <div className="w-full pt-5 flex items-center justify-between">
           <div className="flex items-center gap-x-2">
             <input
@@ -158,7 +158,7 @@ export default function Utilisateurs() {
               value=""
               onChange={() => {}}
             />
-            <button className="w-14 h-11 bg-stone-800 text-white rounded-md flex items-center justify-center">
+            <button className="w-14 h-11 bg-primary text-primary-foreground rounded-md flex items-center justify-center">
               {!searchLoading ? (
                 <SearchIcon />
               ) : (
@@ -179,7 +179,7 @@ export default function Utilisateurs() {
             onClick={() => {
               document.getElementById("add_user").showModal();
             }}
-            className="p-3 rounded-lg shadow-sm bg-stone-700 hover:bg-stone-800 transition-all text-white "
+            className="p-3 rounded-lg shadow-sm bg-primary hover:bg-primary/90 transition-all text-primary-foreground"
           >
             Ajouter un utilisateur
           </button>
@@ -187,7 +187,7 @@ export default function Utilisateurs() {
         <div className="overflow-x-auto border rounded-lg mt-16">
           <table className="custom-table table  table-zebra">
             {/* head */}
-            <thead className="bg-stone-700  text-white ">
+            <thead className="bg-muted text-muted-foreground">
               <tr>
                 {columns.map((item, index) => (
                   <th key={index} className="text-lg">
@@ -306,7 +306,7 @@ export default function Utilisateurs() {
                                       })
                                       .catch((err) => {});
                                   }}
-                                  className="bg-black text-white w-fit h-10 px-4 rounded-md flex items-center justify-center font-semibold"
+                                  className="bg-primary text-primary-foreground w-fit h-10 px-4 rounded-md flex items-center justify-center font-semibold"
                                 >
                                   {selectItem?.enabled
                                     ? "Désactiver"

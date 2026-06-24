@@ -1,78 +1,35 @@
-import { useState, useEffect } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import { Search, Filter, X, Star, MapPin, Clock } from 'lucide-react'
+import { BookOpen, Gamepad2, Gift, Headphones, Loader, Search, Sparkles, Tv } from 'lucide-react'
 import { abonnementsAPI } from '../lib/api'
 import toast from 'react-hot-toast'
-import ForfaitCard from '@/components/forfaitCard'
+import { OfferCard } from './HomeNouvelle'
+
+const CATEGORIES = [
+  { value: '', label: 'Tout', icon: Sparkles },
+  { value: 'FILMS_SERIES', label: 'Streaming', icon: Tv },
+  { value: 'MUSIQUE', label: 'Musique', icon: Headphones },
+  { value: 'GAMING', label: 'Gaming', icon: Gamepad2 },
+  { value: 'EBOOKS', label: 'Cartes Cadeaux', icon: Gift },
+  { value: 'SPORT', label: 'Ebooks', icon: BookOpen }
+]
 
 export default function Catalogue() {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
-
   const [offres, setOffres] = useState([])
   const [loading, setLoading] = useState(true)
-  const [searchQuery, setSearchQuery] = useState(searchParams.get('search') || '')
-  const [selectedCategorie, setSelectedCategorie] = useState(searchParams.get('categorie') || '')
-  const [selectedDuree, setSelectedDuree] = useState('')
-  const [selectedPrix, setSelectedPrix] = useState('')
+  const [query, setQuery] = useState(searchParams.get('search') || '')
+  const [category, setCategory] = useState(searchParams.get('categorie') || '')
 
-  // Catégories
-  const categories = [
-    { value: '', label: 'Toutes' },
-    { value: 'FILMS_SERIES', label: '🎬 Films & Séries' },
-    { value: 'MUSIQUE', label: '🎵 Musique' },
-    { value: 'GAMING', label: '🎮 Gaming' },
-    { value: 'EBOOKS', label: '📚 Ebooks' },
-    { value: 'SPORT', label: '⚽ Sport' },
-  ]
-
-  // Durées
-  const durees = [
-    { value: '', label: 'Toutes durées' },
-    { value: '1', label: '1 mois' },
-    { value: '3', label: '3 mois' },
-    { value: '6', label: '6 mois' },
-    { value: '12', label: '1 an' },
-  ]
-
-  // Prix
-  const prix = [
-    { value: '', label: 'Tous les prix' },
-    { value: '0-5000', label: 'Moins de 5,000 F' },
-    { value: '5000-10000', label: '5,000 - 10,000 F' },
-    { value: '10000-20000', label: '10,000 - 20,000 F' },
-    { value: '20000+', label: 'Plus de 20,000 F' },
-  ]
-
-  // Charger les offres depuis l'API
   useEffect(() => {
-    const loadOffres = async () => {
+    const load = async () => {
       setLoading(true)
-
       try {
         const { data } = await abonnementsAPI.getAll()
-
-        // Mapper les données backend vers le format frontend
-        const offresFormatted = data.map(offre => ({
-          id: offre.id,
-          nom: offre.nom,
-          categorie: offre.categorie,
-          description: offre.description || `Profitez de ${offre.nom}`,
-          image: offre.image || `https://via.placeholder.com/400x250/475569/ffffff?text=${encodeURIComponent(offre.nom)}`,
-          icon: offre.icon,
-          forfaits: offre.forfaits || [],
-          // Utiliser le premier forfait pour affichage simplifié
-          prixMensuel: offre.forfaits?.[0]?.prix || 0,
-          duree: offre.forfaits?.[0]?.duree || 1,
-          // Infos partenaire (si disponible)
-          partenaire: offre.partenaire || { nom: 'RICHESSES', ville: 'Abidjan' },
-          rating: 4.5,
-          avis: Math.floor(Math.random() * 500) + 100,
-        }))
-
-        setOffres(offresFormatted)
+        setOffres((Array.isArray(data) ? data : []).map(normalizeOffer))
       } catch (error) {
-        console.error('Erreur chargement catalogue:', error)
+        console.error(error)
         toast.error('Impossible de charger le catalogue')
         setOffres([])
       } finally {
@@ -80,295 +37,106 @@ export default function Catalogue() {
       }
     }
 
-    loadOffres()
+    load()
   }, [])
 
-  // Filtrer les offres
-  const offresFiltrees = offres.filter(offre => {
-    // Filtre recherche
-    if (searchQuery && !offre.nom.toLowerCase().includes(searchQuery.toLowerCase())) {
-      return false
-    }
-
-    // Filtre catégorie
-    if (selectedCategorie && offre.categorie !== selectedCategorie) {
-      return false
-    }
-
-    // Filtre durée
-    if (selectedDuree && offre.duree.toString() !== selectedDuree) {
-      return false
-    }
-
-    // Filtre prix
-    if (selectedPrix) {
-      const [min, max] = selectedPrix.split('-')
-      if (max === '+') {
-        if (offre.prixMensuel < parseInt(min)) return false
-      } else {
-        if (offre.prixMensuel < parseInt(min) || offre.prixMensuel > parseInt(max)) {
-          return false
-        }
-      }
-    }
-
-    return true
-  })
-
-  const resetFilters = () => {
-    setSearchQuery('')
-    setSelectedCategorie('')
-    setSelectedDuree('')
-    setSelectedPrix('')
-  }
-
-  const handleOffreClick = (offreId) => {
-    navigate(`/offre/${offreId}`)
-  }
-
-  // Fonction pour formater le prix
-const formatPrix = (prix) => {
-  if (!prix) return '0 FCFA'
-  return new Intl.NumberFormat('fr-FR').format(prix) + ' FCFA'
-}
-
-// Obtenir le prix minimum d'une offre
-const getPrixMin = (forfaits) => {
-  if (!forfaits || forfaits.length === 0) return 0
-  return Math.min(...forfaits.map(f => f.prix || 0))
-}
-
-// Obtenir la durée minimum
-const getDureeMin = (forfaits) => {
-  if (!forfaits || forfaits.length === 0) return 1
-  return Math.min(...forfaits.map(f => f.duree || 999))
-}
+  const filtered = useMemo(() => {
+    return offres.filter((offre) => {
+      const inCategory = !category || offre.categorie === category
+      const text = `${offre.nom} ${offre.description} ${offre.partenaire}`.toLowerCase()
+      const matchQuery = !query.trim() || text.includes(query.toLowerCase())
+      return inCategory && matchQuery
+    })
+  }, [offres, category, query])
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
-      <div className="container mx-auto px-4">
-        {/* En-tête */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold mb-2">Catalogue des offres</h1>
-          <p className="text-gray-600">
-            {offresFiltrees.length} offre{offresFiltrees.length > 1 ? 's' : ''} disponible{offresFiltrees.length > 1 ? 's' : ''}
-          </p>
-        </div>
-
-        {/* Barre de recherche */}
-        <div className="mb-6">
-          <div className="relative">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
-            <input
-              type="text"
-              placeholder="Rechercher une offre..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-12 pr-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-slate-600"
-            />
-          </div>
-        </div>
-
-        {/* Filtres */}
-        <div className="bg-white rounded-2xl border-2 border-gray-200 p-6 mb-8">
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-2">
-              <Filter className="h-5 w-5 text-gray-600" />
-              <h2 className="font-semibold">Filtres</h2>
-            </div>
-            {(selectedCategorie || selectedDuree || selectedPrix) && (
-              <button
-                onClick={resetFilters}
-                className="text-sm text-slate-700 hover:text-slate-800 flex items-center gap-1"
-              >
-                <X className="h-4 w-4" />
-                Réinitialiser
+    <div className="min-h-screen bg-background text-foreground">
+      <section className="border-b border-border bg-gradient-to-b from-primary/5 to-background">
+        <div className="mx-auto max-w-[1400px] px-4 py-10">
+          <div className="mx-auto max-w-2xl text-center">
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-primary/20 bg-primary/10 px-3 py-1 text-xs font-medium text-primary">
+              <Sparkles className="h-3.5 w-3.5" />
+              Marketplace
+            </span>
+            <h1 className="mt-4 text-3xl font-black tracking-tight sm:text-5xl">
+              Rechercher une offre
+            </h1>
+            <div className="mx-auto mt-6 flex max-w-xl items-center gap-2 rounded-xl border border-border bg-card p-2 shadow-sm">
+              <Search className="ml-2 h-5 w-5 text-muted-foreground" />
+              <input
+                value={query}
+                onChange={(event) => setQuery(event.target.value)}
+                placeholder="Netflix, Spotify, Game Pass..."
+                className="min-w-0 flex-1 border-0 bg-transparent px-1 text-sm outline-none"
+              />
+              <button className="h-9 rounded-lg bg-primary px-4 text-sm font-semibold text-primary-foreground">
+                Rechercher
               </button>
-            )}
-          </div>
-
-          <div className="grid md:grid-cols-3 gap-4">
-            {/* Catégorie */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Catégorie
-              </label>
-              <select
-                value={selectedCategorie}
-                onChange={(e) => setSelectedCategorie(e.target.value)}
-                className="w-full px-4 py-2 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-slate-600"
-              >
-                {categories.map(cat => (
-                  <option key={cat.value} value={cat.value}>{cat.label}</option>
-                ))}
-              </select>
-            </div>
-
-            {/* Durée */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Durée
-              </label>
-              <select
-                value={selectedDuree}
-                onChange={(e) => setSelectedDuree(e.target.value)}
-                className="w-full px-4 py-2 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-slate-600"
-              >
-                {durees.map(duree => (
-                  <option key={duree.value} value={duree.value}>{duree.label}</option>
-                ))}
-              </select>
-            </div>
-
-            {/* Prix */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Prix
-              </label>
-              <select
-                value={selectedPrix}
-                onChange={(e) => setSelectedPrix(e.target.value)}
-                className="w-full px-4 py-2 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-slate-600"
-              >
-                {prix.map(p => (
-                  <option key={p.value} value={p.value}>{p.label}</option>
-                ))}
-              </select>
             </div>
           </div>
         </div>
+      </section>
 
-        {/* Liste des offres */}
-        {loading ? (
-          <div className="text-center py-20">
-            <div className="inline-block h-12 w-12 border-4 border-slate-600 border-t-transparent rounded-full animate-spin"></div>
-            <p className="mt-4 text-gray-600">Chargement des offres...</p>
-          </div>
-        ) : offresFiltrees.length === 0 ? (
-          <div className="text-center py-20 bg-white rounded-2xl border-2 border-gray-200">
-            <div className="text-6xl mb-4">🔍</div>
-            <h3 className="text-xl font-semibold mb-2">Aucune offre trouvée</h3>
-            <p className="text-gray-600 mb-6">
-              Essayez de modifier vos critères de recherche
-            </p>
-            <button
-              onClick={resetFilters}
-              className="px-6 py-2 bg-slate-700 text-white rounded-lg font-semibold hover:bg-slate-800"
-            >
-              Réinitialiser les filtres
-            </button>
-          </div>
-        ) : (
-<div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-  {offresFiltrees.map(offre => (
-    <div
-      key={offre.id}
-      onClick={() => handleOffreClick(offre.id)}
-      className="group bg-white rounded-2xl border-2 border-gray-200 overflow-hidden hover:border-slate-600 hover:shadow-xl transition-all duration-300 transform hover:-translate-y-2 cursor-pointer flex flex-col h-full"
-    >
-      {/* Image */}
-      <div className="relative h-48 overflow-hidden bg-slate-800 flex-shrink-0">
-        <img
-          src={offre.image}
-          alt={offre.nom}
-          className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
-        />
-        {/* NOM DU SERVICE EN GROS AU CENTRE */}
-        <div className="absolute inset-0 flex items-center justify-center bg-black/30">
-          <h3 className="text-4xl font-black text-white drop-shadow-2xl tracking-tight text-center px-4">
-            {offre.nom.split(' ').slice(0, 2).join(' ')}
-          </h3>
-        </div>
-        <div className="absolute top-3 left-3 px-3 py-1 bg-white/90 backdrop-blur-sm rounded-full text-xs font-semibold border">
-          {categories.find(c => c.value === offre.categorie)?.label || offre.categorie}
-        </div>
-        <div className="absolute top-3 right-3 flex items-center gap-1 px-2 py-1 bg-yellow-400 rounded-full">
-          <Star className="h-3 w-3 fill-yellow-600 text-yellow-600" />
-          <span className="text-xs font-bold text-yellow-900">{offre.rating}</span>
-        </div>
-        {offre.stock < 10 && offre.stock > 0 && (
-          <div className="absolute bottom-3 left-3 px-2 py-1 bg-red-500 text-white text-xs font-semibold rounded-full">
-            Plus que {offre.stock} en stock !
-          </div>
-        )}
-        {offre.stock === 0 && (
-          <div className="absolute bottom-3 left-3 px-2 py-1 bg-gray-700 text-white text-xs font-semibold rounded-full">
-            Rupture de stock
-          </div>
-        )}
-      </div>
-
-      {/* Contenu */}
-      <div className="p-5 flex flex-col flex-grow">
-        <h4 className="text-lg font-bold mb-2 line-clamp-1">{offre.nom}</h4>
-
-        <p className="text-sm text-gray-600 mb-3 line-clamp-2">
-          {offre.description}
-        </p>
-
-        {/* Infos partenaire */}
-        <div className="flex items-center gap-2 text-xs text-gray-500 mb-3 pb-3 border-b">
-          <div className="flex items-center gap-1">
-            <span>👤</span>
-            <span className="truncate">{offre.partenaire?.nom || 'RICHESSES'}</span>
-          </div>
-          {offre.partenaire?.ville && (
-            <>
-              <span>•</span>
-              <div className="flex items-center gap-1">
-                <MapPin className="h-3 w-3" />
-                <span>{offre.partenaire.ville}</span>
-              </div>
-            </>
-          )}
+      <section className="mx-auto max-w-[1400px] px-4 py-6">
+        <div className="flex flex-wrap gap-2">
+          {CATEGORIES.map((cat) => {
+            const Icon = cat.icon
+            const active = category === cat.value
+            return (
+              <button
+                key={cat.label}
+                onClick={() => setCategory(cat.value)}
+                className={`flex items-center gap-1.5 rounded-full border px-4 py-2 text-sm font-medium transition-colors ${
+                  active ? 'border-primary bg-primary text-primary-foreground' : 'border-border bg-card hover:bg-muted'
+                }`}
+              >
+                <Icon className="h-4 w-4" />
+                {cat.label}
+              </button>
+            )
+          })}
         </div>
 
+        <div className="mt-6">
+          <div className="mb-3 flex items-center justify-between">
+            <h2 className="text-lg font-semibold">
+              {filtered.length} offre{filtered.length > 1 ? 's' : ''} disponible{filtered.length > 1 ? 's' : ''}
+            </h2>
+          </div>
 
-        {/* Affichage des forfaits */}
-        {offre.forfaits && offre.forfaits.length > 0 && (
-          <div className="mt-auto">
-            <div className="flex flex-wrap gap-2 mb-3">
-              {offre.forfaits.slice(0, 3).map(forfait => (
-                <div
-                  key={forfait.id}
-                  className="flex-1 min-w-[80px] bg-gray-50 rounded-lg p-2 text-center border border-gray-200"
-                >
-                  <div className="text-xs text-gray-500">{forfait.duree} mois</div>
-                  <div className="text-sm font-bold text-slate-700">
-                    {formatPrix(forfait.prix)}
-                  </div>
-                  {forfait.plan && (
-                    <div className="text-xs text-gray-500 truncate">{forfait.plan}</div>
-                  )}
-                </div>
+          {loading ? (
+            <div className="flex min-h-56 items-center justify-center rounded-xl border border-border bg-card">
+              <Loader className="h-8 w-8 animate-spin text-primary" />
+            </div>
+          ) : filtered.length === 0 ? (
+            <div className="rounded-xl border border-dashed border-border py-16 text-center text-muted-foreground">
+              Aucune offre ne correspond à votre recherche.
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+              {filtered.map((offer) => (
+                <OfferCard key={offer.id} offer={offer} onBuy={() => navigate(`/offre/${offer.id}`)} />
               ))}
             </div>
-            
-            {offre.forfaits.length > 3 && (
-              <div className="text-center text-xs text-gray-500 mb-3">
-                +{offre.forfaits.length - 3} autres formules
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* Bouton voir détails */}
-        <button 
-          className="w-full mt-3 px-4 py-2 bg-slate-100 text-slate-700 rounded-lg font-semibold hover:bg-slate-200 transition-colors"
-          onClick={(e) => {
-            e.stopPropagation();
-            handleOffreClick(offre.id);
-          }}
-        >
-          Voir les détails
-        </button>
-      </div>
-    </div>
-  ))}
-</div>
-        )}
-      </div>
+          )}
+        </div>
+      </section>
     </div>
   )
 }
 
+function normalizeOffer(offre = {}) {
+  const firstPlan = offre.forfaits?.[0] || {}
+  return {
+    id: offre.id,
+    nom: offre.nom || offre.nomService || 'Offre',
+    description: offre.description || `Profitez de ${offre.nom || offre.nomService}`,
+    categorie: offre.categorie || '',
+    image: offre.image || offre.imageService || '',
+    prix: Number(firstPlan.prix || offre.prixMensuel || 0),
+    duree: Number(firstPlan.duree || offre.duree || 1),
+    stock: Number(offre.stock ?? offre.quantiteDisponible ?? 0),
+    partenaire: offre.partenaire?.nomBoutique || offre.partenaire?.nom || 'DigiStore CI',
+    forfaits: offre.forfaits || []
+  }
+}

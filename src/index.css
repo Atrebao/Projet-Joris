@@ -4,6 +4,38 @@
 @tailwind components;
 @tailwind utilities;
 
+:root {
+  color-scheme: light;
+  --background: #f6faf8;
+  --foreground: #111c19;
+  --card: #ffffff;
+  --card-foreground: #111c19;
+  --primary: #00956f;
+  --primary-foreground: #ffffff;
+  --secondary: #eef7f3;
+  --secondary-foreground: #213a34;
+  --muted: #eef6f3;
+  --muted-foreground: #60746e;
+  --accent: #f9e8b2;
+  --accent-foreground: #6e4b00;
+  --destructive: #ef4444;
+  --border: #d7e5df;
+  --input: #d7e5df;
+  --ring: #00956f;
+  --chart-1: #00956f;
+  --chart-2: #ff7900;
+  --chart-3: #1dc8ff;
+  --chart-4: #ffcc00;
+  --chart-5: #0066b3;
+  --sidebar: #fbfefd;
+  --sidebar-foreground: #243b35;
+  --sidebar-primary: #00956f;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #edf7f3;
+  --sidebar-accent-foreground: #243b35;
+  --sidebar-border: #d7e5df;
+}
+
 @font-face {
   font-family: "MTNBrighterSans";
   src: url("./assets/fonts/MTNBrighterSans-Light.woff") format("woff");
@@ -39,7 +71,17 @@
 html,
 body {
   font-family: "Work Sans", sans-serif;
-  background-color: #f2f2f2;
+  background-color: var(--background);
+  color: var(--foreground);
+}
+
+* {
+  letter-spacing: 0;
+}
+
+::selection {
+  background: var(--accent);
+  color: var(--accent-foreground);
 }
 
 

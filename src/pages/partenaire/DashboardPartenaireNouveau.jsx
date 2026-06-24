@@ -1,28 +1,17 @@
-import { useState, useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import {
-  Plus,
-  Package,
-  DollarSign,
-  TrendingUp,
-  Eye,
-  Edit,
-  Trash2,
-  Users,
-  Star,
-  ShoppingBag,
-  BarChart3,
-  AlertCircle
-} from 'lucide-react'
+import { AlertTriangle, Edit, Eye, Package, Plus, RefreshCw, ShoppingBag, Trash2, Users, Wallet } from 'lucide-react'
 import { getPartenaireId } from '../../Utils/Utils'
-import { statsAPI, offresAPI, souscriptionsAPI } from '../../lib/api'
+import { offresAPI, souscriptionsAPI, statsAPI } from '../../lib/api'
 import toast from 'react-hot-toast'
+import { Badge, Button, Card, DataTable, EmptyState, KpiCard, LoadingState, PageHeader, ServiceLogo, StatusBadge, formatFCFA } from '../../components/saas/SaasPrimitives'
 
 export default function DashboardPartenaireNouveau() {
   const navigate = useNavigate()
   const partenaireId = getPartenaireId()
   const [stats, setStats] = useState(null)
   const [mesOffres, setMesOffres] = useState([])
+  const [ventesRecentes, setVentesRecentes] = useState([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -31,6 +20,7 @@ export default function DashboardPartenaireNouveau() {
       return
     }
     loadData()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [partenaireId, navigate])
 
   const loadData = async () => {
@@ -40,26 +30,25 @@ export default function DashboardPartenaireNouveau() {
       const [statsRes, offresRes, souscriptionsRes] = await Promise.all([
         statsAPI.partenaireDashboard(partenaireId),
         offresAPI.getByPartenaire(partenaireId),
-        souscriptionsAPI.getByPartenaire(partenaireId),
+        souscriptionsAPI.getByPartenaire(partenaireId)
       ])
 
+      const paidSubs = (souscriptionsRes?.data || []).filter((x) => x?.statutPaiement === 'SUCCES')
       const s = statsRes?.data || {}
-      const subs = (souscriptionsRes?.data || []).filter((x) => x?.statutPaiement === 'SUCCES')
       setStats({
         totalOffres: s.totalOffres ?? 0,
         offresActives: s.offresActives ?? 0,
-        totalVentes: subs.length,
+        totalVentes: paidSubs.length,
         revenuTotal: s.revenusTotal ?? 0,
         ventesAujourdhui: s.ventesAujourdhui ?? 0,
         revenuMois: s.revenusMois ?? 0,
         croissance: s.croissance ?? 0,
-        notePartenaire: 0,
         enAttenteLivraison: s.enAttenteLivraison ?? 0,
         clientsUniques: s.clientsUniques ?? 0
       })
 
       const byOffre = new Map()
-      subs.forEach((sub) => {
+      paidSubs.forEach((sub) => {
         const id = sub?.abonnement?.id || sub?.offrePartenaire?.id
         if (!id) return
         const current = byOffre.get(id) || { ventes: 0, revenu: 0 }
@@ -68,24 +57,25 @@ export default function DashboardPartenaireNouveau() {
         byOffre.set(id, current)
       })
 
-      const offresMapped = (offresRes?.data || []).map(o => {
-        const forfaits = Array.isArray(o.forfaits) ? o.forfaits : []
-        const firstForfait = forfaits[0] || null
+      const offresMapped = (offresRes?.data || []).map((o) => {
+        const firstForfait = Array.isArray(o.forfaits) ? o.forfaits[0] : null
         const metrics = byOffre.get(o.id) || { ventes: 0, revenu: 0 }
         return {
           id: o.id,
-          nom: o.nomService,
+          nom: o.nomService || o.nom,
           categorie: o.categorie,
+          image: o.imageService || o.image,
           prix: Number(firstForfait?.prix || 0),
           duree: Number(firstForfait?.duree || o.duree || 1),
-          stock: o.quantiteDisponible ?? 0,
+          stock: o.quantiteDisponible ?? o.stock ?? 0,
           ventes: metrics.ventes,
           revenu: metrics.revenu,
-          actif: o.isActive !== false,
-          note: 4.5
+          actif: o.isActive !== false
         }
       })
+
       setMesOffres(offresMapped)
+      setVentesRecentes(paidSubs.slice(0, 6))
     } catch (error) {
       console.error('Erreur chargement dashboard partenaire:', error)
       toast.error('Impossible de charger les données')
@@ -97,20 +87,14 @@ export default function DashboardPartenaireNouveau() {
         ventesAujourdhui: 0,
         revenuMois: 0,
         croissance: 0,
-        notePartenaire: 0
+        enAttenteLivraison: 0,
+        clientsUniques: 0
       })
       setMesOffres([])
+      setVentesRecentes([])
     } finally {
       setLoading(false)
     }
-  }
-
-  const handleNouvelleOffre = () => {
-    navigate('/partenaire/offres/nouvelle')
-  }
-
-  const handleEditerOffre = (offreId) => {
-    navigate(`/partenaire/offres/editer/${offreId}`)
   }
 
   const handleSupprimerOffre = async (offreId) => {
@@ -119,7 +103,7 @@ export default function DashboardPartenaireNouveau() {
       await offresAPI.delete(offreId)
       toast.success('Offre supprimée')
       loadData()
-    } catch (error) {
+    } catch {
       toast.error('Erreur lors de la suppression')
     }
   }
@@ -129,270 +113,119 @@ export default function DashboardPartenaireNouveau() {
       await offresAPI.toggleActive(offreId)
       toast.success(actif ? 'Offre désactivée' : 'Offre activée')
       loadData()
-    } catch (error) {
+    } catch {
       toast.error('Erreur lors de la modification')
     }
   }
 
-  if (loading || !stats) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="inline-block h-12 w-12 border-4 border-slate-600 border-t-transparent rounded-full animate-spin"></div>
-          <p className="mt-4 text-gray-600">Chargement...</p>
-        </div>
-      </div>
-    )
-  }
+  if (loading || !stats) return <LoadingState label="Chargement de votre espace partenaire..." />
+
+  const lowStock = mesOffres.filter((offre) => Number(offre.stock) <= 5)
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* En-tête */}
-      <div className="bg-gradient-to-r from-slate-600 to-slate-600 text-white">
-        <div className="container mx-auto px-4 py-8">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-3xl font-bold mb-2">Dashboard Partenaire</h1>
-              <p className="text-slate-100">Gérez vos offres et suivez vos performances</p>
-            </div>
-            <button
-              onClick={handleNouvelleOffre}
-              className="px-6 py-3 bg-white text-slate-600 rounded-xl font-bold hover:bg-slate-50 transition-all shadow-lg flex items-center gap-2"
-            >
-              <Plus className="h-5 w-5" />
-              Nouvelle offre
-            </button>
+    <>
+      <PageHeader
+        title="Tableau de bord"
+        description="Aperçu de vos performances de vente."
+        action={<Button onClick={() => navigate('/partenaire/offres/nouvelle')}><Plus className="h-4 w-4" /> Nouvelle offre</Button>}
+      />
+
+      {lowStock.length > 0 && (
+        <div className="flex items-start gap-3 rounded-xl border border-destructive/20 bg-destructive/5 p-4">
+          <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-destructive" />
+          <div>
+            <p className="text-sm font-semibold text-destructive">Alerte stock bas</p>
+            <p className="text-sm text-muted-foreground">
+              {lowStock.slice(0, 3).map((o) => o.nom).join(', ')}: pensez à réapprovisionner vos identifiants.
+            </p>
           </div>
         </div>
+      )}
+
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <KpiCard label="Gains totaux" value={formatFCFA(stats.revenuTotal)} icon={Wallet} trend={`+${stats.croissance}%`} />
+        <KpiCard label="Clients uniques" value={String(stats.clientsUniques)} icon={Users} accent="chart3" />
+        <KpiCard label="Offres en ligne" value={String(stats.totalOffres)} icon={Package} accent="accent" trend={`${stats.offresActives} actives`} />
+        <KpiCard label="Commandes à livrer" value={String(stats.enAttenteLivraison)} icon={RefreshCw} accent="chart4" />
       </div>
 
-      <div className="container mx-auto px-4 py-8">
-        {/* KPIs */}
-        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          {/* Total Offres */}
-          <div className="bg-white rounded-2xl border-2 border-gray-200 p-6 hover:shadow-xl transition-all">
-            <div className="flex items-center justify-between mb-4">
-              <div className="w-12 h-12 bg-slate-100 rounded-xl flex items-center justify-center">
-                <Package className="h-6 w-6 text-slate-600" />
-              </div>
-              <span className="text-xs font-semibold px-2 py-1 bg-green-100 text-green-600 rounded-full">
-                {stats.offresActives} actives
-              </span>
-            </div>
-            <div className="text-3xl font-bold mb-1">{stats.totalOffres}</div>
-            <div className="text-sm text-gray-600">Mes offres</div>
+      <div className="grid gap-6 lg:grid-cols-3">
+        <Card className="lg:col-span-2 p-5">
+          <div className="mb-4">
+            <h2 className="font-semibold text-foreground">Mes offres</h2>
+            <p className="text-sm text-muted-foreground">{mesOffres.length} offre(s) au total</p>
           </div>
-
-          {/* Total Ventes */}
-          <div className="bg-white rounded-2xl border-2 border-gray-200 p-6 hover:shadow-xl transition-all">
-            <div className="flex items-center justify-between mb-4">
-              <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center">
-                <ShoppingBag className="h-6 w-6 text-blue-600" />
-              </div>
-              <span className="text-xs font-semibold px-2 py-1 bg-blue-100 text-blue-600 rounded-full">
-                +{stats.ventesAujourdhui}
-              </span>
-            </div>
-            <div className="text-3xl font-bold mb-1">{stats.totalVentes}</div>
-            <div className="text-sm text-gray-600">Ventes totales</div>
-            <div className="text-xs text-gray-500 mt-2">
-              Aujourd'hui: {stats.ventesAujourdhui}
-            </div>
-          </div>
-
-          {/* Revenu Total */}
-          <div className="bg-white rounded-2xl border-2 border-gray-200 p-6 hover:shadow-xl transition-all">
-            <div className="flex items-center justify-between mb-4">
-              <div className="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center">
-                <DollarSign className="h-6 w-6 text-green-600" />
-              </div>
-              <TrendingUp className="h-5 w-5 text-green-500" />
-            </div>
-            <div className="text-3xl font-bold mb-1">{(stats.revenuTotal / 1000000).toFixed(1)}M</div>
-            <div className="text-sm text-gray-600">Revenu total (FCFA)</div>
-            <div className="text-xs text-gray-500 mt-2">
-              Ce mois: {(stats.revenuMois / 1000).toFixed(0)}K
-            </div>
-          </div>
-
-          {/* Note */}
-          <div className="bg-white rounded-2xl border-2 border-gray-200 p-6 hover:shadow-xl transition-all">
-            <div className="flex items-center justify-between mb-4">
-              <div className="w-12 h-12 bg-yellow-100 rounded-xl flex items-center justify-center">
-                <Star className="h-6 w-6 text-yellow-600" />
-              </div>
-              <span className="text-xs font-semibold px-2 py-1 bg-yellow-100 text-yellow-600 rounded-full">
-                +{stats.croissance}%
-              </span>
-            </div>
-            <div className="text-3xl font-bold mb-1">{stats.notePartenaire}</div>
-            <div className="text-sm text-gray-600">Note moyenne</div>
-            <div className="flex items-center gap-1 mt-2">
-              {[1, 2, 3, 4, 5].map((star) => (
-                <Star
-                  key={star}
-                  className={`h-4 w-4 ${
-                    star <= Math.floor(stats.notePartenaire)
-                      ? 'fill-yellow-400 text-yellow-400'
-                      : 'text-gray-300'
-                  }`}
-                />
-              ))}
-            </div>
-          </div>
-        </div>
-
-        {/* Mes Offres */}
-        <div className="bg-white rounded-2xl border-2 border-gray-200 p-6">
-          <div className="flex items-center justify-between mb-6">
-            <div>
-              <h2 className="text-2xl font-bold">Mes offres</h2>
-              <p className="text-sm text-gray-600">{mesOffres.length} offres au total</p>
-            </div>
-            <button
-              onClick={handleNouvelleOffre}
-              className="px-4 py-2 bg-slate-600 text-white rounded-lg font-semibold hover:bg-slate-700 transition-all flex items-center gap-2"
-            >
-              <Plus className="h-4 w-4" />
-              Ajouter
-            </button>
-          </div>
-
           {mesOffres.length === 0 ? (
-            <div className="text-center py-12 text-gray-500">
-              <Package className="h-12 w-12 mx-auto mb-3 text-gray-400" />
-              <p className="mb-4">Vous n'avez pas encore d'offres</p>
-              <button
-                onClick={handleNouvelleOffre}
-                className="px-6 py-3 bg-slate-600 text-white rounded-lg font-semibold hover:bg-slate-700 transition-all"
-              >
-                Créer ma première offre
-              </button>
-            </div>
+            <EmptyState
+              icon={Package}
+              title="Vous n'avez pas encore d'offres"
+              description="Créez une première offre pour commencer à vendre."
+              action={<Button onClick={() => navigate('/partenaire/offres/nouvelle')}><Plus className="h-4 w-4" /> Créer une offre</Button>}
+            />
           ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead>
-                  <tr className="border-b-2 border-gray-200">
-                    <th className="text-left py-3 px-4 font-semibold text-gray-700">Offre</th>
-                    <th className="text-left py-3 px-4 font-semibold text-gray-700">Prix</th>
-                    <th className="text-left py-3 px-4 font-semibold text-gray-700">Stock</th>
-                    <th className="text-left py-3 px-4 font-semibold text-gray-700">Ventes</th>
-                    <th className="text-left py-3 px-4 font-semibold text-gray-700">Revenu</th>
-                    <th className="text-left py-3 px-4 font-semibold text-gray-700">Note</th>
-                    <th className="text-left py-3 px-4 font-semibold text-gray-700">Statut</th>
-                    <th className="text-center py-3 px-4 font-semibold text-gray-700">Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {mesOffres.map((offre) => (
-                    <tr key={offre.id} className="border-b border-gray-100 hover:bg-gray-50">
-                      <td className="py-4 px-4">
-                        <div>
-                          <div className="font-semibold">{offre.nom}</div>
-                          <div className="text-xs text-gray-500">{offre.duree} mois</div>
-                        </div>
-                      </td>
-                      <td className="py-4 px-4">
-                        <div className="font-semibold text-slate-600">{offre.prix.toLocaleString()} F</div>
-                      </td>
-                      <td className="py-4 px-4">
-                        <div className="flex items-center gap-2">
-                          <span className={offre.stock === 0 ? 'text-red-500 font-semibold' : ''}>
-                            {offre.stock}
-                          </span>
-                          {offre.stock === 0 && (
-                            <AlertCircle className="h-4 w-4 text-red-500" />
-                          )}
-                        </div>
-                      </td>
-                      <td className="py-4 px-4">
-                        <div className="font-semibold">{offre.ventes}</div>
-                      </td>
-                      <td className="py-4 px-4">
-                        <div className="font-semibold text-green-600">{(offre.revenu / 1000).toFixed(0)}K</div>
-                      </td>
-                      <td className="py-4 px-4">
-                        <div className="flex items-center gap-1">
-                          <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
-                          <span className="font-semibold">{offre.note}</span>
-                        </div>
-                      </td>
-                      <td className="py-4 px-4">
-                        <button
-                          onClick={() => handleToggleActif(offre.id, offre.actif)}
-                          className={`px-3 py-1 rounded-full text-xs font-semibold ${
-                            offre.actif
-                              ? 'bg-green-100 text-green-700'
-                              : 'bg-gray-100 text-gray-700'
-                          }`}
-                        >
-                          {offre.actif ? 'Actif' : 'Inactif'}
-                        </button>
-                      </td>
-                      <td className="py-4 px-4">
-                        <div className="flex items-center justify-center gap-2">
-                          <button
-                            onClick={() => handleEditerOffre(offre.id)}
-                            className="p-2 hover:bg-blue-50 rounded-lg transition-all"
-                            title="Voir"
-                          >
-                            <Eye className="h-4 w-4 text-blue-600" />
-                          </button>
-                          <button
-                            onClick={() => handleEditerOffre(offre.id)}
-                            className="p-2 hover:bg-slate-50 rounded-lg transition-all"
-                            title="Éditer"
-                          >
-                            <Edit className="h-4 w-4 text-slate-600" />
-                          </button>
-                          <button
-                            onClick={() => handleSupprimerOffre(offre.id)}
-                            className="p-2 hover:bg-red-50 rounded-lg transition-all"
-                            title="Supprimer"
-                          >
-                            <Trash2 className="h-4 w-4 text-red-600" />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+            <DataTable
+              data={mesOffres}
+              columns={[
+                {
+                  key: 'offre',
+                  label: 'Offre',
+                  render: (offre) => (
+                    <div className="flex items-center gap-3">
+                      <ServiceLogo name={offre.nom} image={offre.image} size="sm" />
+                      <div>
+                        <div className="font-medium text-foreground">{offre.nom}</div>
+                        <div className="text-xs text-muted-foreground">{offre.categorie || '-'} / {offre.duree} mois</div>
+                      </div>
+                    </div>
+                  )
+                },
+                { key: 'prix', label: 'Prix', render: (offre) => <span className="font-medium">{formatFCFA(offre.prix)}</span> },
+                { key: 'stock', label: 'Stock', render: (offre) => <Badge tone={offre.stock <= 5 ? 'danger' : 'muted'}>{offre.stock}</Badge> },
+                { key: 'ventes', label: 'Ventes', render: (offre) => <span className="font-medium">{offre.ventes}</span> },
+                { key: 'revenu', label: 'Revenu', render: (offre) => formatFCFA(offre.revenu) },
+                { key: 'statut', label: 'Statut', render: (offre) => <button onClick={() => handleToggleActif(offre.id, offre.actif)}><StatusBadge status={offre.actif ? 'ACTIF' : 'INACTIF'} /></button> },
+                {
+                  key: 'actions',
+                  label: '',
+                  className: 'text-right',
+                  cellClassName: 'text-right',
+                  render: (offre) => (
+                    <div className="flex justify-end gap-1">
+                      <Button size="icon" variant="ghost" onClick={() => navigate(`/partenaire/offres/editer/${offre.id}`)}><Eye className="h-4 w-4" /></Button>
+                      <Button size="icon" variant="ghost" onClick={() => navigate(`/partenaire/offres/editer/${offre.id}`)}><Edit className="h-4 w-4" /></Button>
+                      <Button size="icon" variant="ghost" onClick={() => handleSupprimerOffre(offre.id)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
+                    </div>
+                  )
+                }
+              ]}
+            />
           )}
-        </div>
+        </Card>
 
-        {/* Actions rapides */}
-        <div className="mt-8 grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          <button
-            onClick={() => navigate('/partenaire/offres/nouvelle')}
-            className="p-6 bg-white rounded-2xl border-2 border-gray-200 hover:border-slate-500 hover:shadow-lg transition-all text-left"
-          >
-            <Plus className="h-8 w-8 text-slate-600 mb-3" />
-            <div className="font-bold mb-1">Créer une offre</div>
-            <div className="text-sm text-gray-600">Ajouter une nouvelle offre</div>
-          </button>
-
-          <button
-            onClick={() => navigate('/partenaire/clients')}
-            className="p-6 bg-white rounded-2xl border-2 border-gray-200 hover:border-blue-500 hover:shadow-lg transition-all text-left"
-          >
-            <Users className="h-8 w-8 text-blue-600 mb-3" />
-            <div className="font-bold mb-1">Mes clients</div>
-            <div className="text-sm text-gray-600">Voir mes clients</div>
-          </button>
-
-          <button
-            onClick={() => navigate('/partenaire/stats')}
-            className="p-6 bg-white rounded-2xl border-2 border-gray-200 hover:border-green-500 hover:shadow-lg transition-all text-left"
-          >
-            <BarChart3 className="h-8 w-8 text-green-600 mb-3" />
-            <div className="font-bold mb-1">Statistiques</div>
-            <div className="text-sm text-gray-600">Rapports détaillés</div>
-          </button>
-        </div>
+        <Card className="p-5">
+          <div className="mb-4">
+            <h2 className="font-semibold text-foreground">Ventes récentes</h2>
+            <p className="text-sm text-muted-foreground">Dernières commandes payées</p>
+          </div>
+          <div className="space-y-3">
+            {ventesRecentes.map((vente) => (
+              <div key={vente.id} className="flex items-center gap-3">
+                <ServiceLogo name={vente?.abonnement?.nom || 'Offre'} size="sm" />
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-medium">{vente?.client?.nom || vente?.emailClient || 'Client'}</p>
+                  <p className="truncate text-xs text-muted-foreground">{vente?.abonnement?.nom || '-'}</p>
+                </div>
+                <div className="text-right">
+                  <p className="text-sm font-semibold">{formatFCFA(vente?.montant || 0)}</p>
+                  <StatusBadge status={vente?.isLivred ? 'LIVRE' : 'EN_ATTENTE'} />
+                </div>
+              </div>
+            ))}
+            {ventesRecentes.length === 0 && <p className="py-8 text-center text-sm text-muted-foreground">Aucune vente récente.</p>}
+          </div>
+          <Button className="mt-5 w-full" variant="secondary" onClick={() => navigate('/partenaire/commandes')}><ShoppingBag className="h-4 w-4" /> Suivre les ventes</Button>
+        </Card>
       </div>
-    </div>
+    </>
   )
 }

@@ -1,182 +1,137 @@
-/* eslint-disable no-unused-vars */
-import React, { useState, useEffect } from "react";
-import SearchIcon from "@mui/icons-material/Search";
-import { ThreeDots, TailSpin } from "react-loader-spinner";
-import { getAbonnements } from "../services/AbonnementService";
-import AbonnementCard from "../components/AbonnementCard";
-import { useNavigate } from "react-router-dom";
-import Pagination from "@mui/material/Pagination";
+import { useEffect, useMemo, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
+import { Plus, Search, Package } from 'lucide-react'
+import Pagination from '@mui/material/Pagination'
+import AjouterModifierAbonnement from '../components/AjouterModifierAbonnement'
+import { useAbonnementStore } from '../store/abonnement'
+import { getUserProfil, HOMEADMIN } from '../Utils/Utils'
+import {
+  Button,
+  Card,
+  DataTable,
+  Input,
+  LoadingState,
+  PageHeader,
+  ServiceLogo,
+  StatusBadge,
+  formatFCFA
+} from '../components/saas/SaasPrimitives'
 
-import AjouterModifierAbonnement from "../components/AjouterModifierAbonnement";
-import { useAbonnementStore } from "../store/abonnement";
-import { getUserProfil, HOMEADMIN } from "../Utils/Utils";
 export default function Abonnements() {
-  const [data, setData] = useState([]);
-  const [searchLoading, setSearchLoading] = useState(false);
-  const [inputs, setInputs] = useState("");
-  const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 8;
-  const navigate = useNavigate();
-  const abonnementSotre = useAbonnementStore();
-  const isLoading = abonnementSotre.loading;
+  const [inputs, setInputs] = useState('')
+  const [currentPage, setCurrentPage] = useState(1)
+  const itemsPerPage = 8
+  const navigate = useNavigate()
+  const abonnementStore = useAbonnementStore()
+  const isLoading = abonnementStore.loading
 
   useEffect(() => {
-    if (!getUserProfil()) {
-      navigate(`${HOMEADMIN}/login`);
-    }
-  }, []);
+    if (!getUserProfil()) navigate(`${HOMEADMIN}/login`)
+  }, [navigate])
 
   useEffect(() => {
-    abonnementSotre.getAllData();
-  }, []);
+    abonnementStore.getAllData()
+  }, [])
 
-  // useEffect(() => {
-  //   setIsLoading(true);
-  //   try {
-  //    setTimeout(()=>{
-  //     getAbonnements()
-  //     .then((response) => {
-  //       if (response.data) {
-  //         setIsLoading(false);
-  //         setData(response.data);
-  //         setAbonnements(response.data);
-  //       }
-  //     })
-  //     .catch((err) => {
-  //       console.log(err.response.data);
-  //       //setIsLoading(false);
-  //     });
-  //    }, 900)
-  //   } catch (err) {
-  //     console.log(err);
-  //     //setIsLoading(false);
-  //   }
-  // }, []);
+  const filtered = useMemo(() => {
+    const source = abonnementStore.data || []
+    const query = inputs.toLowerCase()
+    return source.filter((item) => `${item.nom || ''} ${item.categorie || ''}`.toLowerCase().includes(query))
+  }, [abonnementStore.data, inputs])
 
-  const filteredData = (inputValue) => {
-    const filter = abonnementSotre.abonnements.filter((x) =>
-      x.nom.toLowerCase().startsWith((inputValue || "").toLowerCase())
-    );
-    setData(filter);
-    setCurrentPage(1); // Réinitialise à la première page après un filtre
-  };
-
-  // Calcul des Pokémon affichés pour la page actuelle
-  const indexOfLastItem = currentPage * itemsPerPage;
-  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
-  const currentData = abonnementSotre.data.slice(
-    indexOfFirstItem,
-    indexOfLastItem
-  );
-
-  // Calcul du nombre total de pages
-  const totalPages = Math.ceil(abonnementSotre.data.length / itemsPerPage);
-
-  // Fonction pour gérer le changement de page avec Material-UI Pagination
-  const handlePageChange = (event, page) => {
-    setCurrentPage(page);
-  };
-
-  const showModalEdit = (item) => {
-    document.getElementById("edit-abonnement").showModal();
-    setCardNaturel(item);
-  };
+  const totalPages = Math.ceil(filtered.length / itemsPerPage)
+  const currentData = filtered.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage)
 
   const showModalAdd = () => {
-    document.getElementById("add-abonnement").showModal();
-  };
+    document.getElementById('add-abonnement')?.showModal()
+  }
 
-  const closeModal = (idName) => {};
+  if (isLoading) return <LoadingState label="Chargement des abonnements..." />
 
   return (
-    <div className="w-11/12 h-full mx-auto pt-16">
-    {/* Titre principal */}
-    <h1 className="text-5xl font-extrabold text-gray-900  mb-10">
-       Abonnements
-    </h1>
-  
-    {/* Barre de recherche & Bouton d'ajout */}
-    <div className="w-full flex flex-col sm:flex-row items-center justify-between gap-6">
-      {/* Champ de recherche */}
-      <div className=" w-full sm:w-auto flex items-center">
-        <input
-          type="text"
-          placeholder=" 🔍Rechercher un abonnement..."
-          className="w-full sm:w-96 px-4 py-3 rounded-lg border border-gray-300 shadow-sm focus:ring-2 focus:ring-slate-500 transition-all"
-          value={inputs}
-          onChange={(e) => setInputs(e.target.value)}
-        />
-        <button
-          className=" bg-slate-600 hover:bg-slate-700 text-white p-2 rounded-md transition-all"
-          onClick={() => filteredData(inputs)}
-        >
-          {!searchLoading ? (
-            <SearchIcon className="w-5 h-5" />
-          ) : (
-            <TailSpin height="20" width="20" color="#fff" />
-          )}
-        </button>
-      </div>
-  
-      {/* Bouton d'ajout */}
-      <button
-        className="px-6 py-3 bg-slate-700 hover:bg-slate-800 text-white font-bold rounded-lg shadow-md transition-all"
-        onClick={showModalAdd}
-      >
-        ➕ Ajouter un abonnement
-      </button>
-    </div>
-  
-    {/* Liste des abonnements */}
-    <div className="w-full mt-12">
-      <div className="container mx-auto px-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8 py-10">
-        {isLoading
-          ? Array.from({ length: 4 }).map((_, index) => (
-              <div
-                key={index}
-                className="bg-gray-200 rounded-lg h-48 animate-pulse"
-              ></div>
-            ))
-          : currentData.map((item, index) => (
-              <AbonnementCard key={index} item={item} />
-            ))}
-      </div>
-    </div>
-  
-    {/* Pagination */}
-    <div className="flex justify-center py-8">
-      {abonnementSotre.data.length > 0 && (
-        <Pagination
-          count={totalPages}
-          page={currentPage}
-          onChange={handlePageChange}
-          variant="outlined"
-          color="primary"
-          shape="rounded"
-        />
-      )}
-    </div>
-  
-    {/* Modal d'ajout d'abonnement */}
-    <dialog id="add-abonnement" className="modal">
-      <div className="modal-box">
-        <div className="modal-action">
-          <h2 className="mr-auto text-3xl font-bold text-gray-900 mb-6">
-            📝 Enregistrer un abonnement
-          </h2>
-          <form method="dialog">
-            <button
-              id="fermer-modal-ajout-abonnement"
-              className="w-8 h-8 flex items-center justify-center rounded-lg bg-red-100 hover:bg-red-200 text-red-600 transition-all"
-            >
-              ✕
-            </button>
-          </form>
+    <>
+      <PageHeader
+        title="Abonnements"
+        description={`${filtered.length} abonnement(s) dans le catalogue.`}
+        action={
+          <Button onClick={showModalAdd}>
+            <Plus className="h-4 w-4" />
+            Ajouter un abonnement
+          </Button>
+        }
+      />
+
+      <Card className="p-4">
+        <label className="relative block max-w-xl">
+          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            className="pl-9"
+            placeholder="Rechercher un abonnement..."
+            value={inputs}
+            onChange={(event) => {
+              setInputs(event.target.value)
+              setCurrentPage(1)
+            }}
+          />
+        </label>
+      </Card>
+
+      <DataTable
+        data={currentData}
+        emptyLabel="Aucun abonnement trouvé"
+        columns={[
+          {
+            key: 'abonnement',
+            label: 'Abonnement',
+            render: (item) => (
+              <div className="flex items-center gap-3">
+                <ServiceLogo name={item.nom} image={item.image} size="sm" />
+                <div>
+                  <div className="font-medium text-foreground">{item.nom || '-'}</div>
+                  <div className="text-xs text-muted-foreground">{item.categorie || 'Catalogue'}</div>
+                </div>
+              </div>
+            )
+          },
+          { key: 'description', label: 'Description', render: (item) => <span className="line-clamp-1 text-muted-foreground">{item.description || '-'}</span> },
+          { key: 'forfaits', label: 'Forfaits', render: (item) => item.forfaits?.length || item.forfaitOffres?.length || 0 },
+          { key: 'prix', label: 'Prix', render: (item) => formatFCFA(item.forfaits?.[0]?.prix || item.forfaitOffres?.[0]?.forfait?.prix || 0) },
+          { key: 'statut', label: 'Statut', render: (item) => <StatusBadge status={item.isDeleted ? 'SUSPENDU' : 'ACTIF'} /> }
+        ]}
+      />
+
+      {filtered.length > itemsPerPage && (
+        <div className="flex justify-center py-2">
+          <Pagination
+            count={totalPages}
+            page={currentPage}
+            onChange={(_, page) => setCurrentPage(page)}
+            variant="outlined"
+            color="primary"
+            shape="rounded"
+          />
         </div>
-        <AjouterModifierAbonnement />
-      </div>
-    </dialog>
-  </div>
-  
-  );
+      )}
+
+      <dialog id="add-abonnement" className="modal">
+        <div className="modal-box border border-border bg-card text-foreground">
+          <div className="modal-action mt-0">
+            <div className="mr-auto flex items-center gap-3">
+              <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                <Package className="h-5 w-5" />
+              </span>
+              <div>
+                <h2 className="text-xl font-bold">Enregistrer un abonnement</h2>
+                <p className="text-sm text-muted-foreground">Ajoutez une offre au catalogue.</p>
+              </div>
+            </div>
+            <form method="dialog">
+              <button className="h-9 w-9 rounded-lg border border-border hover:bg-muted">x</button>
+            </form>
+          </div>
+          <AjouterModifierAbonnement />
+        </div>
+      </dialog>
+    </>
+  )
 }

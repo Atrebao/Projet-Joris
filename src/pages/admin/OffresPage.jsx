@@ -1,8 +1,9 @@
-import { useState, useEffect } from 'react'
-import { Package, Eye, Edit, Trash2, Search, Filter, CheckCircle, XCircle } from 'lucide-react'
+import { useEffect, useMemo, useState } from 'react'
+import { Eye, Search, Trash2 } from 'lucide-react'
 import { abonnementsAPI } from '../../lib/api'
 import toast from 'react-hot-toast'
 import ModalDetail from '../../components/ModalDetail'
+import { Button, Card, DataTable, Input, LoadingState, PageHeader, Select, ServiceLogo, StatusBadge, formatFCFA } from '../../components/saas/SaasPrimitives'
 
 export default function OffresPage() {
   const [offres, setOffres] = useState([])
@@ -20,28 +21,22 @@ export default function OffresPage() {
     setLoading(true)
     try {
       const { data } = await abonnementsAPI.getAll()
-
-      // Mapper les données backend vers le format UI
-      const offresFormatted = data.map(offre => ({
+      setOffres((data || []).map((offre) => ({
         id: offre.id,
         nom: offre.nom,
-        partenaire: offre.partenaire?.nom || 'N/A',
+        partenaire: offre.partenaire?.nom || offre.partenaire?.nomBoutique || 'N/A',
         categorie: offre.categorie,
         image: offre.image,
-        // Utiliser le premier forfait pour l'affichage
         prix: offre.forfaits?.[0]?.prix || 0,
         duree: offre.forfaits?.[0]?.duree || 1,
         forfaits: offre.forfaits || [],
-        stock: Math.floor(Math.random() * 50), // TODO: Implémenter stock backend
-        ventes: Math.floor(Math.random() * 100), // TODO: Stats ventes
-        statut: offre.isDeleted ? 'SUSPENDU' : 'ACTIF',
-        note: 4.5 + Math.random() * 0.5
-      }))
-
-      setOffres(offresFormatted)
+        stock: offre.stock ?? offre.quantiteDisponible ?? 0,
+        statut: offre.isDeleted ? 'SUSPENDU' : 'ACTIF'
+      })))
     } catch (error) {
       console.error('Erreur chargement offres:', error)
       toast.error('Impossible de charger les offres')
+      setOffres([])
     } finally {
       setLoading(false)
     }
@@ -60,20 +55,8 @@ export default function OffresPage() {
     }
   }
 
-  const handleToggleActive = async (id) => {
-    try {
-      // TODO: Créer endpoint backend pour toggle isActif
-      // await abonnementsAPI.toggleActive(id)
-      toast.success('Statut modifié')
-      loadOffres()
-    } catch (error) {
-      toast.error('Erreur lors de la modification')
-    }
-  }
-
   const handleDelete = async (id) => {
     if (!confirm('Êtes-vous sûr de vouloir supprimer cette offre ?')) return
-
     try {
       await abonnementsAPI.delete(id)
       toast.success('Offre supprimée')
@@ -84,162 +67,102 @@ export default function OffresPage() {
     }
   }
 
-  const offresFiltrees = offres.filter(o => {
-    const matchStatut = filtreStatut === 'TOUS' || o.statut === filtreStatut
-    const matchRecherche = o.nom.toLowerCase().includes(recherche.toLowerCase())
-    return matchStatut && matchRecherche
-  })
+  const offresFiltrees = useMemo(
+    () =>
+      offres.filter((o) => {
+        const matchStatut = filtreStatut === 'TOUS' || o.statut === filtreStatut
+        const matchRecherche = `${o.nom || ''} ${o.partenaire || ''}`.toLowerCase().includes(recherche.toLowerCase())
+        return matchStatut && matchRecherche
+      }),
+    [offres, filtreStatut, recherche]
+  )
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="inline-block h-12 w-12 border-4 border-slate-600 border-t-transparent rounded-full animate-spin"></div>
-          <p className="mt-4 text-gray-600">Chargement des offres...</p>
-        </div>
-      </div>
-    )
-  }
+  if (loading) return <LoadingState label="Chargement des offres..." />
 
   return (
-    <div className="min-h-screen bg-gray-50 p-8">
-      <div className="max-w-7xl mx-auto">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold mb-2">Gestion des Offres</h1>
-          <p className="text-gray-600">{offres.length} offres au total</p>
-        </div>
+    <>
+      <PageHeader title="Offres" description={`${offres.length} offre(s) publiées par les partenaires.`} />
 
-        {/* Filtres */}
-        <div className="bg-white rounded-2xl border-2 border-gray-200 p-6 mb-6">
-          <div className="flex flex-wrap gap-4 items-center">
-            <div className="flex-1 min-w-[300px]">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
-                <input
-                  type="text"
-                  placeholder="Rechercher..."
-                  value={recherche}
-                  onChange={(e) => setRecherche(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-slate-500"
-                />
+      <Card className="p-4">
+        <div className="flex flex-col gap-3 md:flex-row md:items-center">
+          <label className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <Input className="pl-9" placeholder="Rechercher une offre ou un partenaire..." value={recherche} onChange={(e) => setRecherche(e.target.value)} />
+          </label>
+          <Select value={filtreStatut} onChange={(e) => setFiltreStatut(e.target.value)}>
+            <option value="TOUS">Tous les statuts</option>
+            <option value="ACTIF">Actives</option>
+            <option value="SUSPENDU">Suspendues</option>
+          </Select>
+        </div>
+      </Card>
+
+      <DataTable
+        data={offresFiltrees}
+        emptyLabel="Aucune offre trouvée"
+        columns={[
+          {
+            key: 'offre',
+            label: 'Offre',
+            render: (o) => (
+              <div className="flex items-center gap-3">
+                <ServiceLogo name={o.nom} image={o.image} size="sm" />
+                <div>
+                  <div className="font-medium text-foreground">{o.nom}</div>
+                  <div className="text-xs text-muted-foreground">{o.categorie || '-'} / {o.duree} mois</div>
+                </div>
+              </div>
+            )
+          },
+          { key: 'partenaire', label: 'Partenaire' },
+          { key: 'prix', label: 'Prix', render: (o) => <span className="font-medium">{formatFCFA(o.prix)}</span> },
+          { key: 'stock', label: 'Stock', render: (o) => o.stock },
+          { key: 'statut', label: 'Statut', render: (o) => <StatusBadge status={o.statut} /> },
+          {
+            key: 'actions',
+            label: '',
+            className: 'text-right',
+            cellClassName: 'text-right',
+            render: (o) => (
+              <div className="flex justify-end gap-1">
+                <Button size="icon" variant="ghost" onClick={() => handleVoirOffre(o.id)}><Eye className="h-4 w-4" /></Button>
+                <Button size="icon" variant="ghost" onClick={() => handleDelete(o.id)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
+              </div>
+            )
+          }
+        ]}
+      />
+
+      <ModalDetail
+        open={!!detailOffre || detailLoading}
+        onClose={() => { setDetailOffre(null); setDetailLoading(false) }}
+        title="Détails de l'offre"
+        loading={detailLoading}
+      >
+        {detailOffre && (
+          <div className="space-y-4">
+            <div className="flex items-center gap-3 rounded-lg border border-border bg-muted/30 p-3">
+              <ServiceLogo name={detailOffre.nom} image={detailOffre.image} />
+              <div>
+                <p className="font-semibold">{detailOffre.nom}</p>
+                <p className="text-sm text-muted-foreground">{detailOffre.categorie || '-'}</p>
               </div>
             </div>
-            <select
-              value={filtreStatut}
-              onChange={(e) => setFiltreStatut(e.target.value)}
-              className="px-4 py-2 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-slate-500"
-            >
-              <option value="TOUS">Tous</option>
-              <option value="ACTIF">Actifs</option>
-              <option value="SUSPENDU">Suspendus</option>
-            </select>
+            {detailOffre.description && <p className="text-sm text-muted-foreground">{detailOffre.description}</p>}
+            {detailOffre.forfaits?.length > 0 && (
+              <div className="space-y-2">
+                <label className="text-xs font-semibold uppercase text-muted-foreground">Forfaits</label>
+                {detailOffre.forfaits.map((f, index) => (
+                  <div key={index} className="flex justify-between rounded-lg border border-border bg-card p-3 text-sm">
+                    <span>{f.plan || `${f.duree} ${f.periode || 'mois'}`}</span>
+                    <span className="font-semibold">{formatFCFA(f.prix)}</span>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
-        </div>
-
-        {/* Tableau */}
-        <div className="bg-white rounded-2xl border-2 border-gray-200 overflow-hidden">
-          <table className="w-full">
-            <thead className="bg-gray-50">
-              <tr className="border-b-2 border-gray-200">
-                <th className="text-left py-4 px-6 font-semibold">Offre</th>
-                <th className="text-left py-4 px-6 font-semibold">Partenaire</th>
-                <th className="text-left py-4 px-6 font-semibold">Prix</th>
-                <th className="text-left py-4 px-6 font-semibold">Stock</th>
-                <th className="text-left py-4 px-6 font-semibold">Ventes</th>
-                <th className="text-left py-4 px-6 font-semibold">Note</th>
-                <th className="text-left py-4 px-6 font-semibold">Statut</th>
-                <th className="text-center py-4 px-6 font-semibold">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {offresFiltrees.map((o) => (
-                <tr key={o.id} className="border-b border-gray-100 hover:bg-gray-50">
-                  <td className="py-4 px-6">
-                    <div className="font-semibold">{o.nom}</div>
-                    <div className="text-xs text-gray-500">{o.categorie}</div>
-                  </td>
-                  <td className="py-4 px-6">{o.partenaire}</td>
-                  <td className="py-4 px-6 font-semibold text-slate-600">{o.prix.toLocaleString()} F</td>
-                  <td className="py-4 px-6">{o.stock}</td>
-                  <td className="py-4 px-6 font-semibold">{o.ventes}</td>
-                  <td className="py-4 px-6">⭐ {o.note}</td>
-                  <td className="py-4 px-6">
-                    <span className={`px-3 py-1 rounded-full text-xs font-semibold ${o.statut === 'ACTIF' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
-                      }`}>
-                      {o.statut}
-                    </span>
-                  </td>
-                    <td className="py-4 px-6">
-                    <div className="flex items-center justify-center gap-2">
-                      <button onClick={() => handleVoirOffre(o.id)} className="p-2 hover:bg-blue-50 rounded-lg">
-                        <Eye className="h-5 w-5 text-blue-600" />
-                      </button>
-                      <button
-                        onClick={() => handleDelete(o.id)}
-                        className="p-2 hover:bg-red-50 rounded-lg"
-                      >
-                        <Trash2 className="h-5 w-5 text-red-600" />
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-
-        <ModalDetail
-          open={!!detailOffre || detailLoading}
-          onClose={() => { setDetailOffre(null); setDetailLoading(false) }}
-          title="Détails de l'offre"
-          loading={detailLoading}
-        >
-          {detailOffre && (
-            <div className="space-y-4">
-              {detailOffre.image && (
-                <img src={detailOffre.image} alt={detailOffre.nom} className="w-full max-h-48 object-contain rounded-lg border border-gray-200" />
-              )}
-              <div className="grid sm:grid-cols-2 gap-4">
-                <div>
-                  <label className="text-xs font-semibold text-gray-500 uppercase">Nom</label>
-                  <p className="font-medium">{detailOffre.nom}</p>
-                </div>
-                <div>
-                  <label className="text-xs font-semibold text-gray-500 uppercase">Catégorie</label>
-                  <p className="font-medium">{detailOffre.categorie || '-'}</p>
-                </div>
-                <div>
-                  <label className="text-xs font-semibold text-gray-500 uppercase">Icône</label>
-                  <p className="font-medium">{detailOffre.icon || '-'}</p>
-                </div>
-                <div>
-                  <label className="text-xs font-semibold text-gray-500 uppercase">Date création</label>
-                  <p className="font-medium">{detailOffre.dateCreation ? new Date(detailOffre.dateCreation).toLocaleDateString('fr-FR') : '-'}</p>
-                </div>
-                {detailOffre.description && (
-                  <div className="sm:col-span-2">
-                    <label className="text-xs font-semibold text-gray-500 uppercase">Description</label>
-                    <p className="text-sm mt-1">{detailOffre.description}</p>
-                  </div>
-                )}
-                {detailOffre.forfaits?.length > 0 && (
-                  <div className="sm:col-span-2">
-                    <label className="text-xs font-semibold text-gray-500 uppercase">Forfaits</label>
-                    <div className="mt-2 space-y-2">
-                      {detailOffre.forfaits.map((f, i) => (
-                        <div key={i} className="flex justify-between p-3 bg-gray-50 rounded-lg">
-                          <span>{f.duree} {f.periode || 'mois'}</span>
-                          <span className="font-semibold">{Number(f.prix || 0).toLocaleString()} FCFA</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
-        </ModalDetail>
-      </div>
-    </div>
+        )}
+      </ModalDetail>
+    </>
   )
 }

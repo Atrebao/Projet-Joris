@@ -1,430 +1,236 @@
-import { useState, useEffect } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Package, Key, Calendar, AlertCircle, Loader, RefreshCw, Eye, EyeOff, Mail, ArrowRight, Shield } from 'lucide-react'
+import { Check, Copy, Eye, EyeOff, KeyRound, Loader, Mail, Wallet } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { souscriptionsAPI } from '../lib/api'
 
+const formatFCFA = (value) => `${new Intl.NumberFormat('fr-FR').format(Number(value) || 0)} FCFA`
+
 export default function MesAbonnements() {
-    const navigate = useNavigate()
-    const [abonnements, setAbonnements] = useState([])
-    const [loading, setLoading] = useState(true)
-    const [email, setEmail] = useState('')
-    const [showPasswords, setShowPasswords] = useState({})
-    const [showEmailGate, setShowEmailGate] = useState(false)
-    const [emailInput, setEmailInput] = useState('')
-    const [emailSubmitting, setEmailSubmitting] = useState(false)
+  const navigate = useNavigate()
+  const [abonnements, setAbonnements] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [emailInput, setEmailInput] = useState('')
+  const [showGate, setShowGate] = useState(false)
+  const [visiblePasswords, setVisiblePasswords] = useState({})
+  const [copied, setCopied] = useState('')
 
-    useEffect(() => {
-        const savedEmail = localStorage.getItem('customerEmail')
-        if (!savedEmail) {
-            setShowEmailGate(true)
-            setLoading(false)
-        } else {
-            setEmail(savedEmail)
-            fetchAbonnements(savedEmail)
-        }
-    }, [navigate])
-
-    const handleEmailGateSubmit = async (e) => {
-        e.preventDefault()
-        const trimmed = emailInput.trim()
-        if (!trimmed || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed)) {
-            toast.error('Veuillez entrer une adresse email valide')
-            return
-        }
-        setEmailSubmitting(true)
-        try {
-            localStorage.setItem('customerEmail', trimmed)
-            setEmail(trimmed)
-            setShowEmailGate(false)
-            await fetchAbonnements(trimmed)
-        } finally {
-            setEmailSubmitting(false)
-        }
+  useEffect(() => {
+    const email = localStorage.getItem('customerEmail')
+    if (!email) {
+      setShowGate(true)
+      setLoading(false)
+      return
     }
+    setEmailInput(email)
+    fetchAbonnements(email)
+  }, [])
 
-    const handleSkipEmailGate = () => {
-        navigate('/')
+  const fetchAbonnements = async (email) => {
+    setLoading(true)
+    try {
+      const { data } = await souscriptionsAPI.getByEmail(email)
+      setAbonnements((data || []).map((sub) => ({
+        id: sub.id,
+        reference: sub.reference || '-',
+        title: sub.abonnement?.nom || 'Abonnement',
+        duration: `${sub.duree || sub.abonnement?.duree || 1} ${sub.periode || 'mois'}`,
+        amount: sub.montant || 0,
+        date: sub.dateCreation ? new Date(sub.dateCreation).toLocaleDateString('fr-FR') : '-',
+        status: sub.isLivred ? 'active' : sub.statutPaiement === 'SUCCES' ? 'pending' : 'failed',
+        login: sub.login,
+        password: sub.password,
+        delivered: sub.isLivred
+      })))
+    } catch (error) {
+      console.error(error)
+      toast.error('Impossible de charger vos abonnements')
+      setAbonnements([])
+    } finally {
+      setLoading(false)
+      setShowGate(false)
     }
+  }
 
-    const fetchAbonnements = async (userEmail) => {
-        try {
-            setLoading(true)
-            const { data } = await souscriptionsAPI.getByEmail(userEmail)
+  const active = abonnements.filter((item) => item.status === 'active')
+  const totalSpent = useMemo(() => abonnements.reduce((sum, item) => sum + Number(item.amount || 0), 0), [abonnements])
 
-            const formatted = (data || []).map((sub) => ({
-                id: sub.id,
-                reference: sub.reference || 'N/A',
-                offre: {
-                    nom: sub.abonnement?.nom || 'Abonnement',
-                    description: sub.abonnement?.description || ''
-                },
-                identifiants: sub.isLivred
-                    ? { login: sub.login, password: sub.password }
-                    : null,
-                dateDebut: sub.dateCreation,
-                dateFin: sub.dateExpiration || sub.dateCreation,
-                statut: sub.etatSouscription || sub.statutPaiement || 'EN_ATTENTE',
-                montant: sub.montant || 0,
-                isLivred: sub.isLivred
-            }))
-
-            setAbonnements(formatted)
-        } catch (error) {
-            console.error('Erreur:', error)
-            toast.error('Erreur lors du chargement des abonnements')
-            setAbonnements([])
-        } finally {
-            setLoading(false)
-        }
+  const submitEmail = (event) => {
+    event.preventDefault()
+    const email = emailInput.trim()
+    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      toast.error('Veuillez entrer une adresse email valide')
+      return
     }
+    localStorage.setItem('customerEmail', email)
+    fetchAbonnements(email)
+  }
 
-    // Vérifier les expirations proches
-    useEffect(() => {
-        if (abonnements.length > 0) {
-            abonnements.forEach(abo => {
-                const joursRestants = Math.ceil((new Date(abo.dateFin) - new Date()) / (1000 * 60 * 60 * 24))
-                if (joursRestants > 0 && joursRestants <= 3) {
-                    toast((t) => (
-                        <div className="flex items-center gap-3">
-                            <AlertCircle className="h-6 w-6 text-orange-500" />
-                            <div>
-                                <p className="font-bold">Attention !</p>
-                                <p className="text-sm">Votre abonnement {abo.offre.nom} expire dans {joursRestants} jours.</p>
-                            </div>
-                        </div>
-                    ), { duration: 5000 })
-                }
-            })
-        }
-    }, [abonnements])
+  const copyValue = async (value, label) => {
+    if (!value) return
+    await navigator.clipboard.writeText(value)
+    setCopied(`${label}-${value}`)
+    toast.success(`${label} copié`)
+    setTimeout(() => setCopied(''), 1200)
+  }
 
-    const togglePasswordVisibility = (id) => {
-        setShowPasswords(prev => ({
-            ...prev,
-            [id]: !prev[id]
-        }))
-    }
-
-    const handleRenouveler = (abonnement) => {
-        navigate('/catalogue')
-        toast.success('Redirection vers le catalogue')
-    }
-
-    const handleDeconnexion = () => {
-        localStorage.removeItem('customerEmail')
-        navigate('/')
-        toast.success('Déconnexion réussie')
-    }
-
-    const copyToClipboard = (text, label) => {
-        navigator.clipboard.writeText(text)
-        toast.success(`${label} copié !`)
-    }
-
-    if (showEmailGate) {
-        return (
-            <div className="min-h-screen bg-gradient-to-b from-slate-100 to-slate-50 flex items-center justify-center p-4">
-                <div className="w-full max-w-md bg-white rounded-2xl shadow-xl border border-slate-200 overflow-hidden">
-                    <div className="bg-slate-800 text-white px-8 py-10 text-center">
-                        <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-white/10 mb-4">
-                            <Shield className="h-8 w-8" />
-                        </div>
-                        <h1 className="text-2xl font-bold">Mes abonnements</h1>
-                        <p className="text-slate-300 text-sm mt-2">Accès sécurisé à vos commandes</p>
-                    </div>
-                    <form onSubmit={handleEmailGateSubmit} className="p-8 space-y-6">
-                        <div>
-                            <label htmlFor="mes-abo-email" className="block text-sm font-semibold text-slate-700 mb-2">
-                                Adresse email utilisée lors de l&apos;achat
-                            </label>
-                            <div className="relative">
-                                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400" />
-                                <input
-                                    id="mes-abo-email"
-                                    type="email"
-                                    autoComplete="email"
-                                    value={emailInput}
-                                    onChange={(e) => setEmailInput(e.target.value)}
-                                    placeholder="vous@exemple.com"
-                                    className="w-full pl-11 pr-4 py-3 border-2 border-slate-200 rounded-xl focus:outline-none focus:border-slate-600 transition-colors"
-                                    required
-                                />
-                            </div>
-                            <p className="text-xs text-slate-500 mt-2">
-                                Nous affichons uniquement les abonnements liés à cette adresse. Vos données ne sont pas partagées.
-                            </p>
-                        </div>
-                        <button
-                            type="submit"
-                            disabled={emailSubmitting}
-                            className="w-full py-3.5 bg-slate-800 text-white rounded-xl font-semibold hover:bg-slate-900 transition-colors flex items-center justify-center gap-2 disabled:opacity-60"
-                        >
-                            {emailSubmitting ? (
-                                <Loader className="h-5 w-5 animate-spin" />
-                            ) : (
-                                <>
-                                    Accéder à mes abonnements
-                                    <ArrowRight className="h-5 w-5" />
-                                </>
-                            )}
-                        </button>
-                        <button
-                            type="button"
-                            onClick={handleSkipEmailGate}
-                            className="w-full py-2 text-sm text-slate-600 hover:text-slate-900 font-medium"
-                        >
-                            Retour à l&apos;accueil
-                        </button>
-                    </form>
-                </div>
-            </div>
-        )
-    }
-
-    if (loading) {
-        return (
-            <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-                <div className="text-center">
-                    <Loader className="h-12 w-12 text-slate-600 animate-spin mx-auto mb-4" />
-                    <p className="text-gray-600">Chargement de vos abonnements...</p>
-                </div>
-            </div>
-        )
-    }
-
+  if (showGate) {
     return (
-        <div className="min-h-screen bg-gray-50 py-8">
-            <div className="container mx-auto px-4 max-w-5xl">
-                {/* En-tête */}
-                <div className="flex justify-between items-center mb-8">
-                    <div>
-                        <h1 className="text-3xl font-bold text-gray-900">Mes Abonnements</h1>
-                        <p className="text-gray-600 mt-1">Connecté en tant que: {email}</p>
-                    </div>
-                    <button
-                        onClick={handleDeconnexion}
-                        className="px-4 py-2 text-sm bg-white border border-gray-300 rounded-lg hover:bg-gray-50"
-                    >
-                        Déconnexion
-                    </button>
-                </div>
-
-                {/* Liste des abonnements */}
-                {abonnements.length === 0 ? (
-                    <div className="bg-white rounded-2xl border-2 border-gray-200 p-12 text-center">
-                        <Package className="h-16 w-16 text-gray-400 mx-auto mb-4" />
-                        <h2 className="text-2xl font-bold text-gray-900 mb-2">
-                            Aucun abonnement
-                        </h2>
-                        <p className="text-gray-600 mb-6">
-                            Vous n'avez pas encore d'abonnement actif
-                        </p>
-                        <button
-                            onClick={() => navigate('/catalogue')}
-                            className="px-6 py-3 bg-slate-600 text-white rounded-lg hover:bg-slate-700"
-                        >
-                            Découvrir nos offres
-                        </button>
-                    </div>
-                ) : (
-                    <div className="space-y-6">
-                        {abonnements.map((abo) => {
-                            const isExpire = new Date(abo.dateFin) < new Date()
-                            const joursRestants = Math.ceil((new Date(abo.dateFin) - new Date()) / (1000 * 60 * 60 * 24))
-
-                            return (
-                                <div
-                                    key={abo.id}
-                                    className="bg-white rounded-2xl border-2 border-gray-200 p-6 hover:shadow-lg transition-shadow"
-                                >
-                                    {/* En-tête de l'abonnement */}
-                                    <div className="flex items-start justify-between mb-6">
-                                        <div className="flex items-start gap-4">
-                                            <div className="w-16 h-16 bg-gradient-to-br from-slate-500 to-slate-600 rounded-xl flex items-center justify-center text-white font-bold text-xl">
-                                                {abo.offre.nom.charAt(0)}
-                                            </div>
-                                            <div>
-                                                <h3 className="text-xl font-bold text-gray-900">{abo.offre.nom}</h3>
-                                                <p className="text-sm text-gray-600">{abo.offre.description}</p>
-                                                <div className="flex items-center gap-2 mt-2">
-                                                    {isExpire ? (
-                                                        <span className="px-3 py-1 bg-red-100 text-red-700 rounded-full text-xs font-semibold">
-                                                            Expiré
-                                                        </span>
-                                                    ) : (
-                                                        <span className="px-3 py-1 bg-green-100 text-green-700 rounded-full text-xs font-semibold">
-                                                            ✓ Actif
-                                                        </span>
-                                                    )}
-                                                    <span className="text-xs text-gray-500">
-                                                        Réf: {abo.reference}
-                                                    </span>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    {/* Identifiants */}
-                                    <div className="bg-slate-50 rounded-xl p-6 mb-6">
-                                        <div className="flex items-center gap-2 mb-4">
-                                            <Key className="h-5 w-5 text-slate-600" />
-                                            <h4 className="font-bold text-slate-900">Vos identifiants</h4>
-                                        </div>
-
-                                        {abo.identifiants ? (
-                                        <div className="space-y-3">
-                                            {/* Login */}
-                                            <div>
-                                                <label className="block text-xs font-semibold text-slate-700 mb-1">
-                                                    Identifiant / Email
-                                                </label>
-                                                <div className="flex items-center gap-2">
-                                                    <input
-                                                        type="text"
-                                                        value={abo.identifiants.login || ''}
-                                                        readOnly
-                                                        className="flex-1 px-4 py-2 bg-white border border-slate-200 rounded-lg font-mono text-sm"
-                                                    />
-                                                    <button
-                                                        onClick={() => copyToClipboard(abo.identifiants.login, 'Identifiant')}
-                                                        className="px-4 py-2 bg-slate-600 text-white rounded-lg hover:bg-slate-700 text-sm"
-                                                    >
-                                                        Copier
-                                                    </button>
-                                                </div>
-                                            </div>
-
-                                            {/* Password */}
-                                            <div>
-                                                <label className="block text-xs font-semibold text-slate-700 mb-1">
-                                                    Mot de passe
-                                                </label>
-                                                <div className="flex items-center gap-2">
-                                                    <div className="flex-1 relative">
-                                                        <input
-                                                            type={showPasswords[abo.id] ? 'text' : 'password'}
-                                                            value={abo.identifiants.password || ''}
-                                                            readOnly
-                                                            className="w-full px-4 py-2 bg-white border border-slate-200 rounded-lg font-mono text-sm pr-12"
-                                                        />
-                                                        <button
-                                                            onClick={() => togglePasswordVisibility(abo.id)}
-                                                            className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-600 hover:text-slate-800"
-                                                        >
-                                                            {showPasswords[abo.id] ? (
-                                                                <EyeOff className="h-5 w-5" />
-                                                            ) : (
-                                                                <Eye className="h-5 w-5" />
-                                                            )}
-                                                        </button>
-                                                    </div>
-                                                    <button
-                                                        onClick={() => copyToClipboard(abo.identifiants.password, 'Mot de passe')}
-                                                        className="px-4 py-2 bg-slate-600 text-white rounded-lg hover:bg-slate-700 text-sm"
-                                                    >
-                                                        Copier
-                                                    </button>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        ) : (
-                                            <p className="text-amber-700 bg-amber-50 rounded-lg p-4 text-sm">
-                                                Identifiants en cours de préparation. Vous les recevrez par email dès que votre commande sera traitée.
-                                            </p>
-                                        )}
-                                    </div>
-
-                                    {/* Informations */}
-                                    <div className="grid sm:grid-cols-2 gap-4 mb-6">
-                                        <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
-                                            <Calendar className="h-5 w-5 text-gray-600" />
-                                            <div>
-                                                <div className="text-xs text-gray-600">Date de fin</div>
-                                                <div className="font-semibold">
-                                                    {new Date(abo.dateFin).toLocaleDateString('fr-FR')}
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
-                                            <AlertCircle className="h-5 w-5 text-gray-600" />
-                                            <div>
-                                                <div className="text-xs text-gray-600">Temps restant</div>
-                                                <div className="font-semibold">
-                                                    {isExpire ? 'Expiré' : `${joursRestants} jour${joursRestants > 1 ? 's' : ''}`}
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    {/* Alerte expiration proche */}
-                                    {!isExpire && joursRestants <= 3 && (
-                                        <div className="bg-orange-50 border-2 border-orange-200 rounded-lg p-4 mb-4 animate-pulse">
-                                            <div className="flex items-start gap-3">
-                                                <AlertCircle className="h-5 w-5 text-orange-600 flex-shrink-0 mt-0.5" />
-                                                <div className="flex-1">
-                                                    <p className="text-sm font-semibold text-orange-900">
-                                                        Expire bientôt !
-                                                    </p>
-                                                    <p className="text-xs text-orange-800 mt-1">
-                                                        Il ne vous reste que {joursRestants} jours. Pensez à renouveler.
-                                                    </p>
-                                                </div>
-                                                <button
-                                                    onClick={() => handleRenouveler(abo)}
-                                                    className="px-3 py-1 bg-orange-600 text-white text-xs rounded-lg font-bold"
-                                                >
-                                                    Renouveler
-                                                </button>
-                                            </div>
-                                        </div>
-                                    )}
-
-                                    {/* Actions */}
-                                    {isExpire && (
-                                        <div className="bg-yellow-50 border-2 border-yellow-200 rounded-lg p-4 mb-4">
-                                            <div className="flex items-start gap-3">
-                                                <AlertCircle className="h-5 w-5 text-yellow-600 flex-shrink-0 mt-0.5" />
-                                                <div className="flex-1">
-                                                    <p className="text-sm font-semibold text-yellow-900">
-                                                        Cet abonnement a expiré
-                                                    </p>
-                                                    <p className="text-xs text-yellow-800 mt-1">
-                                                        Renouvelez pour continuer à profiter de ce service
-                                                    </p>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    )}
-
-                                    <div className="flex gap-3">
-                                        {isExpire && (
-                                            <button
-                                                onClick={() => handleRenouveler(abo)}
-                                                className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-slate-600 text-white rounded-lg hover:bg-slate-700 font-semibold"
-                                            >
-                                                <RefreshCw className="h-5 w-5" />
-                                                Renouveler
-                                            </button>
-                                        )}
-                                    </div>
-                                </div>
-                            )
-                        })}
-                    </div>
-                )}
-
-                {/* Bouton ajouter */}
-                <div className="mt-8 text-center">
-                    <button
-                        onClick={() => navigate('/catalogue')}
-                        className="px-6 py-3 bg-white border-2 border-slate-600 text-slate-600 rounded-lg hover:bg-slate-50 font-semibold"
-                    >
-                        + Ajouter un abonnement
-                    </button>
-                </div>
+      <div className="flex min-h-screen items-center justify-center bg-background p-4">
+        <form onSubmit={submitEmail} className="w-full max-w-md rounded-2xl border border-border bg-card p-6 shadow-xl">
+          <div className="mb-5 flex items-center gap-3">
+            <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary">
+              <Mail className="h-5 w-5" />
+            </span>
+            <div>
+              <h1 className="text-xl font-bold">Espace Client</h1>
+              <p className="text-sm text-muted-foreground">Entrez l'email utilisé pendant l'achat.</p>
             </div>
-        </div>
+          </div>
+          <input
+            type="email"
+            value={emailInput}
+            onChange={(event) => setEmailInput(event.target.value)}
+            placeholder="vous@exemple.com"
+            className="h-11 w-full rounded-lg border border-input bg-card px-3 text-sm outline-none"
+          />
+          <button className="mt-4 h-11 w-full rounded-lg bg-primary px-4 text-sm font-semibold text-primary-foreground">
+            Accéder à mes abonnements
+          </button>
+          <button type="button" onClick={() => navigate('/')} className="mt-2 h-10 w-full rounded-lg border border-border text-sm font-medium">
+            Retour au marketplace
+          </button>
+        </form>
+      </div>
     )
+  }
+
+  if (loading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-background">
+        <Loader className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    )
+  }
+
+  return (
+    <div className="min-h-screen bg-background text-foreground">
+      <div className="mx-auto max-w-[1400px] space-y-8 px-4 py-8">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight">Espace Client</h1>
+          <p className="text-muted-foreground">Gérez vos abonnements et retrouvez vos identifiants.</p>
+        </div>
+
+        <div className="grid gap-4 sm:grid-cols-3">
+          <StatCard icon={KeyRound} value={active.length} label="Abonnements actifs" />
+          <StatCard icon={Wallet} value={formatFCFA(totalSpent)} label="Total dépensé" accent="accent" />
+          <StatCard icon={Check} value={abonnements.length} label="Transactions" accent="blue" />
+        </div>
+
+        <section>
+          <h2 className="mb-3 text-lg font-semibold">Mes abonnements actifs</h2>
+          {abonnements.length === 0 ? (
+            <div className="rounded-xl border border-dashed border-border py-16 text-center">
+              <p className="font-medium">Aucun abonnement trouvé.</p>
+              <button onClick={() => navigate('/')} className="mt-4 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground">
+                Voir le marketplace
+              </button>
+            </div>
+          ) : (
+            <div className="grid gap-4 lg:grid-cols-2">
+              {abonnements.map((sub) => (
+                <article key={sub.id} className="rounded-xl border border-border bg-card p-5">
+                  <div className="flex items-start gap-3">
+                    <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-primary text-sm font-bold text-primary-foreground">
+                      {sub.title.slice(0, 1).toUpperCase()}
+                    </span>
+                    <div className="min-w-0 flex-1">
+                      <h3 className="truncate font-semibold">{sub.title}</h3>
+                      <p className="text-sm text-muted-foreground">{sub.duration}</p>
+                    </div>
+                    <Status status={sub.status} />
+                  </div>
+
+                  <div className="mt-4 grid gap-2 sm:grid-cols-2">
+                    <Credential label="Identifiant" value={sub.login} copied={copied} onCopy={copyValue} />
+                    <Credential
+                      label="Mot de passe"
+                      value={sub.password}
+                      secret
+                      revealed={visiblePasswords[sub.id]}
+                      copied={copied}
+                      onCopy={copyValue}
+                      onReveal={() => setVisiblePasswords((prev) => ({ ...prev, [sub.id]: !prev[sub.id] }))}
+                    />
+                  </div>
+
+                  <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-border pt-4 text-sm">
+                    <span className="font-mono text-xs text-muted-foreground">{sub.reference}</span>
+                    <span className="font-semibold">{formatFCFA(sub.amount)}</span>
+                    <span className="text-muted-foreground">{sub.date}</span>
+                  </div>
+                </article>
+              ))}
+            </div>
+          )}
+        </section>
+      </div>
+    </div>
+  )
+}
+
+function StatCard({ icon: Icon, value, label, accent = 'primary' }) {
+  const styles = {
+    primary: 'bg-primary/10 text-primary',
+    accent: 'bg-accent text-accent-foreground',
+    blue: 'bg-blue-100 text-blue-700'
+  }
+
+  return (
+    <div className="rounded-xl border border-border bg-card p-5">
+      <div className="flex items-center gap-3">
+        <span className={`flex h-10 w-10 items-center justify-center rounded-xl ${styles[accent]}`}>
+          <Icon className="h-5 w-5" />
+        </span>
+        <div>
+          <p className="text-2xl font-bold">{value}</p>
+          <p className="text-sm text-muted-foreground">{label}</p>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function Credential({ label, value, secret, revealed, copied, onCopy, onReveal }) {
+  const display = !value ? 'En attente de livraison' : secret && !revealed ? '••••••••••' : value
+  const copiedKey = `${label}-${value}`
+
+  return (
+    <div className="rounded-lg border border-border bg-muted/30 px-3 py-2">
+      <p className="text-[11px] uppercase tracking-wide text-muted-foreground">{label}</p>
+      <div className="mt-1 flex items-center gap-2">
+        <p className="min-w-0 flex-1 truncate font-mono text-sm">{display}</p>
+        {secret && value && (
+          <button onClick={onReveal} className="rounded-md p-1 text-muted-foreground hover:bg-muted" aria-label={revealed ? 'Masquer' : 'Révéler'}>
+            {revealed ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+          </button>
+        )}
+        {value && (
+          <button onClick={() => onCopy(value, label)} className="rounded-md p-1 text-muted-foreground hover:bg-muted" aria-label="Copier">
+            {copied === copiedKey ? <Check className="h-4 w-4 text-primary" /> : <Copy className="h-4 w-4" />}
+          </button>
+        )}
+      </div>
+    </div>
+  )
+}
+
+function Status({ status }) {
+  const config = {
+    active: 'border-primary/20 bg-primary/10 text-primary',
+    pending: 'border-accent-foreground/20 bg-accent text-accent-foreground',
+    failed: 'border-destructive/20 bg-destructive/10 text-destructive'
+  }
+  const label = status === 'active' ? 'Actif' : status === 'pending' ? 'En attente' : 'Échoué'
+  return <span className={`rounded-md border px-2 py-1 text-xs font-medium ${config[status] || config.pending}`}>{label}</span>
 }

@@ -122,32 +122,32 @@ export default function StatsModerne() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-80 bg-background flex items-center justify-center">
         <div className="text-center">
-          <div className="inline-block h-12 w-12 border-4 border-slate-600 border-t-transparent rounded-full animate-spin"></div>
-          <p className="mt-4 text-gray-600">Chargement des statistiques...</p>
+          <div className="inline-block h-12 w-12 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
+          <p className="mt-4 text-muted-foreground">Chargement des statistiques...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-8">
-      <div className="max-w-7xl mx-auto">
+    <div className="space-y-6">
+      <div>
         {/* Header */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4">
           <div>
             <h1 className="text-3xl font-bold mb-2 flex items-center gap-3">
-              <BarChart3 className="h-8 w-8 text-slate-600" />
+              <BarChart3 className="h-8 w-8 text-primary" />
               Statistiques Globales
             </h1>
-            <p className="text-gray-600">Vue d'ensemble de la performance de la plateforme</p>
+            <p className="text-muted-foreground">Vue d'ensemble de la performance de la plateforme</p>
           </div>
 
           <select
             value={periode}
             onChange={(e) => setPeriode(e.target.value)}
-            className="px-4 py-2 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-slate-500 font-semibold"
+            className="px-4 py-2 border border-input bg-card rounded-lg focus:outline-none focus:ring-2 focus:ring-ring/20 font-semibold"
           >
             <option value="semaine">Cette semaine</option>
             <option value="mois">Ce mois</option>
@@ -159,66 +159,66 @@ export default function StatsModerne() {
         {/* KPIs Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           {/* Revenu Total */}
-          <div className="bg-gradient-to-br from-green-500 to-emerald-600 rounded-2xl p-6 text-white shadow-xl hover:shadow-2xl transition-all">
+          <div className="rounded-xl border border-border bg-card p-5 shadow-sm">
             <div className="flex items-center justify-between mb-4">
-              <DollarSign className="h-10 w-10 text-green-100" />
-              <div className="flex items-center gap-1 bg-white/20 px-2 py-1 rounded-full text-sm">
+              <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10 text-primary"><DollarSign className="h-5 w-5" /></span>
+              <div className="flex items-center gap-1 text-primary text-sm font-medium">
                 <ArrowUp className="h-4 w-4" />
                 {stats.revenueEvolution}%
               </div>
             </div>
-            <div className="text-3xl font-bold mb-1">
+            <div className="text-2xl font-bold mb-1 text-foreground">
               {(stats.revenuTotal / 1000000).toFixed(2)}M F
             </div>
-            <div className="text-green-100 text-sm">Revenu Total</div>
+            <div className="text-muted-foreground text-sm">Revenu Total</div>
           </div>
 
           {/* Total Partenaires */}
-          <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl p-6 text-white shadow-xl hover:shadow-2xl transition-all">
+          <div className="rounded-xl border border-border bg-card p-5 shadow-sm">
             <div className="flex items-center justify-between mb-4">
-              <Users className="h-10 w-10 text-blue-100" />
-              <div className="flex items-center gap-1 bg-white/20 px-2 py-1 rounded-full text-sm">
+              <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-chart-3/10 text-chart-3"><Users className="h-5 w-5" /></span>
+              <div className="flex items-center gap-1 text-primary text-sm font-medium">
                 <ArrowUp className="h-4 w-4" />
                 {stats.partenairesEvolution}%
               </div>
             </div>
-            <div className="text-3xl font-bold mb-1">{stats.totalPartenaires}</div>
-            <div className="text-blue-100 text-sm">Partenaires Actifs</div>
+            <div className="text-2xl font-bold mb-1 text-foreground">{stats.totalPartenaires}</div>
+            <div className="text-muted-foreground text-sm">Partenaires Actifs</div>
           </div>
 
           {/* Total Offres */}
-          <div className="bg-gradient-to-br from-slate-500 to-slate-600 rounded-2xl p-6 text-white shadow-xl hover:shadow-2xl transition-all">
+          <div className="rounded-xl border border-border bg-card p-5 shadow-sm">
             <div className="flex items-center justify-between mb-4">
-              <Package className="h-10 w-10 text-slate-100" />
-              <div className="flex items-center gap-1 bg-white/20 px-2 py-1 rounded-full text-sm">
+              <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-accent text-accent-foreground"><Package className="h-5 w-5" /></span>
+              <div className="flex items-center gap-1 text-primary text-sm font-medium">
                 <ArrowUp className="h-4 w-4" />
                 {stats.offresEvolution}%
               </div>
             </div>
-            <div className="text-3xl font-bold mb-1">{stats.totalOffres}</div>
-            <div className="text-slate-100 text-sm">Offres Disponibles</div>
+            <div className="text-2xl font-bold mb-1 text-foreground">{stats.totalOffres}</div>
+            <div className="text-muted-foreground text-sm">Offres Disponibles</div>
           </div>
 
           {/* Total Clients */}
-          <div className="bg-gradient-to-br from-orange-500 to-orange-600 rounded-2xl p-6 text-white shadow-xl hover:shadow-2xl transition-all">
+          <div className="rounded-xl border border-border bg-card p-5 shadow-sm">
             <div className="flex items-center justify-between mb-4">
-              <ShoppingCart className="h-10 w-10 text-orange-100" />
-              <div className="flex items-center gap-1 bg-white/20 px-2 py-1 rounded-full text-sm">
+              <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-chart-4/10 text-chart-4"><ShoppingCart className="h-5 w-5" /></span>
+              <div className="flex items-center gap-1 text-primary text-sm font-medium">
                 <ArrowUp className="h-4 w-4" />
                 {stats.clientsEvolution}%
               </div>
             </div>
-            <div className="text-3xl font-bold mb-1">{stats.totalClients.toLocaleString()}</div>
-            <div className="text-orange-100 text-sm">Clients Actifs</div>
+            <div className="text-2xl font-bold mb-1 text-foreground">{stats.totalClients.toLocaleString()}</div>
+            <div className="text-muted-foreground text-sm">Clients Actifs</div>
           </div>
         </div>
 
         <div className="grid lg:grid-cols-3 gap-6 mb-8">
           {/* Graphique Revenus Mensuels */}
-          <div className="lg:col-span-2 bg-white rounded-2xl border-2 border-gray-200 p-6 shadow-lg">
+          <div className="lg:col-span-2 bg-card rounded-xl border border-border p-6 shadow-sm">
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-xl font-bold flex items-center gap-2">
-                <TrendingUp className="h-6 w-6 text-slate-600" />
+                <TrendingUp className="h-6 w-6 text-primary" />
                 Évolution du Revenu (12 mois)
               </h2>
               <span className="text-sm text-gray-500">En FCFA</span>
@@ -231,7 +231,7 @@ export default function StatsModerne() {
                   <div className="flex-1">
                     <div className="bg-gray-100 rounded-full h-10 overflow-hidden">
                       <div
-                        className="bg-gradient-to-r from-slate-500 to-slate-500 h-full flex items-center justify-end pr-3 text-white text-xs font-semibold transition-all"
+                        className="bg-primary h-full flex items-center justify-end pr-3 text-primary-foreground text-xs font-semibold transition-all"
                         style={{ width: `${(item.revenu / maxRevenu) * 100}%` }}
                       >
                         {item.revenu >= 1000000 && `${(item.revenu / 1000000).toFixed(1)}M`}
@@ -247,9 +247,9 @@ export default function StatsModerne() {
           </div>
 
           {/* Top Catégories */}
-          <div className="bg-white rounded-2xl border-2 border-gray-200 p-6 shadow-lg">
+          <div className="bg-card rounded-xl border border-border p-6 shadow-sm">
             <h2 className="text-xl font-bold mb-6 flex items-center gap-2">
-              <PieChart className="h-6 w-6 text-slate-600" />
+              <PieChart className="h-6 w-6 text-primary" />
               Top Catégories
             </h2>
 
@@ -263,7 +263,7 @@ export default function StatsModerne() {
                   <div className="relative h-3 bg-gray-100 rounded-full overflow-hidden">
                     <div
                       className={`absolute top-0 left-0 h-full rounded-full transition-all ${
-                        index === 0 ? 'bg-gradient-to-r from-slate-500 to-slate-500' :
+                        index === 0 ? 'bg-primary' :
                         index === 1 ? 'bg-gradient-to-r from-blue-500 to-cyan-500' :
                         index === 2 ? 'bg-gradient-to-r from-green-500 to-emerald-500' :
                         'bg-gradient-to-r from-orange-500 to-amber-500'
@@ -279,18 +279,18 @@ export default function StatsModerne() {
         </div>
 
         {/* Transactions Récentes */}
-        <div className="bg-white rounded-2xl border-2 border-gray-200 shadow-lg overflow-hidden">
-          <div className="p-6 border-b-2 border-gray-200 bg-gradient-to-r from-slate-50 to-slate-50">
+        <div className="bg-card rounded-xl border border-border shadow-sm overflow-hidden">
+          <div className="p-6 border-b border-border bg-muted/40">
             <h2 className="text-xl font-bold flex items-center gap-2">
-              <ShoppingCart className="h-6 w-6 text-slate-600" />
+              <ShoppingCart className="h-6 w-6 text-primary" />
               Transactions Récentes
             </h2>
           </div>
 
           <div className="overflow-x-auto">
             <table className="w-full">
-              <thead className="bg-gray-50">
-                <tr className="border-b-2 border-gray-200">
+              <thead className="bg-muted/40">
+                <tr className="border-b border-border">
                   <th className="text-left py-4 px-6 font-semibold text-gray-700">Client</th>
                   <th className="text-left py-4 px-6 font-semibold text-gray-700">Offre</th>
                   <th className="text-left py-4 px-6 font-semibold text-gray-700">Montant</th>
@@ -300,10 +300,10 @@ export default function StatsModerne() {
               </thead>
               <tbody>
                 {(transactionsRecentes.length > 0 ? transactionsRecentes : [{ id: 0, client: "-", offre: "-", montant: 0, date: "-", statut: "-" }]).map((transaction) => (
-                  <tr key={transaction.id} className="border-b border-gray-100 hover:bg-slate-50 transition-all">
+                  <tr key={transaction.id} className="border-b border-border hover:bg-muted/40 transition-all">
                     <td className="py-4 px-6">
                       <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 bg-gradient-to-br from-slate-400 to-slate-400 rounded-full flex items-center justify-center text-white font-bold">
+                        <div className="w-10 h-10 bg-primary/10 text-primary rounded-full flex items-center justify-center font-bold">
                           {transaction.client.charAt(0)}
                         </div>
                         <span className="font-semibold">{transaction.client}</span>
