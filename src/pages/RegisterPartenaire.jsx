@@ -15,7 +15,8 @@ import {
   Sparkles,
   CheckCircle,
   Upload,
-  Loader
+  Loader,
+  ArrowRight 
 } from "lucide-react";
 import { partenairesAPI } from "@/lib/api";
 
@@ -29,7 +30,7 @@ export default function RegisterPartenaire() {
   const [logoPreview, setLogoPreview] = useState(null);
 
   const password = watch("password");
-
+  const passwordStrength = password ? Math.min(4, Math.floor(password.length / 4)) : 0;
   const onSubmit = async (data) => {
     setIsSubmitting(true);
   
@@ -65,441 +66,509 @@ export default function RegisterPartenaire() {
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-slate-50 to-rose-50 py-12 px-4">
-      <div className="max-w-4xl mx-auto">
-        {/* Header */}
-        <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-slate-600 to-slate-600 rounded-2xl mb-4 shadow-2xl">
-            <span className="text-3xl font-bold text-white">R</span>
-          </div>
-          <h1 className="text-4xl font-bold bg-gradient-to-r from-slate-600 to-slate-600 bg-clip-text text-transparent mb-2">
-            Devenir Partenaire
-          </h1>
-          <p className="text-gray-600 text-lg">
-            Rejoignez notre réseau et développez votre activité
-          </p>
+  <div className="min-h-screen bg-slate-50/50 py-12 px-4 sm:px-6">
+    <div className="max-w-3xl mx-auto">
+      
+      {/* En-tête de la page */}
+      <div className="text-center mb-10">
+        <div className="inline-flex items-center justify-center w-12 h-12 bg-primary rounded-xl mb-4 shadow-sm shadow-primary/20">
+          <span className="text-xl font-black text-primary-foreground tracking-tighter">R</span>
         </div>
+        <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight mb-1.5">
+          Devenir Partenaire
+        </h1>
+        <p className="text-slate-500 text-sm max-w-md mx-auto font-medium">
+          Rejoignez notre réseau de distribution et développez votre activité de streaming en Afrique.
+        </p>
+      </div>
 
-        {/* Stepper */}
-        <div className="mb-8">
-          <div className="flex items-center justify-center">
-            {etapes.map((etape, index) => (
-              <div key={etape.numero} className="flex items-center">
-                <div className="flex flex-col items-center">
+      {/* Barre de progression (Stepper) Moderne */}
+      <div className="mb-10 bg-card border border-border rounded-xl p-4 shadow-sm">
+        <div className="flex items-center justify-center max-w-xl mx-auto">
+          {etapes.map((etape, index) => {
+            const isPassed = etapeActuelle > etape.numero;
+            const isActive = etapeActuelle === etape.numero;
+            
+            return (
+              <div key={etape.numero} className="flex items-center flex-1 last:flex-none">
+                <div className="flex items-center gap-2.5">
                   <div
-                    className={`w-12 h-12 rounded-full flex items-center justify-center font-bold transition-all ${
-                      etapeActuelle >= etape.numero
-                        ? "bg-gradient-to-br from-slate-600 to-slate-600 text-white shadow-lg"
-                        : "bg-gray-200 text-gray-500"
+                    className={`w-9 h-9 rounded-lg flex items-center justify-center font-bold text-xs transition-all duration-200 border ${
+                      isPassed
+                        ? "bg-emerald-500 border-emerald-500 text-white"
+                        : isActive
+                        ? "bg-primary border-primary text-primary-foreground shadow-sm shadow-primary/10"
+                        : "bg-slate-50 border-slate-200 text-slate-400"
                     }`}
                   >
-                    {etapeActuelle > etape.numero ? (
-                      <CheckCircle className="h-6 w-6" />
+                    {isPassed ? (
+                      <CheckCircle className="h-4 w-4" />
                     ) : (
-                      <etape.icon className="h-6 w-6" />
+                      <etape.icon className="h-4 w-4" />
                     )}
                   </div>
-                  <span className="text-xs mt-2 text-center font-medium hidden sm:block">
+                  <span className={`text-xs font-bold whitespace-nowrap hidden sm:block ${
+                    isActive ? "text-slate-900" : "text-slate-400 font-semibold"
+                  }`}>
                     {etape.titre}
                   </span>
                 </div>
+                
+                {/* Ligne de liaison entre les étapes */}
                 {index < etapes.length - 1 && (
-                  <div
-                    className={`w-16 sm:w-24 h-1 mx-2 transition-all ${
-                      etapeActuelle > etape.numero
-                        ? "bg-gradient-to-r from-slate-600 to-slate-600"
-                        : "bg-gray-200"
-                    }`}
-                  />
-                )}
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Form Card */}
-        <div className="bg-white rounded-2xl shadow-2xl p-8 border-2 border-gray-100">
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-            {/* Étape 1: Informations personnelles */}
-            {etapeActuelle === 1 && (
-              <div className="space-y-5">
-                <h2 className="text-2xl font-bold text-gray-800 mb-6">
-                  Informations personnelles
-                </h2>
-
-                <div className="grid sm:grid-cols-2 gap-5">
-                  {/* Nom */}
-                  <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-2">
-                      Nom *
-                    </label>
-                    <div className="relative">
-                      <User className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
-                      <input
-                        type="text"
-                        placeholder="Votre nom"
-                        className={`w-full pl-10 pr-4 py-3 border-2 rounded-lg focus:outline-none transition-all ${
-                          errors.nom ? "border-red-300" : "border-gray-200 focus:border-slate-500"
-                        }`}
-                        {...register("nom", { required: "Le nom est requis" })}
-                      />
-                    </div>
-                    {errors.nom && <p className="mt-1 text-sm text-red-600">{errors.nom.message}</p>}
-                  </div>
-
-                  {/* Prénoms */}
-                  <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-2">
-                      Prénoms *
-                    </label>
-                    <div className="relative">
-                      <User className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
-                      <input
-                        type="text"
-                        placeholder="Vos prénoms"
-                        className={`w-full pl-10 pr-4 py-3 border-2 rounded-lg focus:outline-none transition-all ${
-                          errors.prenoms ? "border-red-300" : "border-gray-200 focus:border-slate-500"
-                        }`}
-                        {...register("prenoms", { required: "Les prénoms sont requis" })}
-                      />
-                    </div>
-                    {errors.prenoms && <p className="mt-1 text-sm text-red-600">{errors.prenoms.message}</p>}
-                  </div>
-                </div>
-
-                {/* Email */}
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">
-                    Email professionnel *
-                  </label>
-                  <div className="relative">
-                    <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
-                    <input
-                      type="email"
-                      placeholder="exemple@domaine.ci"
-                      className={`w-full pl-10 pr-4 py-3 border-2 rounded-lg focus:outline-none transition-all ${
-                        errors.email ? "border-red-300" : "border-gray-200 focus:border-slate-500"
-                      }`}
-                      {...register("email", {
-                        required: "L'email est requis",
-                        pattern: {
-                          value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
-                          message: "Email invalide",
-                        },
-                      })}
+                  <div className="flex-1 h-[2px] mx-4 bg-slate-100 min-w-[40px] relative overflow-hidden">
+                    <div 
+                      className={`absolute inset-y-0 left-0 transition-all duration-300 ${
+                        isPassed ? "w-full bg-emerald-500" : "w-0 bg-primary"
+                      }`} 
                     />
                   </div>
-                  {errors.email && <p className="mt-1 text-sm text-red-600">{errors.email.message}</p>}
-                </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </div>
 
-                {/* Téléphone */}
+      {/* Boîtier du Formulaire */}
+      <div className="bg-card rounded-2xl shadow-sm border border-border p-6 sm:p-8">
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+          
+          {/* Étape 1: Informations personnelles */}
+          {etapeActuelle === 1 && (
+            <div className="space-y-5">
+              <div className="border-b border-slate-100 pb-3 mb-2">
+                <h2 className="text-xl font-extrabold text-slate-900 tracking-tight">
+                  Informations personnelles
+                </h2>
+                <p className="text-xs text-slate-400 mt-0.5 font-medium">Renseignez vos coordonnées de contact officiel.</p>
+              </div>
+
+              <div className="grid sm:grid-cols-2 gap-4">
+                {/* Nom */}
                 <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">
-                    Téléphone *
+                  <label className="block text-xs font-bold text-slate-800 mb-1.5">
+                    Nom <span className="text-destructive">*</span>
                   </label>
                   <div className="relative">
-                    <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+                    <User className="absolute left-3.5 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
+                    <input
+                      type="text"
+                      placeholder="Votre nom"
+                      className={`w-full pl-10 pr-4 py-3 border rounded-xl text-sm outline-none transition-all ${
+                        errors.nom 
+                          ? "border-destructive bg-destructive/5 focus:ring-4 focus:ring-destructive/10" 
+                          : "border-input bg-card focus:border-primary focus:ring-4 focus:ring-primary/10"
+                      }`}
+                      {...register("nom", { required: "Le nom est requis" })}
+                    />
+                  </div>
+                  {errors.nom && <p className="mt-1.5 text-xs font-semibold text-destructive">{errors.nom.message}</p>}
+                </div>
+
+                {/* Prénoms */}
+                <div>
+                  <label className="block text-xs font-bold text-slate-800 mb-1.5">
+                    Prénoms <span className="text-destructive">*</span>
+                  </label>
+                  <div className="relative">
+                    <User className="absolute left-3.5 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
+                    <input
+                      type="text"
+                      placeholder="Vos prénoms"
+                      className={`w-full pl-10 pr-4 py-3 border rounded-xl text-sm outline-none transition-all ${
+                        errors.prenoms 
+                          ? "border-destructive bg-destructive/5 focus:ring-4 focus:ring-destructive/10" 
+                          : "border-input bg-card focus:border-primary focus:ring-4 focus:ring-primary/10"
+                      }`}
+                      {...register("prenoms", { required: "Les prénoms sont requis" })}
+                    />
+                  </div>
+                  {errors.prenoms && <p className="mt-1.5 text-xs font-semibold text-destructive">{errors.prenoms.message}</p>}
+                </div>
+              </div>
+
+              {/* Email */}
+              <div>
+                <label className="block text-xs font-bold text-slate-800 mb-1.5">
+                  Email professionnel <span className="text-destructive">*</span>
+                </label>
+                <div className="relative">
+                  <Mail className="absolute left-3.5 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
+                  <input
+                    type="email"
+                    placeholder="exemple@domaine.ci"
+                    className={`w-full pl-10 pr-4 py-3 border rounded-xl text-sm outline-none transition-all ${
+                      errors.email 
+                        ? "border-destructive bg-destructive/5 focus:ring-4 focus:ring-destructive/10" 
+                        : "border-input bg-card focus:border-primary focus:ring-4 focus:ring-primary/10"
+                    }`}
+                    {...register("email", {
+                      required: "L'email est requis",
+                      pattern: {
+                        value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
+                        message: "Email invalide",
+                      },
+                    })}
+                  />
+                </div>
+                {errors.email && <p className="mt-1.5 text-xs font-semibold text-destructive">{errors.email.message}</p>}
+              </div>
+
+              {/* Téléphone & Ville */}
+              <div className="grid sm:grid-cols-2 gap-4">
+                {/* Téléphone */}
+                <div>
+                  <label className="block text-xs font-bold text-slate-800 mb-1.5">
+                    Téléphone <span className="text-destructive">*</span>
+                  </label>
+                  <div className="relative">
+                    <Phone className="absolute left-3.5 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
                     <input
                       type="tel"
-                      placeholder="+225 XX XX XX XX XX"
-                      className={`w-full pl-10 pr-4 py-3 border-2 rounded-lg focus:outline-none transition-all ${
-                        errors.telephone ? "border-red-300" : "border-gray-200 focus:border-slate-500"
+                      placeholder="Ex: 0707070707"
+                      className={`w-full pl-10 pr-4 py-3 border rounded-xl text-sm outline-none transition-all ${
+                        errors.telephone 
+                          ? "border-destructive bg-destructive/5 focus:ring-4 focus:ring-destructive/10" 
+                          : "border-input bg-card focus:border-primary focus:ring-4 focus:ring-primary/10"
                       }`}
                       {...register("telephone", { required: "Le téléphone est requis" })}
                     />
                   </div>
-                  {errors.telephone && <p className="mt-1 text-sm text-red-600">{errors.telephone.message}</p>}
+                  {errors.telephone && <p className="mt-1.5 text-xs font-semibold text-destructive">{errors.telephone.message}</p>}
                 </div>
 
                 {/* Ville */}
                 <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">
-                    Ville *
+                  <label className="block text-xs font-bold text-slate-800 mb-1.5">
+                    Ville <span className="text-destructive">*</span>
                   </label>
                   <div className="relative">
-                    <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+                    <MapPin className="absolute left-3.5 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
                     <input
                       type="text"
                       placeholder="Ex: Abidjan"
-                      className={`w-full pl-10 pr-4 py-3 border-2 rounded-lg focus:outline-none transition-all ${
-                        errors.ville ? "border-red-300" : "border-gray-200 focus:border-slate-500"
+                      className={`w-full pl-10 pr-4 py-3 border rounded-xl text-sm outline-none transition-all ${
+                        errors.ville 
+                          ? "border-destructive bg-destructive/5 focus:ring-4 focus:ring-destructive/10" 
+                          : "border-input bg-card focus:border-primary focus:ring-4 focus:ring-primary/10"
                       }`}
                       {...register("ville", { required: "La ville est requise" })}
                     />
                   </div>
-                  {errors.ville && <p className="mt-1 text-sm text-red-600">{errors.ville.message}</p>}
+                  {errors.ville && <p className="mt-1.5 text-xs font-semibold text-destructive">{errors.ville.message}</p>}
                 </div>
               </div>
-            )}
+            </div>
+          )}
 
-            {/* Étape 2: Informations boutique */}
-            {etapeActuelle === 2 && (
-              <div className="space-y-5">
-                <h2 className="text-2xl font-bold text-gray-800 mb-6">
+          {/* Étape 2: Informations boutique */}
+          {etapeActuelle === 2 && (
+            <div className="space-y-5">
+              <div className="border-b border-slate-100 pb-3 mb-2">
+                <h2 className="text-xl font-extrabold text-slate-900 tracking-tight">
                   Informations de votre boutique
                 </h2>
+                <p className="text-xs text-slate-400 mt-0.5 font-medium">Configurez votre espace de vente en ligne.</p>
+              </div>
 
-                {/* Nom boutique */}
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">
-                    Nom de la boutique *
-                  </label>
-                  <div className="relative">
-                    <Building2 className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
-                    <input
-                      type="text"
-                      placeholder="Ex: StreamPro CI"
-                      className={`w-full pl-10 pr-4 py-3 border-2 rounded-lg focus:outline-none transition-all ${
-                        errors.nomBoutique ? "border-red-300" : "border-gray-200 focus:border-slate-500"
-                      }`}
-                      {...register("nomBoutique", { required: "Le nom de la boutique est requis" })}
-                    />
-                  </div>
-                  {errors.nomBoutique && <p className="mt-1 text-sm text-red-600">{errors.nomBoutique.message}</p>}
+              {/* Nom boutique */}
+              <div>
+                <label className="block text-xs font-bold text-slate-800 mb-1.5">
+                  Nom de la boutique <span className="text-destructive">*</span>
+                </label>
+                <div className="relative">
+                  <Building2 className="absolute left-3.5 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
+                  <input
+                    type="text"
+                    placeholder="Ex: StreamPro CI"
+                    className={`w-full pl-10 pr-4 py-3 border rounded-xl text-sm outline-none transition-all ${
+                      errors.nomBoutique 
+                        ? "border-destructive bg-destructive/5 focus:ring-4 focus:ring-destructive/10" 
+                        : "border-input bg-card focus:border-primary focus:ring-4 focus:ring-primary/10"
+                    }`}
+                    {...register("nomBoutique", { required: "Le nom de la boutique est requis" })}
+                  />
                 </div>
+                {errors.nomBoutique && <p className="mt-1.5 text-xs font-semibold text-destructive">{errors.nomBoutique.message}</p>}
+              </div>
 
-                {/* Description */}
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">
-                    Description de votre activité *
-                  </label>
-                  <div className="relative">
-                    <FileText className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
-                    <textarea
-                      rows="4"
-                      placeholder="Décrivez votre activité et les services que vous proposez..."
-                      className={`w-full pl-10 pr-4 py-3 border-2 rounded-lg focus:outline-none transition-all ${
-                        errors.description ? "border-red-300" : "border-gray-200 focus:border-slate-500"
-                      }`}
-                      {...register("description", { required: "La description est requise" })}
-                    />
-                  </div>
-                  {errors.description && <p className="mt-1 text-sm text-red-600">{errors.description.message}</p>}
+              {/* Description */}
+              <div>
+                <label className="block text-xs font-bold text-slate-800 mb-1.5">
+                  Description de votre activité <span className="text-destructive">*</span>
+                </label>
+                <div className="relative">
+                  <FileText className="absolute left-3.5 top-3.5 h-4 w-4 text-slate-400" />
+                  <textarea
+                    rows="4"
+                    placeholder="Décrivez votre activité et les services que vous proposez..."
+                    className={`w-full pl-10 pr-4 py-3 border rounded-xl text-sm outline-none transition-all resize-none ${
+                      errors.description 
+                        ? "border-destructive bg-destructive/5 focus:ring-4 focus:ring-destructive/10" 
+                        : "border-input bg-card focus:border-primary focus:ring-4 focus:ring-primary/10"
+                    }`}
+                    {...register("description", { required: "La description est requise" })}
+                  />
                 </div>
+                {errors.description && <p className="mt-1.5 text-xs font-semibold text-destructive">{errors.description.message}</p>}
+              </div>
 
-                {/* Logo */}
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">
-                    Logo de la boutique
-                  </label>
-                  <div className="flex items-center gap-4">
-                    {logoPreview && (
+              {/* Logo */}
+              <div>
+                <label className="block text-xs font-bold text-slate-800 mb-1.5">
+                  Logo de la boutique
+                </label>
+                <div className="flex flex-wrap items-center gap-4">
+                  {logoPreview && (
+                    <div className="relative group">
                       <img
                         src={logoPreview}
                         alt="Logo preview"
-                        className="w-24 h-24 object-cover rounded-lg border-2 border-gray-200"
+                        className="w-20 h-20 object-cover rounded-xl border-2 border-slate-200 shadow-sm"
                       />
-                    )}
-                    <label className="flex items-center gap-2 px-4 py-3 border-2 border-dashed border-gray-300 rounded-lg hover:border-slate-500 cursor-pointer transition-all">
-                      <Upload className="h-5 w-5 text-gray-600" />
-                      <span className="text-sm font-medium text-gray-600">
-                        {logoPreview ? "Changer le logo" : "Télécharger un logo"}
-                      </span>
-                      <input
-                        type="file"
-                        accept="image/*"
-                        className="hidden"
-                        onChange={handleLogoUpload}
-                      />
-                    </label>
-                  </div>
-                  <p className="mt-2 text-xs text-gray-500">Format recommandé: PNG ou JPG, max 2MB</p>
-                </div>
-
-                {/* Adresse */}
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">
-                    Adresse physique
-                  </label>
-                  <div className="relative">
-                    <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+                      <button
+                        type="button"
+                        onClick={() => setLogoPreview(null)}
+                        className="absolute -top-1 -right-1 w-5 h-5 bg-destructive text-white rounded-full flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transition-opacity"
+                      >
+                        ×
+                      </button>
+                    </div>
+                  )}
+                  <label className="flex items-center gap-2 px-4 py-3 border-2 border-dashed border-slate-200 rounded-xl hover:border-primary/50 hover:bg-slate-50/50 cursor-pointer transition-all">
+                    <Upload className="h-4 w-4 text-slate-400" />
+                    <span className="text-xs font-semibold text-slate-600">
+                      {logoPreview ? "Changer le logo" : "Télécharger un logo"}
+                    </span>
                     <input
-                      type="text"
-                      placeholder="Adresse complète de votre boutique"
-                      className="w-full pl-10 pr-4 py-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-slate-500 transition-all"
-                      {...register("adresse")}
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={handleLogoUpload}
                     />
-                  </div>
+                  </label>
+                </div>
+                <p className="mt-2 text-[11px] font-medium text-slate-400">Format PNG ou JPG • Max 2MB • 200×200px recommandé</p>
+              </div>
+
+              {/* Adresse physique */}
+              <div>
+                <label className="block text-xs font-bold text-slate-800 mb-1.5">
+                  Adresse physique
+                </label>
+                <div className="relative">
+                  <MapPin className="absolute left-3.5 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
+                  <input
+                    type="text"
+                    placeholder="Adresse complète de votre boutique"
+                    className="w-full pl-10 pr-4 py-3 border border-input bg-card rounded-xl text-sm outline-none transition-all focus:border-primary focus:ring-4 focus:ring-primary/10"
+                    {...register("adresse")}
+                  />
                 </div>
               </div>
-            )}
+            </div>
+          )}
 
-            {/* Étape 3: Sécurité */}
-            {etapeActuelle === 3 && (
-              <div className="space-y-5">
-                <h2 className="text-2xl font-bold text-gray-800 mb-6">
+          {/* Étape 3: Sécurité */}
+          {etapeActuelle === 3 && (
+            <div className="space-y-5">
+              <div className="border-b border-slate-100 pb-3 mb-2">
+                <h2 className="text-xl font-extrabold text-slate-900 tracking-tight">
                   Sécurité de votre compte
                 </h2>
-
-                {/* Username */}
-                {/*
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">
-                    Nom d'utilisateur *
-                  </label>
-                  <div className="relative">
-                    <User className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
-                    <input
-                      type="text"
-                      placeholder="Choisissez un nom d'utilisateur unique"
-                      className={`w-full pl-10 pr-4 py-3 border-2 rounded-lg focus:outline-none transition-all ${
-                        errors.username ? "border-red-300" : "border-gray-200 focus:border-slate-500"
-                      }`}
-                      {...register("username", { required: "Le nom d'utilisateur est requis" })}
-                    />
-                  </div>
-                  {errors.username && <p className="mt-1 text-sm text-red-600">{errors.username.message}</p>}
-                </div>
-                */}
-                {/* Password */}
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">
-                    Mot de passe *
-                  </label>
-                  <div className="relative">
-                    <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
-                    <input
-                      type={showPassword ? "text" : "password"}
-                      placeholder="Minimum 8 caractères"
-                      className={`w-full pl-10 pr-12 py-3 border-2 rounded-lg focus:outline-none transition-all ${
-                        errors.password ? "border-red-300" : "border-gray-200 focus:border-slate-500"
-                      }`}
-                      {...register("password", {
-                        required: "Le mot de passe est requis",
-                        minLength: { value: 8, message: "Minimum 8 caractères" },
-                      })}
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400"
-                    >
-                      {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
-                    </button>
-                  </div>
-                  {errors.password && <p className="mt-1 text-sm text-red-600">{errors.password.message}</p>}
-                </div>
-
-                {/* Confirm Password */}
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">
-                    Confirmer le mot de passe *
-                  </label>
-                  <div className="relative">
-                    <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
-                    <input
-                      type={showConfirmPassword ? "text" : "password"}
-                      placeholder="Confirmer votre mot de passe"
-                      className={`w-full pl-10 pr-12 py-3 border-2 rounded-lg focus:outline-none transition-all ${
-                        errors.confirmPassword ? "border-red-300" : "border-gray-200 focus:border-slate-500"
-                      }`}
-                      {...register("confirmPassword", {
-                        required: "Veuillez confirmer le mot de passe",
-                        validate: (value) => value === password || "Les mots de passe ne correspondent pas",
-                      })}
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                      className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400"
-                    >
-                      {showConfirmPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
-                    </button>
-                  </div>
-                  {errors.confirmPassword && (
-                    <p className="mt-1 text-sm text-red-600">{errors.confirmPassword.message}</p>
-                  )}
-                </div>
-
-                {/* Conditions */}
-                <div className="bg-slate-50 rounded-xl p-4 border-2 border-slate-200">
-                  <label className="flex items-start gap-3 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      className="mt-1 w-5 h-5 accent-slate-600"
-                      {...register("accepteConditions", {
-                        required: "Vous devez accepter les conditions",
-                      })}
-                    />
-                    <span className="text-sm text-gray-700">
-                      J'accepte les{" "}
-                      <button type="button" className="text-slate-600 font-semibold hover:underline">
-                        conditions d'utilisation
-                      </button>{" "}
-                      et la{" "}
-                      <button type="button" className="text-slate-600 font-semibold hover:underline">
-                        politique de confidentialité
-                      </button>
-                    </span>
-                  </label>
-                  {errors.accepteConditions && (
-                    <p className="mt-2 text-sm text-red-600">{errors.accepteConditions.message}</p>
-                  )}
-                </div>
+                <p className="text-xs text-slate-400 mt-0.5 font-medium">Protégez l'accès à votre espace partenaire.</p>
               </div>
-            )}
 
-            {/* Buttons */}
-            <div className="flex gap-4 pt-6">
-              {etapeActuelle > 1 && (
-                <button
-                  type="button"
-                  onClick={() => setEtapeActuelle(etapeActuelle - 1)}
-                  className="px-6 py-3 border-2 border-gray-200 rounded-lg font-semibold hover:border-gray-300 transition-all"
-                >
-                  Retour
-                </button>
-              )}
+              {/* Mot de passe */}
+              <div>
+                <label className="block text-xs font-bold text-slate-800 mb-1.5">
+                  Mot de passe <span className="text-destructive">*</span>
+                </label>
+                <div className="relative">
+                  <Lock className="absolute left-3.5 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
+                  <input
+                    type={showPassword ? "text" : "password"}
+                    placeholder="Minimum 8 caractères"
+                    className={`w-full pl-10 pr-12 py-3 border rounded-xl text-sm outline-none transition-all ${
+                      errors.password 
+                        ? "border-destructive bg-destructive/5 focus:ring-4 focus:ring-destructive/10" 
+                        : "border-input bg-card focus:border-primary focus:ring-4 focus:ring-primary/10"
+                    }`}
+                    {...register("password", {
+                      required: "Le mot de passe est requis",
+                      minLength: { value: 8, message: "Minimum 8 caractères" },
+                    })}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3.5 top-1/2 transform -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors"
+                  >
+                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </button>
+                </div>
+                {errors.password && <p className="mt-1.5 text-xs font-semibold text-destructive">{errors.password.message}</p>}
+              </div>
 
-              {etapeActuelle < 3 ? (
-                <button
-                  type="button"
-                  onClick={() => setEtapeActuelle(etapeActuelle + 1)}
-                  className="flex-1 px-6 py-3 bg-gradient-to-r from-slate-600 to-slate-600 text-white rounded-lg font-semibold hover:shadow-xl transition-all"
-                >
-                  Continuer
-                </button>
-              ) : (
-                <button
-                  type="submit"
-                  disabled={isSubmitting}
-                  className={`flex-1 px-6 py-3 rounded-lg font-semibold flex items-center justify-center gap-2 transition-all ${
-                    isSubmitting
-                      ? "bg-gray-300 text-gray-500 cursor-not-allowed"
-                      : "bg-gradient-to-r from-slate-600 to-slate-600 text-white hover:shadow-xl"
-                  }`}
-                >
-                  {isSubmitting ? (
-                    <>
-                      <Loader className="h-5 w-5 animate-spin" />
-                      Création du compte...
-                    </>
-                  ) : (
-                    <>
-                      <Sparkles className="h-5 w-5" />
-                      Créer mon compte
-                    </>
-                  )}
-                </button>
-              )}
+              {/* Confirmer le mot de passe */}
+              <div>
+                <label className="block text-xs font-bold text-slate-800 mb-1.5">
+                  Confirmer le mot de passe <span className="text-destructive">*</span>
+                </label>
+                <div className="relative">
+                  <Lock className="absolute left-3.5 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
+                  <input
+                    type={showConfirmPassword ? "text" : "password"}
+                    placeholder="Confirmer votre mot de passe"
+                    className={`w-full pl-10 pr-12 py-3 border rounded-xl text-sm outline-none transition-all ${
+                      errors.confirmPassword 
+                        ? "border-destructive bg-destructive/5 focus:ring-4 focus:ring-destructive/10" 
+                        : "border-input bg-card focus:border-primary focus:ring-4 focus:ring-primary/10"
+                    }`}
+                    {...register("confirmPassword", {
+                      required: "Veuillez confirmer le mot de passe",
+                      validate: (value) => value === watch('password') || "Les mots de passe ne correspondent pas",
+                    })}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                    className="absolute right-3.5 top-1/2 transform -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors"
+                  >
+                    {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </button>
+                </div>
+                {errors.confirmPassword && (
+                  <p className="mt-1.5 text-xs font-semibold text-destructive">{errors.confirmPassword.message}</p>
+                )}
+              </div>
+
+              {/* Indicateur de force du mot de passe (optionnel) */}
+              <div className="space-y-1.5">
+                <div className="flex gap-1">
+                  {[...Array(4)].map((_, i) => (
+                    <div
+                      key={i}
+                      className={`h-1 flex-1 rounded-full transition-all ${
+                        passwordStrength >= i + 1 
+                          ? i < 2 
+                            ? 'bg-destructive' 
+                            : i < 3 
+                              ? 'bg-amber-500' 
+                              : 'bg-emerald-500'
+                          : 'bg-slate-100'
+                      }`}
+                    />
+                  ))}
+                </div>
+                <p className="text-[10px] font-medium text-slate-400">
+                  {passwordStrength === 0 && 'Saisissez un mot de passe'}
+                  {passwordStrength === 1 && 'Faible - Ajoutez des chiffres et symboles'}
+                  {passwordStrength === 2 && 'Moyen - Ajoutez des majuscules et symboles'}
+                  {passwordStrength === 3 && 'Fort - Excellente sécurité'}
+                  {passwordStrength === 4 && 'Très fort - Sécurité maximale'}
+                </p>
+              </div>
+
+              {/* Conditions générales */}
+              <div className={`rounded-xl p-4 border-2 transition-all ${
+                errors.accepteConditions 
+                  ? "border-destructive bg-destructive/5" 
+                  : "border-slate-100 bg-slate-50/50"
+              }`}>
+                <label className="flex items-start gap-3 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    className={`mt-0.5 w-4 h-4 rounded border-2 transition-all ${
+                      errors.accepteConditions 
+                        ? "border-destructive accent-destructive" 
+                        : "border-slate-300 accent-primary"
+                    }`}
+                    {...register("accepteConditions", {
+                      required: "Vous devez accepter les conditions",
+                    })}
+                  />
+                  <span className="text-xs text-slate-600 font-medium leading-relaxed">
+                    J'accepte les{" "}
+                    <button type="button" className="text-primary font-bold hover:underline">
+                      conditions d'utilisation
+                    </button>{" "}
+                    et la{" "}
+                    <button type="button" className="text-primary font-bold hover:underline">
+                      politique de confidentialité
+                    </button>
+                  </span>
+                </label>
+                {errors.accepteConditions && (
+                  <p className="mt-2 text-xs font-semibold text-destructive">{errors.accepteConditions.message}</p>
+                )}
+              </div>
             </div>
-          </form>
+          )}
 
-          {/* Login Link */}
-          <div className="mt-6 text-center">
-            <p className="text-sm text-gray-600">
-              Vous avez déjà un compte ?{" "}
+          {/* Navigation - Boutons */}
+          <div className="flex flex-col sm:flex-row gap-3 pt-6 border-t border-slate-100">
+            {etapeActuelle > 1 && (
               <button
                 type="button"
-                onClick={() => navigate("/backoffice/login")}
-                className="text-slate-600 font-semibold hover:underline"
+                onClick={() => setEtapeActuelle(etapeActuelle - 1)}
+                className="sm:flex-1 px-6 py-3 border border-slate-200 bg-card rounded-xl text-sm font-bold text-slate-700 hover:bg-slate-50 hover:border-slate-300 transition-all"
               >
-                Se connecter
+                ← Retour
               </button>
-            </p>
+            )}
+
+            {etapeActuelle < 3 ? (
+              <button
+                type="button"
+                onClick={() => setEtapeActuelle(etapeActuelle + 1)}
+                className="flex-1 px-6 py-3 bg-primary text-primary-foreground rounded-xl text-sm font-bold hover:bg-primary/90 hover:shadow-sm transition-all active:scale-[0.98] flex items-center justify-center gap-2"
+              >
+                Continuer
+                <ArrowRight className="h-4 w-4" />
+              </button>
+            ) : (
+              <button
+                type="submit"
+                disabled={isSubmitting}
+                className={`flex-1 px-6 py-3 rounded-xl text-sm font-bold flex items-center justify-center gap-2 transition-all ${
+                  isSubmitting
+                    ? "bg-slate-200 text-slate-400 cursor-not-allowed"
+                    : "bg-emerald-600 text-white hover:bg-emerald-700 hover:shadow-sm active:scale-[0.98]"
+                }`}
+              >
+                {isSubmitting ? (
+                  <>
+                    <Loader className="h-4 w-4 animate-spin" />
+                    Création du compte...
+                  </>
+                ) : (
+                  <>
+                    <Sparkles className="h-4 w-4" />
+                    Créer mon compte
+                  </>
+                )}
+              </button>
+            )}
           </div>
+        </form>
+
+        {/* Lien de connexion */}
+        <div className="mt-6 text-center">
+          <p className="text-xs text-slate-500 font-medium">
+            Vous avez déjà un compte ?{" "}
+            <button
+              type="button"
+              onClick={() => navigate("/backoffice/login")}
+              className="text-primary font-bold hover:underline"
+            >
+              Se connecter
+            </button>
+          </p>
         </div>
       </div>
     </div>
-  );
+  </div>
+);
 }

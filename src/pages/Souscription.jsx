@@ -31,8 +31,8 @@ export default function Souscription() {
     if (!getUserProfil()) navigate(`${HOMEADMIN}/login`)
   }, [navigate])
 
-  useEffect(() => {
-    souscriptionStore.getAllData('', '', '')
+  useEffect(() => { 
+    souscriptionStore.getAllData('SUCCES', '', '')
   }, [])
 
   const filteredData = () => {

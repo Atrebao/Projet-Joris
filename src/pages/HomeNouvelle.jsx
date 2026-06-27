@@ -175,7 +175,11 @@ return (
         <h3 className="truncate text-base font-bold text-slate-900 leading-tight tracking-tight group-hover:text-primary transition-colors">
           {offer.nom}
         </h3>
-        <p className="text-xs font-semibold text-slate-500 mt-0.5">{offer.duree} mois</p>
+       
+        <span className="inline-flex items-center rounded-md bg-emerald-50 px-2 py-0.5 text-xs font-extrabold text-emerald-700 border border-emerald-200/60 mt-1.5 w-fit">
+          {offer.duree} {offer.periode || 'mois'}
+        </span>
+
         <p className="mt-1 flex items-center gap-1 text-xs text-slate-500 font-medium">
           {/* Correction du plantage : l'icône a maintenant une taille harmonieuse */}
           <Store className="h-3.5 w-3.5 text-slate-400" />

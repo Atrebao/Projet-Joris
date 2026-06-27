@@ -63,7 +63,7 @@ export default function ClientShell({ children }) {
           <button
             type="button"
             onClick={() => setMobileOpen((current) => !current)}
-            className="inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-border bg-primary text-foreground transition hover:border-slate-700 hover:bg-slate-800 md:hidden"
+            className="inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-border bg-primary text-white transition hover:border-slate-700 hover:bg-slate-800 md:hidden"
             aria-label={mobileOpen ? 'Fermer le menu' : 'Ouvrir le menu'}
           >
             {mobileOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}

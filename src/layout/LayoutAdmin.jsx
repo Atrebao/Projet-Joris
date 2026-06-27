@@ -20,7 +20,7 @@ export default function LayoutAdmin() {
     { to: '/backoffice/commandes', label: 'Commandes', icon: ShoppingCart },
     { to: '/backoffice/clients', label: 'Clients', icon: Users },
     { to: '/backoffice/stats', label: 'Statistiques', icon: BarChart3 },
-    { to: '/backoffice/abonnements', label: 'Abonnements', icon: ClipboardList },
+    // { to: '/backoffice/abonnements', label: 'Abonnements', icon: ClipboardList },
     { to: '/backoffice/souscriptions', label: 'Souscriptions', icon: Activity },
     { to: '/backoffice/utilisateurs', label: 'Utilisateurs', icon: Users },
     { to: '/backoffice/identifiants', label: 'Identifiants', icon: KeyRound }
@@ -30,7 +30,7 @@ export default function LayoutAdmin() {
     <>
       {/* <SaasTopBar active="admin" /> */}
       <DashboardShell
-        brand="AbonéPlus Admin"
+        brand="Richesses Streaming"
         brandIcon={ShieldCheck}
         role="Super-Administrateur"
         nav={nav}

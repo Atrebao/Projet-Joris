@@ -11,6 +11,7 @@ export const useSouscriptionStore = create((set) => ({
   sosucriptions: [],
   souscription: {},
   getAllData: async (statut, etat, param) => {
+    
     set({
       loading: true,
       data: [],

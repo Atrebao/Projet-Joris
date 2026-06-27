@@ -1,6 +1,6 @@
 ﻿import { useEffect, useMemo, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
-import { CheckCircle, Home, FileText, Loader2 } from 'lucide-react'
+import { CheckCircle, Home, FileText, Loader2,Clock } from 'lucide-react'
 import { souscriptionsAPI } from '../lib/api'
 
 export default function ConfirmationPage() {
@@ -119,74 +119,111 @@ export default function ConfirmationPage() {
     )
   }
 
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-green-50 via-white to-blue-50 py-12 px-4">
-      <div className="max-w-2xl mx-auto">
-        <div className="bg-white rounded-3xl shadow-2xl p-8 sm:p-12 text-center">
-          <div className="inline-flex items-center justify-center w-24 h-24 bg-green-500 rounded-full mb-6">
-            {isLoading ? <Loader2 className="h-12 w-12 text-white animate-spin" /> : <CheckCircle className="h-12 w-12 text-white" />}
-          </div>
+ return (
+  <div className="min-h-screen bg-slate-50/50 py-12 px-4 sm:px-6">
+    <div className="max-w-2xl mx-auto">
+      <div className="bg-card rounded-2xl border border-border p-6 sm:p-10 shadow-sm text-center">
+        
+        {/* Pastille centrale épurée */}
+        <div className={`inline-flex items-center justify-center w-20 h-20 rounded-2xl mb-6 shadow-sm border ${
+          isLoading 
+            ? 'bg-primary/10 border-primary/20' 
+            : paymentStatus === 'SUCCES' 
+            ? 'bg-emerald-50 border-emerald-200/60' 
+            : paymentStatus === 'ECHEC' 
+            ? 'bg-destructive/10 border-destructive/20' 
+            : 'bg-amber-50 border-amber-200/60'
+        }`}>
+          {isLoading ? (
+            <Loader2 className="h-10 w-10 text-primary animate-spin" />
+          ) : paymentStatus === 'SUCCES' ? (
+            <CheckCircle className="h-10 w-10 text-emerald-600" />
+          ) : paymentStatus === 'ECHEC' ? (
+            <XCircle className="h-10 w-10 text-destructive" /> // Pensez à importer XCircle ou réutilisez votre icône
+          ) : (
+            <Clock className="h-10 w-10 text-amber-600" /> // Pensez à importer Clock ou réutilisez votre icône
+          )}
+        </div>
 
-          <h1 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-4">
-            {isLoading
-              ? 'Confirmation en cours...'
-              : paymentStatus === 'SUCCES'
-                ? 'Paiement confirme'
-                : paymentStatus === 'ECHEC'
-                  ? 'Paiement echoue'
-                  : 'Paiement en cours de traitement'}
-          </h1>
+        {/* Titre dynamique conservé à l'identique */}
+        <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight mb-4">
+          {isLoading
+            ? 'Confirmation en cours...'
+            : paymentStatus === 'SUCCES'
+              ? 'Paiement confirmé'
+              : paymentStatus === 'ECHEC'
+                ? 'Paiement échoué'
+                : 'Paiement en cours de traitement'}
+        </h1>
 
-          {error && <p className="text-red-600 mb-6">{error}</p>}
+        {error && (
+          <p className="text-xs font-semibold text-destructive bg-destructive/5 border border-destructive/10 rounded-xl px-4 py-2.5 max-w-md mx-auto mb-6">
+            {error}
+          </p>
+        )}
 
-          <div className="bg-green-50 rounded-2xl p-6 mb-6 text-left border border-green-200">
-            <p className="text-green-800 text-sm">
-              <strong>Statut actuel:</strong> {paymentStatus.replace(/_/g, ' ')} <br />
-            </p>
-          </div>
+        {/* Bloc Statut Actuel */}
+        <div className={`rounded-xl p-4 mb-5 text-left border ${
+          paymentStatus === 'SUCCES' 
+            ? 'bg-emerald-50/50 border-emerald-100 text-emerald-800' 
+            : paymentStatus === 'ECHEC' 
+            ? 'bg-destructive/5 border-destructive/10 text-destructive' 
+            : 'bg-amber-50/50 border-amber-100 text-amber-800'
+        }`}>
+          <p className="text-sm font-medium">
+            <strong className="font-bold">Statut actuel:</strong> {paymentStatus ? paymentStatus.replace(/_/g, ' ') : ''}
+          </p>
+        </div>
 
-          <div className="bg-gray-50 rounded-2xl p-6 mb-8 text-left">
-            <h2 className="font-bold text-xl mb-4 text-gray-900">Details de la commande</h2>
-            <div className="space-y-3">
-              <div className="flex justify-between">
-                <span className="text-gray-600">Service</span>
-                <span className="font-semibold text-gray-900">{offre?.nom || 'Abonnement'}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-600">Montant paye</span>
-                <span className="font-semibold text-gray-900">{(montant || 0).toLocaleString()} F CFA</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-600">Reference</span>
-                <span className="font-mono text-sm text-gray-900">{reference || '-'}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-600">Date</span>
-                <span className="font-semibold text-gray-900">{new Date().toLocaleDateString('fr-FR')}</span>
-              </div>
+        {/* Bloc Détails de la commande */}
+        <div className="border border-border rounded-xl bg-card p-5 text-left mb-5 shadow-sm">
+          <h2 className="font-extrabold text-xs tracking-wider text-slate-400 uppercase mb-4">
+            Détails de la commande
+          </h2>
+          <div className="space-y-3 text-sm">
+            <div className="flex justify-between items-center border-b border-slate-50 pb-2">
+              <span className="text-slate-500 font-medium">Service</span>
+              <span className="font-bold text-slate-900">{offre?.nom || 'Abonnement'}</span>
+            </div>
+            <div className="flex justify-between items-center border-b border-slate-50 pb-2">
+              <span className="text-slate-500 font-medium">Montant payé</span>
+              <span className="font-extrabold text-slate-950">{(montant || 0).toLocaleString()} F CFA</span>
+            </div>
+            <div className="flex justify-between items-center border-b border-slate-50 pb-2">
+              <span className="text-slate-500 font-medium">Référence</span>
+              <span className="font-mono text-xs text-slate-700 bg-slate-100 px-2 py-0.5 rounded border border-slate-200/50">{reference || '-'}</span>
+            </div>
+            <div className="flex justify-between items-center pt-1">
+              <span className="text-slate-500 font-medium">Date</span>
+              <span className="font-semibold text-slate-900">{new Date().toLocaleDateString('fr-FR')}</span>
             </div>
           </div>
-
-          <div className="bg-blue-50 rounded-2xl p-6 mb-8 text-left">
-            <h3 className="font-bold text-lg mb-3 text-blue-900 flex items-center gap-2">
-              <FileText className="h-5 w-5" />
-              Prochaines etapes
-            </h3>
-            <ul className="space-y-2 text-sm text-blue-800">
-              <li>Vos identifiants seront envoyes par email.</li>
-              <li>Conservez votre reference pour le support.</li>
-            </ul>
-          </div>
-
-          <button
-            onClick={() => navigate('/')}
-            className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-slate-600 text-white rounded-xl font-semibold hover:bg-slate-700 transition-all shadow-lg"
-          >
-            <Home className="h-5 w-5" />
-            Retour a l'accueil
-          </button>
         </div>
+
+        {/* Bloc Prochaines étapes */}
+        <div className="border border-blue-100 bg-blue-50/30 rounded-xl p-5 text-left mb-8">
+          <h3 className="font-bold text-sm text-blue-900 flex items-center gap-2 mb-3">
+            <FileText className="h-4 w-4 text-blue-600" />
+            Prochaines étapes
+          </h3>
+          <ul className="space-y-2 text-xs text-blue-800 font-medium list-disc list-inside">
+            <li>Vos identifiants seront envoyés par email.</li>
+            <li>Conservez votre référence pour le support.</li>
+          </ul>
+        </div>
+
+        {/* Bouton Retour à l'accueil */}
+        <button
+          onClick={() => navigate('/')}
+          className="inline-flex w-full sm:w-auto items-center justify-center gap-2 px-6 py-3 bg-primary text-primary-foreground rounded-xl font-bold text-sm transition-all shadow-sm hover:bg-primary/90 active:scale-[0.99]"
+        >
+          <Home className="h-4 w-4" />
+          Retour à l&apos;accueil
+        </button>
+        
       </div>
     </div>
-  )
+  </div>
+);
+
 }

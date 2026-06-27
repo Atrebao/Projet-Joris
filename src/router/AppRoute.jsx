@@ -44,6 +44,7 @@ import CommandesPartenairePage from "../pages/partenaire/CommandesPartenairePage
 import ForfaitsPage from "../pages/partenaire/ForfaitsPage";
 import IdentifiantsStockPage from "../pages/partenaire/IdentifiantsStockPage";
 import EnConstruction from "../pages/EnConstruction";
+import ForgotPasswordPartenaire from "@/pages/ForgotPasswordPartenaire";
 
 export const AppRoute = createHashRouter([
   // Routes pour les utilisateurs
@@ -205,6 +206,10 @@ export const AppRoute = createHashRouter([
   {
     path: "/register-partenaire",
     element: <RegisterPartenaire />,
+  },
+    {
+    path: "/forgot-password-partenaire",
+    element: <ForgotPasswordPartenaire />,
   },
 
   // Route pour les pages inexistantes

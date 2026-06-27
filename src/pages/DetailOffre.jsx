@@ -26,6 +26,7 @@ export default function DetailOffre() {
   const [promo, setPromo] = useState(null)
   const [submitting, setSubmitting] = useState(false)
   const [success, setSuccess] = useState(false)
+  const [hasPromo, setHasPromo] = useState(false)
 
   useEffect(() => {
     const user = safeParse(localStorage.getItem('infoUser')) || safeParse(localStorage.getItem('user'))
@@ -213,7 +214,7 @@ export default function DetailOffre() {
                 <label className="mb-2 block text-sm font-medium">Forfait</label>
                 <select value={selectedForfaitId || ''} onChange={(event) => setSelectedForfaitId(event.target.value)} className="h-10 w-full rounded-lg border border-input bg-card px-3 text-sm outline-none">
                   {offre.forfaits.map((forfait) => (
-                    <option key={forfait.id} value={forfait.id}>{forfait.plan || `${forfait.duree} mois`} - {formatFCFA(forfait.prix)}</option>
+                    <option key={forfait.id} value={forfait.id}>{forfait.plan || `${forfait.duree} ${forfait.prediode}`} - {formatFCFA(forfait.prix)}</option>
                   ))}
                 </select>
               </div>
@@ -285,16 +286,46 @@ export default function DetailOffre() {
               <input value={otp} onChange={(event) => setOtp(event.target.value)} placeholder="Code OTP Orange" className="h-10 w-full rounded-lg border border-input bg-card px-3 text-sm outline-none" />
             )}
 
-            <div className="flex gap-2">
-              <input value={promoCode} onChange={(event) => setPromoCode(event.target.value)} placeholder="Code promo" className="h-10 min-w-0 flex-1 rounded-lg border border-input bg-card px-3 text-sm outline-none" />
-              <button type="button" onClick={applyPromo} className="h-10 rounded-lg border border-border bg-card px-3 text-sm font-medium hover:bg-muted">Appliquer</button>
+            <div className="space-y-3">
+              {/* Case à cocher pour activer le code promo */}
+              <label className="flex items-center gap-2.5 cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  checked={hasPromo}
+                  onChange={(e) => setHasPromo(e.target.checked)}
+                  className="w-4 h-4 rounded border-input text-primary focus:ring-primary/20 accent-primary"
+                />
+                <span className="text-xs font-semibold text-slate-700">
+                  J&apos;ai un code promo
+                </span>
+              </label>
+
+              {/* Affichage conditionnel du champ de saisie */}
+              {hasPromo && (
+                <div className="flex gap-2 animate-in fade-in slide-in-from-top-1 duration-200">
+                  <input
+                    value={promoCode}
+                    onChange={(event) => setPromoCode(event.target.value)}
+                    placeholder="Entrez votre code (ex: STREAM20)"
+                    className="h-10 min-w-0 flex-1 rounded-xl border border-input bg-card px-3.5 text-sm outline-none transition focus:border-primary focus:ring-4 focus:ring-primary/10 font-medium"
+                  />
+                  <button
+                    type="button"
+                    onClick={applyPromo}
+                    className="h-10 rounded-xl border border-slate-200 bg-slate-50/50 px-4 text-sm font-bold text-slate-700 hover:bg-slate-100 transition-colors"
+                  >
+                    Appliquer
+                  </button>
+                </div>
+              )}
             </div>
+
 
             <button disabled={submitting} className="h-11 w-full rounded-lg bg-primary px-4 text-sm font-semibold text-primary-foreground transition hover:bg-primary/90 disabled:opacity-60">
               {submitting ? 'Traitement...' : `Payer ${formatFCFA(total)}`}
             </button>
 
-            <p className="text-center text-xs text-muted-foreground">Démo: aucun paiement réel n'est effectué.</p>
+           
           </form>
         )}
       </div>

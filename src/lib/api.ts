@@ -1,7 +1,7 @@
 ﻿import axios from 'axios'
 
-//export const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000'
-export const API_URL = import.meta.env.VITE_API_URL || 'https://projet-joris-api.onrender.com/'
+export const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000'
+//export const API_URL = import.meta.env.VITE_API_URL || 'https://projet-joris-api.onrender.com/'
 
 
 export const api = axios.create({
@@ -126,6 +126,7 @@ export const authAPI = {
   loginAdmin: (credentials) => api.post('/auth/admin/login', credentials),
   loginPartenaire: (credentials) => api.post('/auth/partenaire/login', credentials),
   registerPartenaire: (data) => api.post('/auth/partenaire/register', data),
+  forgotPasswordPartenaire: (email) => api.post('/partenaires/forgot-password', { email }),
   me: () => api.get('/auth/me'),
 }
 
