@@ -45,6 +45,7 @@ import ForfaitsPage from "../pages/partenaire/ForfaitsPage";
 import IdentifiantsStockPage from "../pages/partenaire/IdentifiantsStockPage";
 import EnConstruction from "../pages/EnConstruction";
 import ForgotPasswordPartenaire from "@/pages/ForgotPasswordPartenaire";
+import ModifierPasswordPartenaire from "@/pages/partenaire/ModifierPasswordPartenaire";
 
 export const AppRoute = createHashRouter([
   // Routes pour les utilisateurs
@@ -191,6 +192,10 @@ export const AppRoute = createHashRouter([
         path: "stats",
         element: <StatsPage />,
       },
+      {
+        path: "modifier-password",
+        element: <ModifierPasswordPartenaire/>,
+      }
     ],
   },
 

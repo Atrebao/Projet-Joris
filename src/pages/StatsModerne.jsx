@@ -9,7 +9,7 @@ import {
   BarChart3,
   PieChart,
   ArrowUp,
-  ArrowDown
+  ArrowDown, ChevronLeft, ChevronRight
 } from "lucide-react";
 import { statsAPI, souscriptionsAPI } from "../lib/api";
 import toast from "react-hot-toast";
@@ -30,6 +30,9 @@ export default function StatsModerne() {
   const [revenusParMois, setRevenusParMois] = useState([]);
   const [transactionsRecentes, setTransactionsRecentes] = useState([]);
   const [categoriesTop, setCategoriesTop] = useState([]);
+
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10; // Nombre d'éléments par page
 
   useEffect(() => {
     loadStats();
@@ -114,22 +117,39 @@ export default function StatsModerne() {
     { mois: "Oct", revenu: 0 }, { mois: "Nov", revenu: 0 }, { mois: "Déc", revenu: 0 },
   ];
 
-  // Données pour le graphique des revenus mensuels
-  // Catégories top (données calculées ou mock)
-  const categoriesTopAffichage = categoriesTop || [];
+    // Données pour le graphique des revenus mensuels
+    // Catégories top (données calculées ou mock)
+    const categoriesTopAffichage = categoriesTop || [];
 
-  const maxRevenu = Math.max(1, ...revenusAffichage.map(r => r.revenu));
+    const maxRevenu = Math.max(1, ...revenusAffichage.map(r => r.revenu));
 
-  if (loading) {
-    return (
-      <div className="min-h-80 bg-background flex items-center justify-center">
-        <div className="text-center">
-          <div className="inline-block h-12 w-12 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
-          <p className="mt-4 text-muted-foreground">Chargement des statistiques...</p>
+    if (loading) {
+      return (
+        <div className="min-h-80 bg-background flex items-center justify-center">
+          <div className="text-center">
+            <div className="inline-block h-12 w-12 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
+            <p className="mt-4 text-muted-foreground">Chargement des statistiques...</p>
+          </div>
         </div>
-      </div>
-    );
-  }
+      );
+    }
+
+
+  const hasTransactions = transactionsRecentes && transactionsRecentes.length > 0;
+  const totalPages = hasTransactions ? Math.ceil(transactionsRecentes.length / itemsPerPage) : 1;
+
+  // Indexation et découpage du tableau d'origine
+  const indexOfLastItem = currentPage * itemsPerPage;
+  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+  const currentTransactions = hasTransactions 
+    ? transactionsRecentes.slice(indexOfFirstItem, indexOfLastItem) 
+    : [];
+
+  const paginate = (pageNumber) => {
+    if (pageNumber >= 1 && pageNumber <= totalPages) {
+      setCurrentPage(pageNumber);
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -279,58 +299,130 @@ export default function StatsModerne() {
         </div>
 
         {/* Transactions Récentes */}
-        <div className="bg-card rounded-xl border border-border shadow-sm overflow-hidden">
-          <div className="p-6 border-b border-border bg-muted/40">
-            <h2 className="text-xl font-bold flex items-center gap-2">
-              <ShoppingCart className="h-6 w-6 text-primary" />
-              Transactions Récentes
-            </h2>
-          </div>
+  <div className="bg-card rounded-xl border border-border shadow-sm overflow-hidden flex flex-col justify-between min-h-[400px]">
+    
+    {/* En-tête du boîtier */}
+    <div className="p-6 border-b border-border bg-muted/40">
+      <h2 className="text-xl font-extrabold text-slate-900 tracking-tight flex items-center gap-2">
+        <ShoppingCart className="h-5 w-5 text-primary" />
+        Transactions Récentes
+      </h2>
+    </div>
 
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead className="bg-muted/40">
-                <tr className="border-b border-border">
-                  <th className="text-left py-4 px-6 font-semibold text-gray-700">Client</th>
-                  <th className="text-left py-4 px-6 font-semibold text-gray-700">Offre</th>
-                  <th className="text-left py-4 px-6 font-semibold text-gray-700">Montant</th>
-                  <th className="text-left py-4 px-6 font-semibold text-gray-700">Date</th>
-                  <th className="text-left py-4 px-6 font-semibold text-gray-700">Statut</th>
-                </tr>
-              </thead>
-              <tbody>
-                {(transactionsRecentes.length > 0 ? transactionsRecentes : [{ id: 0, client: "-", offre: "-", montant: 0, date: "-", statut: "-" }]).map((transaction) => (
-                  <tr key={transaction.id} className="border-b border-border hover:bg-muted/40 transition-all">
-                    <td className="py-4 px-6">
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 bg-primary/10 text-primary rounded-full flex items-center justify-center font-bold">
-                          {transaction.client.charAt(0)}
-                        </div>
-                        <span className="font-semibold">{transaction.client}</span>
-                      </div>
-                    </td>
-                    <td className="py-4 px-6 text-gray-700">{transaction.offre}</td>
-                    <td className="py-4 px-6">
-                      <span className="font-bold text-green-600">{transaction.montant.toLocaleString()} F</span>
-                    </td>
-                    <td className="py-4 px-6 text-gray-600">
-                      {new Date(transaction.date).toLocaleDateString('fr-FR')}
-                    </td>
-                    <td className="py-4 px-6">
-                      <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
-                        transaction.statut === 'SUCCES' 
-                          ? 'bg-green-100 text-green-700' 
-                          : 'bg-yellow-100 text-yellow-700'
-                      }`}>
-                        {transaction.statut}
-                      </span>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+    {/* Corps du tableau */}
+    <div className="overflow-x-auto flex-1">
+      <table className="w-full">
+        <thead className="bg-slate-50/50">
+          <tr className="border-b border-border">
+            <th className="text-left py-4 px-6 text-xs font-bold uppercase tracking-wider text-slate-400">Client</th>
+            <th className="text-left py-4 px-6 text-xs font-bold uppercase tracking-wider text-slate-400">Offre</th>
+            <th className="text-left py-4 px-6 text-xs font-bold uppercase tracking-wider text-slate-400">Montant</th>
+            <th className="text-left py-4 px-6 text-xs font-bold uppercase tracking-wider text-slate-400">Date</th>
+            <th className="text-left py-4 px-6 text-xs font-bold uppercase tracking-wider text-slate-400">Statut</th>
+          </tr>
+        </thead>
+        <tbody className="divide-y divide-slate-100">
+          {currentTransactions.length > 0 ? (
+            currentTransactions.map((transaction) => (
+              <tr key={transaction.id} className="hover:bg-slate-50/50 transition-colors group">
+                <td className="py-4 px-6">
+                  <div className="flex items-center gap-3">
+                    <div className="w-9 h-9 bg-primary/10 text-primary rounded-xl border border-primary/5 flex items-center justify-center font-bold text-sm shadow-sm shrink-0">
+                      {transaction.client ? transaction.client.charAt(0).toUpperCase() : '-'}
+                    </div>
+                    <span className="font-bold text-slate-900 text-sm">{transaction.client}</span>
+                  </div>
+                </td>
+                <td className="py-4 px-6 text-sm text-slate-600 font-medium">{transaction.offre}</td>
+                <td className="py-4 px-6">
+                  <span className="font-extrabold text-sm text-slate-950">
+                    {transaction.montant.toLocaleString()} FCFA
+                  </span>
+                </td>
+                <td className="py-4 px-6 text-xs text-slate-400 font-semibold">
+                  {transaction.date !== "-" ? new Date(transaction.date).toLocaleDateString('fr-FR') : "-"}
+                </td>
+                <td className="py-4 px-6">
+                  <span className={`inline-flex items-center rounded-md px-2.5 py-0.5 text-xs font-bold border ${
+                    transaction.statut === 'SUCCES' 
+                      ? 'bg-emerald-50 border-emerald-100 text-emerald-700' 
+                      : transaction.statut === 'ECHEC'
+                      ? 'bg-destructive/5 border-destructive/10 text-destructive'
+                      : 'bg-amber-50 border-amber-100 text-amber-700'
+                  }`}>
+                    {transaction.statut}
+                  </span>
+                </td>
+              </tr>
+            ))
+          ) : (
+            /* Ligne vide sécurisée */
+            <tr>
+              <td colSpan="5" className="py-12 text-center text-sm font-medium text-slate-400">
+                Aucune transaction enregistrée.
+              </td>
+            </tr>
+          )}
+        </tbody>
+      </table>
+    </div>
+
+    {/* CONTROLE DE PAGINATION EN PIED DE PAGE */}
+    {hasTransactions && totalPages > 1 && (
+      <div className="flex items-center justify-between border-t border-slate-100 bg-slate-50/30 p-4 mt-auto select-none">
+        {/* Rappel des compteurs */}
+        <p className="text-xs font-semibold text-slate-500">
+          Affichage de <span className="text-slate-900">{indexOfFirstItem + 1}</span> à{' '}
+          <span className="text-slate-900">{Math.min(indexOfLastItem, transactionsRecentes.length)}</span> sur{' '}
+          <span className="text-slate-900">{transactionsRecentes.length}</span> transactions
+        </p>
+
+        {/* Boutons directionnels et pages */}
+        <div className="flex items-center gap-1.5">
+          {/* Bouton Précédent */}
+          <button
+            type="button"
+            disabled={currentPage === 1}
+            onClick={() => paginate(currentPage - 1)}
+            className="flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 bg-card text-slate-600 hover:bg-slate-50 disabled:opacity-40 disabled:hover:bg-card transition-all"
+          >
+            <ChevronLeft className="h-4 w-4" />
+          </button>
+
+          {/* Numéros de pages */}
+          {Array.from({ length: totalPages }, (_, index) => {
+            const pageNum = index + 1;
+            const isPageActive = currentPage === pageNum;
+            return (
+              <button
+                key={pageNum}
+                type="button"
+                onClick={() => paginate(pageNum)}
+                className={`flex h-8 min-w-[32px] items-center justify-center rounded-lg text-xs font-bold px-2 border transition-all ${
+                  isPageActive
+                    ? 'bg-primary border-primary text-primary-foreground shadow-sm'
+                    : 'border-transparent bg-transparent text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+                }`}
+              >
+                {pageNum}
+              </button>
+            );
+          })}
+
+          {/* Bouton Suivant */}
+          <button
+            type="button"
+            disabled={currentPage === totalPages}
+            onClick={() => paginate(currentPage + 1)}
+            className="flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 bg-card text-slate-600 hover:bg-slate-50 disabled:opacity-40 disabled:hover:bg-card transition-all"
+          >
+            <ChevronRight className="h-4 w-4" />
+          </button>
         </div>
+      </div>
+    )}
+
+  </div>
       </div>
     </div>
   );

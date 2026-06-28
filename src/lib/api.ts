@@ -139,6 +139,8 @@ export const partenairesAPI = {
   validate: (id) => api.patch(`/partenaires/${id}/valider`),
   toggleActive: (id) => api.patch(`/partenaires/${id}/toggle-active`),
   getStats: (id) => api.get(`/partenaires/${id}/stats`),
+  updateCommission: (id, newCommission) => api.patch(`/partenaires/${id}/update-commission`, { newCommission }),
+  modifyPassword: (id, newPassword, confirmPassword) => api.patch(`/partenaires/${id}/modify-password`, { newPassword, confirmPassword }),
 }
 
 // API Offres
@@ -227,6 +229,11 @@ export const souscriptionsAPI = {
     withData(api.get(`/souscription/partenaire/${partenaireId}`, { params }), (data) =>
       Array.isArray(data) ? data.map(normalizeSouscription) : []
     ),
+  getSouscriptionsByPartenaire: (partenaireId, params) =>
+    withData(api.get(`/souscription/partenaire/${partenaireId}/souscriptions`, { params }), (data) =>
+      Array.isArray(data) ? data.map(normalizeSouscription) : []
+    ),
+
   getOne: (id) => withData(api.get(`/souscription/rechercher-souscription/${id}`), normalizeSouscription),
   getALivrer: () => withData(api.get('/souscription/a-livrer'), (data) => (Array.isArray(data) ? data.map(normalizeSouscription) : [])),
   getAllByPartenaire: (partenaireId) =>
@@ -270,7 +277,7 @@ export const abonnementsAPI = {
 
 // API Users/Clients
 export const usersAPI = {
-  getClients: (params) => api.get('/users/clients', { params }),
+  getClients: (params) => api.get('/clients', { params }),
   getClient: (id) => api.get(`/users/clients/${id}`),
   getClientSouscriptions: (id) => api.get(`/users/clients/${id}/souscriptions`),
   getUsers: () => api.get('/users/rechercher-users'),

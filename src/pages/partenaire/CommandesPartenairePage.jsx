@@ -34,7 +34,7 @@ export default function CommandesPartenairePage() {
     if (!partenaireId) return
     setLoading(true)
     try {
-      const { data } = await souscriptionsAPI.getByPartenaire(partenaireId)
+      const { data } = await souscriptionsAPI.getSouscriptionsByPartenaire(partenaireId)
       setCommandes(Array.isArray(data) ? data : [])
     } catch (error) {
       console.error('Erreur chargement commandes partenaire :', error)

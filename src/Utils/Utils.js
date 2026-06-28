@@ -37,6 +37,15 @@ export const getPartenaireId = () => {
   return partenaire?.id ?? null;
 };
 
+
+/** Retourne l'objet partenaire connecté (null si admin/client) */
+export const getPartenaire = () => {
+  const info = getUserProfil();
+  if (info?.partenaire) return info.partenaire;
+  const partenaire = JSON.parse(localStorage.getItem("partenaire") || "null");
+  return partenaire ?? null;
+}
+
 /** Vérifie si l'utilisateur connecté est un partenaire */
 export const isPartenaire = () => !!getPartenaireId();
 
