@@ -7,7 +7,7 @@ import { useAbonnementStore } from "../store/abonnement";
 import toast from "react-hot-toast";
 import { addOne, editOne, getAll } from "../services/service";
 import { AJOUTER_ABONNEMENT, MODIFIER_ABONNEMENT, RECHERCHER_LISTES_FORFAIT } from "../Utils/constant";
-import { BASE_URLS } from "../Utils/Utils";
+import { API_URL } from "@/lib/api";
 
 export default function AjouterModifierAbonnement({ abonnement }) {
   const abonnementStore = useAbonnementStore();
@@ -34,7 +34,7 @@ export default function AjouterModifierAbonnement({ abonnement }) {
   }, [abonnement ]);
 
   useEffect(() => {
-      getAll(`${BASE_URLS}${RECHERCHER_LISTES_FORFAIT}`)
+      getAll(`${API_URL}${RECHERCHER_LISTES_FORFAIT}`)
       .then((res) => {
         if(res.data){
           setForfaits(res.data);

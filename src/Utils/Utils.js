@@ -2,12 +2,7 @@ import { BookOpen, Gamepad2, Gift, Headphones, Loader, Search, ShieldCheck, Spar
 export const HOMECLIENT = "/client";
 export const HOMEADMIN = "/backoffice";
 export const HOMEPARTENAIRE = "/partenaire";
-export const BASE_URL = "http://localhost:3000";
-export const BASE_URLS = "http://localhost:3000";
 
-//export const BASE_URL = "https://projet-joris-api.onrender.com/";
-
-//export const BASE_URLS = "https://projet-joris-api.onrender.com/";
 
 export const resetStorage = () => {
   localStorage.removeItem("infoUser");
@@ -82,6 +77,13 @@ export const getPaiement = () => {
 export const getUserProfil = () => {
   return JSON.parse(localStorage.getItem("infoUser"));
 };
+
+export const getClient = ()=>{
+  const info = getUserProfil();
+  if(info?.user) return info.user;
+  const user = JSON.parse(localStorage.getItem("user") || "null");
+  return user ?? null;
+}
 
 export const userToken = () => {
   const user = getUserProfil();

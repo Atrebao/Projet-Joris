@@ -166,10 +166,7 @@ export const offresAPI = {
 }
 
 export const forfaitsAPI = {
-  getAll: (categorie) =>
-    api.get('/forfaits/rechercher-forfaits', {
-      params: categorie ? { categorie } : {},
-    }),
+  getAll: () => api.get('/forfaits/rechercher-forfaits'),
   getOne: (id) => api.get(`/forfaits/rechercher-forfait/${id}`),
   create: (data) => api.post('/forfaits/enregistrer', data),
   update: (id, data) => api.post(`/forfaits/modifier/${id}`, data),
