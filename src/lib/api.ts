@@ -275,6 +275,7 @@ export const abonnementsAPI = {
 // API Users/Clients
 export const usersAPI = {
   getClients: (params) => api.get('/clients', { params }),
+  getClientsWithSouscriptions: (params) => api.get('/clients/liste-avec-souscriptions', { params }),
   getClient: (id) => api.get(`/users/clients/${id}`),
   getClientSouscriptions: (id) => api.get(`/users/clients/${id}/souscriptions`),
   getUsers: () => api.get('/users/rechercher-users'),
