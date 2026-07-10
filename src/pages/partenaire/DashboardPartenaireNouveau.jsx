@@ -217,7 +217,7 @@ export default function DashboardPartenaireNouveau() {
                 </div>
                 <div className="text-right">
                   <p className="text-sm font-semibold">{formatFCFA(vente?.montant || 0)}</p>
-                  <StatusBadge status={vente?.isLivred ? 'LIVRE' : 'EN_ATTENTE'} />
+                  <StatusBadge status={vente?.isLivred ? 'LIVRE' : 'EN ATTENTE LIVRAISON'} />
                 </div>
               </div>
             ))}

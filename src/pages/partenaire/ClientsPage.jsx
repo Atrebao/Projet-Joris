@@ -10,6 +10,7 @@ export default function ClientsPage() {
   const [recherche, setRecherche] = useState('')
   const [loading, setLoading] = useState(true)
   const [detailClient, setDetailClient] = useState(null)
+  
 
   useEffect(() => {
     loadClients()
@@ -18,14 +19,14 @@ export default function ClientsPage() {
   const loadClients = async () => {
     setLoading(true)
     try {
-      const { data } = await usersAPI.getClients()
+      const { data } = await usersAPI.getClientsWithSouscriptions()
       const formatted = (data || []).map((c) => ({
         id: c.id,
         nom: c.nomPrenoms || `${c.nom || ''} ${c.prenoms || ''}`.trim() || 'Client',
         email: c.email || '-',
         telephone: c.numero || c.telephone || '-',
-        nbAchats: c.nbAchats || 0,
-        totalDepense: Number(c.totalDepense || 0),
+        nbAchats: c.souscriptions ? c.souscriptions.length : 0,
+        totalDepense: c.souscriptions ? c.souscriptions.reduce((sum, s) => sum + (s.montant || 0), 0) : 0,
         derniereCommande: c.dateCreation ? new Date(c.dateCreation).toISOString().split('T')[0] : '',
         statut: c.enabled !== false ? 'ACTIF' : 'INACTIF',
       }))

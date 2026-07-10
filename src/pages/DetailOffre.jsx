@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { ArrowLeft, CheckCircle2, Loader, Smartphone, X } from 'lucide-react'
 import toast from 'react-hot-toast'
-import { abonnementsAPI, codesPromoAPI, souscriptionsAPI } from '../lib/api'
+import api, { abonnementsAPI, clientsAPI, codesPromoAPI, souscriptionsAPI, usersAPI } from '../lib/api'
 import { ServiceLogo } from './HomeNouvelle'
 import { OPERATOR_BADGES } from '@/Utils/Utils'
 
@@ -29,14 +29,32 @@ export default function DetailOffre() {
   const [hasPromo, setHasPromo] = useState(false)
 
   useEffect(() => {
-    const user = safeParse(localStorage.getItem('infoUser')) || safeParse(localStorage.getItem('user'))
-    if (user) {
-      setNom(user.nom || user.lastName || '')
-      setPrenoms(user.prenoms || user.firstName || '')
-      setEmail(user.email || '')
-      setTelephone(user.telephone || user.phone || user.numero || '')
+  const fetchClientData = async () => {
+    const email = localStorage.getItem('customerEmail');
+    console.log('Email récupéré du localStorage:', email);
+    
+    if (!email) return;
+
+    try {
+     
+      const client = await clientsAPI.getByEmail(email);
+      console.log('Client trouvé par email:', client);
+
+      if (client) {
+        const data = client.data;
+        setNom(data.nom || data.lastName || '');
+        setPrenoms(data.prenoms || data.firstName || '');
+        setEmail(data.email || '');
+        setTelephone(data.telephone || data.phone || data.numero || '');
+      }
+    } catch (error) {
+      console.error('Erreur lors de la récupération du client:', error);
     }
-  }, [])
+  };
+
+  fetchClientData();
+}, []);
+
 
   useEffect(() => {
     const load = async () => {
@@ -134,6 +152,8 @@ export default function DetailOffre() {
         telephone: telephone.replace(/\s/g, ''),
         codePromo: promo?.codePromo
       }))
+
+      localStorage.setItem('clientInfo', JSON.stringify({ nom, prenoms, email, telephone: telephone.replace(/\s/g, '') }))
 
       setSuccess(true)
       setTimeout(() => {
