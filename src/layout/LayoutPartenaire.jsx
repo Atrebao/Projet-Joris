@@ -15,6 +15,7 @@ export default function LayoutPartenaire() {
   const nav = [
     { to: '/partenaire', label: 'Tableau de bord', icon: LayoutDashboard, exact: true },
     { to: '/partenaire/commandes', label: 'Suivi des ventes', icon: Receipt },
+    // { to: '/partenaire/offres', label: 'Mes offres', icon: Package },
     { to: '/partenaire/offres/nouvelle', label: 'Nouvelle offre', icon: Package },
     { to: '/partenaire/forfaits', label: 'Forfaits', icon: Tag },
     { to: '/partenaire/identifiants', label: 'Stocks & Identifiants', icon: Boxes },

@@ -84,7 +84,7 @@ export default function ForfaitsPage() {
         prix: Number(form.prix),
         description: form.description,
         duree: Number(form.duree),
-        categorie: form.categorie,
+        // categorie: form.categorie,
         periode: form.periode,
       }
 
@@ -113,7 +113,7 @@ export default function ForfaitsPage() {
       prix: String(f.prix ?? ''),
       description: f.description || '',
       duree: String(f.duree ?? '1'),
-      categorie: f.categorie || categorieFiltre,
+      // categorie: f.categorie || categorieFiltre,
       periode: f.periode || 'MOIS',
     })
   }
@@ -143,12 +143,14 @@ export default function ForfaitsPage() {
             <p className="text-sm text-muted-foreground">Nom, prix, duree et categorie du plan.</p>
           </div>
           <form onSubmit={onSubmit} className="space-y-4">
-            <div>
+          
+            {/* <div>
               <label className="text-sm font-medium text-foreground">Categorie</label>
               <Select name="categorie" value={form.categorie} onChange={onChange} className="mt-1 w-full">
                 {CATEGORIES.map((c) => <option key={c.value} value={c.value}>{c.label}</option>)}
               </Select>
-            </div>
+            </div> */}
+
             <div>
               <label className="text-sm font-medium text-foreground">Nom du plan</label>
               <Input name="plan" value={form.plan} onChange={onChange} required className="mt-1" />
@@ -192,9 +194,9 @@ export default function ForfaitsPage() {
               <h2 className="font-semibold text-foreground">Forfaits disponibles</h2>
               <p className="text-sm text-muted-foreground">Classement par prix croissant.</p>
             </div>
-            <Select value={categorieFiltre} onChange={(e) => setCategorieFiltre(e.target.value)}>
+            {/* <Select value={categorieFiltre} onChange={(e) => setCategorieFiltre(e.target.value)}>
               {CATEGORIES.map((c) => <option key={c.value} value={c.value}>{c.label}</option>)}
-            </Select>
+            </Select> */}
           </div>
 
           {loading ? (

@@ -1,9 +1,10 @@
 ﻿import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { ArrowLeft, Save, ImagePlus, Loader2 } from 'lucide-react'
-import { getPartenaireId } from '../../Utils/Utils'
+import { CATEGORIES, getPartenaireId } from '../../Utils/Utils'
 import { offresAPI, forfaitsAPI, API_URL } from '../../lib/api'
 import toast from 'react-hot-toast'
+import { Select } from '@/components/saas/SaasPrimitives'
 
 export default function NouvelleOffrePage() {
   const navigate = useNavigate()
@@ -20,7 +21,8 @@ export default function NouvelleOffrePage() {
     description: '',
     duree: '1',
     stock: '0',
-    imageUrl: ''
+    imageUrl: '',
+    categorie: CATEGORIES[0]?.value || ''
   })
 
   useEffect(() => {
@@ -108,6 +110,7 @@ export default function NouvelleOffrePage() {
         typeCompte: 'Standard',
         quantiteDisponible: parseInt(formData.stock) || 0,
         forfaitIds: selectedForfaitIds,
+        categorie: formData.categorie,
       })
       toast.success('Offre crÃ©Ã©e avec succÃ¨s')
       navigate('/partenaire/dashboard')
@@ -149,7 +152,16 @@ return (
         {/* COLONNE GAUCHE : Informations principales (Prend 2/3 de l'espace) */}
         <div className="lg:col-span-2 space-y-6">
           <div className="rounded-xl border border-border bg-card p-6 shadow-sm sm:p-8 space-y-6">
-            
+
+            <div>
+              <label className="block text-sm font-semibold text-slate-900 mb-2">
+                Categorie <span className="text-destructive">*</span>
+              </label>
+              <Select name="categorie" value={formData.categorie} onChange={handleChange} className="mt-1 w-full">
+                {CATEGORIES.map((c) => <option key={c.value} value={c.value}>{c.label}</option>)}
+              </Select>
+            </div>
+
             {/* Nom de l'offre */}
             <div>
               <label className="block text-sm font-semibold text-slate-900 mb-2">

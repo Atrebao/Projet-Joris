@@ -161,6 +161,11 @@ export const AppRoute = createHashRouter([
         element: <DashboardPartenaireNouveau />,
       },
       {
+        path: "offres",
+        element: <OffresPage />,
+
+      },
+      {
         path: "commandes",
         element: <CommandesPartenairePage />,
       },

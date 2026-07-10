@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
 import { useStoreModalite } from "../store/modalite";
-import { BASE_URL, BASE_URLS, paymentMethods, savePaiement } from "../Utils/Utils";
+import { paymentMethods, savePaiement } from "../Utils/Utils";
 import { addOne, getAll } from "../services/service";
 import {
   ENVOYER_MAIL,
@@ -11,6 +11,7 @@ import {
   VERIFIER_STATUT_SOUSCRIPTION,
 } from "../Utils/constant";
 import toast from "react-hot-toast";
+import { API_URL } from "@/lib/api";
 
 export default function FormsClient({ abonnement, userProfile, forfait }) {
   const navigate = useNavigate();
@@ -109,7 +110,7 @@ export default function FormsClient({ abonnement, userProfile, forfait }) {
   };
 
   const envoyerMail = (data) => {
-    addOne(`${BASE_URLS}${ENVOYER_MAIL}`, "application/json", data)
+    addOne(`${API_URL}${ENVOYER_MAIL}`, "application/json", data)
       .then((res) => {
         if (res.data) {
           console.log("=====REPONSE MAIL=============== ", res.data);
