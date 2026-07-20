@@ -1,4 +1,5 @@
 ﻿import axios from 'axios'
+import { get } from 'react-hook-form'
 
 export const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000'
 //export const API_URL = import.meta.env.VITE_API_URL || 'https://projet-joris-api.onrender.com/'
@@ -238,9 +239,9 @@ export const souscriptionsAPI = {
       Array.isArray(data) ? data.map(normalizeSouscription) : []
     ),
   getByEmail: (email) =>
-    withData(api.get(`/souscription/by-email?${encodeURIComponent(email)}`), (data) =>
-      Array.isArray(data) ? data.map(normalizeSouscription) : []
-    ),
+    withData(api.post('/souscription/by-email', { email }), (data) => (Array.isArray(data) ? data.map(normalizeSouscription) : [])),
+  getByClientId: (clientId) =>
+    withData(api.get(`/souscription/by-client/${clientId}`), (data) => (Array.isArray(data) ? data.map(normalizeSouscription) : [])),
   getByReference: (reference) =>
     withData(api.get(`/souscription/reference/${encodeURIComponent(reference)}`), normalizeSouscription),
   livrer: (id, data) => api.patch(`/souscription/livrer/${id}`, data),
@@ -248,6 +249,8 @@ export const souscriptionsAPI = {
   creerDepuisPaiement: (data) => api.post('/souscription/creer-depuis-paiement', data),
   initierPaiement: (data) => api.post('/souscription/initier-paiement', data),
   updateEtat: (id, etat) => api.post(`/souscription/modifier-etat/${id}`, { etat }),
+  getByPseudoAndNumero: (data) =>
+    withData(api.post('/souscription/by-pseudo-and-numero', data), (data) => (Array.isArray(data) ? data.map(normalizeSouscription) : [])),
 }
 
 // API Abonnements (compatibilité front legacy vers /offres)
@@ -289,6 +292,8 @@ export const clientsAPI = {
   getOne: (id) => api.get(`/clients/${id}`),
   getSouscriptions: (id) => api.get(`/clients/${id}/souscriptions`),
   getByEmail: (email) => api.post('/clients/get-by-email', { email }),
+  getByPseudoAndNumero: (data) => api.post('/clients/find-by-pseudo-and-numero', data),
+  create: (data) => api.post('/clients/enregistrer', data),
 }
 
 export const identifiantsStockAPI = {
