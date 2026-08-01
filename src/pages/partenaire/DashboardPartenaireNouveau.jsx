@@ -53,7 +53,7 @@ export default function DashboardPartenaireNouveau() {
         if (!id) return
         const current = byOffre.get(id) || { ventes: 0, revenu: 0 }
         current.ventes += 1
-        current.revenu += Number(sub?.montantPartenaire || sub?.montant || 0)
+        current.revenu += Number(sub?.montantPartenaire ?? sub?.montantTotal ?? sub?.montant ?? 0)
         byOffre.set(id, current)
       })
 
@@ -216,7 +216,7 @@ export default function DashboardPartenaireNouveau() {
                   <p className="truncate text-xs text-muted-foreground">{vente?.abonnement?.nom || '-'}</p>
                 </div>
                 <div className="text-right">
-                  <p className="text-sm font-semibold">{formatFCFA(vente?.montant || 0)}</p>
+                  <p className="text-sm font-semibold">{formatFCFA(vente?.montantPartenaire ?? vente?.montantTotal ?? vente?.montant ?? 0)}</p>
                   <StatusBadge status={vente?.isLivred ? 'LIVRE' : 'EN ATTENTE LIVRAISON'} />
                 </div>
               </div>

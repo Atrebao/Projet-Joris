@@ -14,6 +14,7 @@ export default function PartenairesPage() {
   const [detailLoading, setDetailLoading] = useState(false)
 
  const [commissionInput, setCommissionInput] = useState('');
+ const [commissionActive, setCommissionActive] = useState(true);
  const [updatingCommission, setUpdatingCommission] = useState(false);
 
   useEffect(() => {
@@ -23,6 +24,7 @@ export default function PartenairesPage() {
   useEffect(() => {
     if (detailPartenaire) {
       setCommissionInput(detailPartenaire.tauxCommission ?? 10);
+      setCommissionActive(detailPartenaire.commissionActive !== false);
     }
   }, [detailPartenaire]);
 
@@ -38,8 +40,8 @@ export default function PartenairesPage() {
         totalVentes: 0,
         revenu: 0,
         note: 0,
-        tauxCommission: p.tauxCommission ?? 10, // Valeur par défaut si non définie,
-        
+        tauxCommission: p.tauxCommission ?? 10,
+        commissionActive: p.commissionActive !== false,
       })))
     } catch (error) {
       console.error('Erreur chargement partenaires:', error)
@@ -96,9 +98,9 @@ export default function PartenairesPage() {
 
   if (loading) return <LoadingState label="Chargement des partenaires..." />
 
-  const handleUpdateCommission = async (id, newCommission) => {
+  const handleUpdateCommission = async (id, newCommission, active) => {
     try {
-      await partenairesAPI.updateCommission(id, newCommission);
+      await partenairesAPI.updateCommission(id, Number(newCommission), active);
       toast.success('Commission mise à jour avec succès');
       loadPartenaires(); // Recharge la liste des partenaires pour refléter le changement
     } catch (error) {
@@ -180,7 +182,7 @@ return (
             label: 'Commission', 
             render: (p) => (
               <span className="inline-flex items-center gap-0.5 font-mono text-xs font-bold text-emerald-700 bg-emerald-50 border border-emerald-100 px-2 py-0.5 rounded">
-                {p.tauxCommission ?? 10}%
+                {p.commissionActive === false ? 'Off' : `${p.tauxCommission ?? 10}%`}
               </span>
             ) 
           },
@@ -200,7 +202,8 @@ return (
                 )}
                 <Button size="icon" variant="ghost" className="hover:bg-slate-100" onClick={() => {
                   handleVoirPartenaire(p.id);
-                  setCommissionInput(p.commission ?? 10); // Initialise la valeur pour l'édition
+                  setCommissionInput(p.tauxCommission ?? 10); // Initialise la valeur pour l'édition
+                  setCommissionActive(p.commissionActive !== false);
                 }}>
                   <Eye className="h-4 w-4 text-slate-500" />
                 </Button>
@@ -243,12 +246,22 @@ return (
               <p className="text-[11px] text-emerald-700/80 mt-0.5 font-medium">Définissez le pourcentage prélevé sur chaque vente de ce partenaire.</p>
             </div>
             
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2">
+              <label className="inline-flex items-center gap-2 rounded-xl border border-emerald-200 bg-card px-3 py-2 text-xs font-bold text-emerald-800">
+                <input
+                  type="checkbox"
+                  checked={commissionActive}
+                  onChange={(e) => setCommissionActive(e.target.checked)}
+                  className="h-4 w-4 accent-emerald-600"
+                />
+                Active
+              </label>
               <div className="relative flex-1 max-w-[160px]">
                 <input
                   type="number"
                   min="0"
                   max="100"
+                  disabled={!commissionActive}
                   value={commissionInput}
                   onChange={(e) => setCommissionInput(e.target.value)}
                   className="w-full pr-8 pl-3 py-2 text-sm font-mono font-bold text-slate-900 border border-emerald-200 bg-card rounded-xl outline-none focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500"
@@ -263,7 +276,7 @@ return (
                 onClick={async () => {
                   setUpdatingCommission(true);
                   
-                  await handleUpdateCommission(detailPartenaire.id, commissionInput);
+                  await handleUpdateCommission(detailPartenaire.id, commissionInput, commissionActive);
                   await new Promise(r => setTimeout(r, 1000)); 
                   setUpdatingCommission(false);
                 }}

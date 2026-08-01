@@ -140,7 +140,8 @@ export const partenairesAPI = {
   validate: (id) => api.patch(`/partenaires/${id}/valider`),
   toggleActive: (id) => api.patch(`/partenaires/${id}/toggle-active`),
   getStats: (id) => api.get(`/partenaires/${id}/stats`),
-  updateCommission: (id, newCommission) => api.patch(`/partenaires/${id}/update-commission`, { newCommission }),
+  updateCommission: (id, newCommission, commissionActive) =>
+    api.patch(`/partenaires/${id}/update-commission`, { newCommission, commissionActive }),
   modifyPassword: (id, newPassword, confirmPassword) => api.patch(`/partenaires/${id}/modify-password`, { newPassword, confirmPassword }),
 }
 
@@ -167,8 +168,17 @@ export const offresAPI = {
 }
 
 export const forfaitsAPI = {
-  getAll: () => api.get('/forfaits/rechercher-forfaits'),
-  getOne: (id) => api.get(`/forfaits/rechercher-forfait/${id}`),
+  getAll: (categorie, partenaireId) =>
+    api.get('/forfaits/rechercher-forfaits', {
+      params: {
+        ...(categorie ? { categorie } : {}),
+        ...(partenaireId ? { partenaireId } : {}),
+      },
+    }),
+  getOne: (id, partenaireId) =>
+    api.get(`/forfaits/rechercher-forfait/${id}`, {
+      params: partenaireId ? { partenaireId } : {},
+    }),
   create: (data) => api.post('/forfaits/enregistrer', data),
   update: (id, data) => api.post(`/forfaits/modifier/${id}`, data),
 }

@@ -54,7 +54,7 @@ export default function CommandesPartenairePage() {
     const payees = commandes.filter((c) => c.statutPaiement === 'SUCCES')
     const aLivrer = payees.filter((c) => !c.isLivred && c.etatSouscription !== 'LIVRE')
     const livrees = payees.filter((c) => c.isLivred || c.etatSouscription === 'LIVRE')
-    const revenu = payees.reduce((sum, c) => sum + Number(c.montantPartenaire || c.montant || 0), 0)
+    const revenu = payees.reduce((sum, c) => sum + Number(c.montantPartenaire ?? c.montantTotal ?? c.montant ?? 0), 0)
     return { total: commandes.length, payees: payees.length, aLivrer: aLivrer.length, livrees: livrees.length, revenu }
   }, [commandes])
 
@@ -193,7 +193,7 @@ export default function CommandesPartenairePage() {
                 </div>
               ),
             },
-            { key: 'montant', label: 'Montant', render: (commande) => <span className="font-semibold">{formatFCFA(commande.montantPartenaire || commande.montant)}</span> },
+            { key: 'montant', label: 'Montant', render: (commande) => <span className="font-semibold">{formatFCFA(commande.montantPartenaire ?? commande.montantTotal ?? commande.montant)}</span> },
             { key: 'paiement', label: 'Paiement', render: (commande) => <StatusBadge status={commande.statutPaiement} /> },
            {
               key: 'livraison',

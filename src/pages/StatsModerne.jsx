@@ -43,7 +43,7 @@ export default function StatsModerne() {
     try {
       const { data: dashboardData } = await statsAPI.adminDashboard();
       const statsFormatted = {
-        revenuTotal: dashboardData.revenusTotal || 0,
+        revenuTotal: dashboardData.revenusTotal ?? 0,
         revenueEvolution: dashboardData.evolutionRevenus || 0,
         totalPartenaires: dashboardData.totalPartenaires || 0,
         partenairesEvolution: 0,
@@ -75,7 +75,7 @@ export default function StatsModerne() {
           id: s.id,
           client: s.user ? `${s.user.nom || ''} ${s.user.prenoms || ''}`.trim() || 'Client' : 'Client',
           offre: s.abonnement?.nom || 'N/A',
-          montant: s.montant || s.montantTotal || 0,
+          montant: s.montantTotal ?? s.montant ?? 0,
           date: s.dateCreation ? new Date(s.dateCreation).toISOString().split('T')[0] : '-',
           statut: s.statutPaiement || 'EN_ATTENTE'
         }));

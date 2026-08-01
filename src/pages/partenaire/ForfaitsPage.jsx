@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import toast from 'react-hot-toast'
 import { Edit3, Layers, Plus, Save, Tag, X } from 'lucide-react'
 import { forfaitsAPI } from '../../lib/api'
+import { getPartenaireId } from '../../Utils/Utils'
 import { Button, Card, DataTable, EmptyState, Input, KpiCard, PageHeader, Select, formatFCFA } from '../../components/saas/SaasPrimitives'
 
 const CATEGORIES = [
@@ -29,6 +30,7 @@ const initialForm = {
 }
 
 export default function ForfaitsPage() {
+  const partenaireId = getPartenaireId()
   const [loading, setLoading] = useState(true)
   const [submitting, setSubmitting] = useState(false)
   const [forfaits, setForfaits] = useState([])
@@ -38,7 +40,7 @@ export default function ForfaitsPage() {
   const loadForfaits = async (categorie = categorieFiltre) => {
     setLoading(true)
     try {
-      const { data } = await forfaitsAPI.getAll(categorie)
+      const { data } = await forfaitsAPI.getAll(categorie, partenaireId)
       setForfaits(Array.isArray(data) ? data : [])
     } catch {
       toast.error('Impossible de charger les forfaits')
@@ -84,8 +86,9 @@ export default function ForfaitsPage() {
         prix: Number(form.prix),
         description: form.description,
         duree: Number(form.duree),
-        // categorie: form.categorie,
+        categorie: form.categorie,
         periode: form.periode,
+        partenaireId,
       }
 
       if (form.id) {
@@ -113,7 +116,7 @@ export default function ForfaitsPage() {
       prix: String(f.prix ?? ''),
       description: f.description || '',
       duree: String(f.duree ?? '1'),
-      // categorie: f.categorie || categorieFiltre,
+      categorie: f.categorie || categorieFiltre,
       periode: f.periode || 'MOIS',
     })
   }

@@ -59,7 +59,7 @@ export default function StatsPage() {
           const nom = sub?.abonnement?.nom || 'Offre'
           const current = byOffre.get(nom) || { nom, ventes: 0, revenu: 0 }
           current.ventes += 1
-          current.revenu += Number(sub?.montantPartenaire || sub?.montant || 0)
+          current.revenu += Number(sub?.montantPartenaire ?? sub?.montantTotal ?? sub?.montant ?? 0)
           byOffre.set(nom, current)
         })
         setOffreTop(Array.from(byOffre.values()).sort((a, b) => b.ventes - a.ventes).slice(0, 5))

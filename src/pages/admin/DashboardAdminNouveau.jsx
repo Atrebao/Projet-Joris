@@ -30,17 +30,20 @@ export default function DashboardAdminNouveau() {
         const transactionsData = transactionsRes.status === 'fulfilled' && Array.isArray(transactionsRes.value.data)
           ? transactionsRes.value.data
           : []
+        const paidTransactions = transactionsData.filter((transaction) => transaction.statutPaiement === 'SUCCES')
 
         setStats({
-          totalRevenue: statsData.revenusTotal || sum(transactionsData, 'montant'),
+          totalRevenue: statsData.revenusTotal ?? sum(paidTransactions, 'montant'),
+          platformRevenue: statsData.revenusPlateforme ?? 0,
+          partnersRevenue: statsData.revenusPartenaires ?? 0,
           partners: statsData.totalPartenaires || 0,
-          clients: statsData.totalClients || countUniqueClients(transactionsData),
-          transactions: transactionsData.length || statsData.souscriptionsMois || 0,
+          clients: statsData.totalClients || countUniqueClients(paidTransactions),
+          transactions: paidTransactions.length || statsData.souscriptionsMois || 0,
           evolution: statsData.evolutionRevenus || 22,
           newPartners: statsData.partenairesActifs || 3,
           newClients: statsData.nouveauxClientsMois || 147
         })
-        setTransactions(transactionsData)
+        setTransactions(paidTransactions)
       } catch (error) {
         console.error('Erreur chargement dashboard admin:', error)
         toast.error('Impossible de charger les statistiques')
@@ -171,7 +174,7 @@ function buildMonthlyData(transactions) {
         const date = transaction.dateCreation ? new Date(transaction.dateCreation) : null
         return date && date.getFullYear() === currentYear && date.getMonth() === index
       })
-      .reduce((total, transaction) => total + Number(transaction.montant || 0), 0)
+      .reduce((total, transaction) => total + Number(transaction.montantTotal ?? transaction.montant ?? 0), 0)
     return { label: month, value }
   })
 }
@@ -181,7 +184,7 @@ function buildOperatorData(transactions) {
     ...operator,
     value: transactions
       .filter((transaction) => normalizeOperator(transaction.operateur || transaction.modePaiement) === operator.key)
-      .reduce((total, transaction) => total + Number(transaction.montant || 0), 0)
+      .reduce((total, transaction) => total + Number(transaction.montantTotal ?? transaction.montant ?? 0), 0)
   }))
   const total = totals.reduce((acc, item) => acc + item.value, 0)
 

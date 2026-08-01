@@ -60,7 +60,7 @@ export default function EditerOffrePage() {
     const loadForfaits = async () => {
       try {
         setLoadingForfaits(true)
-        const { data } = await forfaitsAPI.getAll(formData.categorie)
+        const { data } = await forfaitsAPI.getAll(formData.categorie, partenaireId)
         setForfaitsDisponibles(Array.isArray(data) ? data : [])
       } catch {
         setForfaitsDisponibles([])
