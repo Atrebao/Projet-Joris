@@ -43,7 +43,7 @@ export default function AjouterModifierAbonnement({ abonnement }) {
   }, []);
 
   forfaits.map((forfait) => {
-    listeForfait.push({value: forfait.id, label: `${forfait.duree} ${forfait.periode.toLowerCase()} (${forfait.prix} FCFA) - ${forfait.categorie} `} );
+    listeForfait.push({ value: forfait.id, label: `${forfait.plan || 'Forfait'} - ${forfait.duree} ${String(forfait.periode || '').toLowerCase()}` });
   });
 
   const clearForm = () => {

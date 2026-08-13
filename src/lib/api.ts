@@ -1,4 +1,4 @@
-﻿import axios from 'axios'
+import axios from 'axios'
 
 //export const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000'
 export const API_URL = import.meta.env.VITE_API_URL || 'https://projet-joris-api.onrender.com/'
@@ -37,6 +37,15 @@ api.interceptors.response.use(
 
 const withData = async (promise, mapper) => {
   const res = await promise
+  if (res.data && Array.isArray(res.data.data)) {
+    return {
+      ...res,
+      data: {
+        ...res.data,
+        data: mapper(res.data.data),
+      },
+    }
+  }
   return { ...res, data: mapper(res.data) }
 }
 
@@ -48,20 +57,18 @@ const toNumber = (value, fallback = 0) => {
 const normalizeOffre = (offre = {}) => {
   const forfaitsFromRelations = Array.isArray(offre.forfaitOffres)
     ? offre.forfaitOffres
-        .map((fo) => fo?.forfait)
-        .filter(Boolean)
-        .map((f) => ({
-          ...f,
-          id: f.id,
-          prix: toNumber(f.prix),
-          duree: toNumber(f.duree, 1),
-        }))
+      .map((fo) => fo?.forfait)
+      .filter(Boolean)
+      .map((f) => ({
+        ...f,
+        id: f.id,
+        duree: toNumber(f.duree, 1),
+      }))
     : []
 
   const fallbackForfait = {
     id: `offre-${offre.id || Math.random()}`,
     plan: offre.typeCompte || 'Standard',
-    prix: 0,
     duree: toNumber(offre.duree, 1),
     periode: 'MOIS',
   }
@@ -77,12 +84,19 @@ const normalizeOffre = (offre = {}) => {
     ...offre,
     nom: offre.nom ?? offre.nomService ?? '',
     nomService: offre.nomService ?? offre.nom ?? '',
+    service: offre.service ?? offre.nomService ?? offre.nom ?? '',
+    titreOffre: offre.titreOffre ?? offre.nom ?? offre.nomService ?? '',
     image: offre.image ?? offre.imageService ?? '',
     imageService: offre.imageService ?? offre.image ?? '',
+    prix: toNumber(offre.prixVente ?? offre.prixOriginal ?? offre.prix, 0),
+    prixVente: toNumber(offre.prixVente ?? offre.prixOriginal ?? offre.prix, 0),
+    prixOriginal: toNumber(offre.prixOriginal ?? offre.prixVente ?? offre.prix, 0),
     stock: offre.stock ?? offre.quantiteDisponible ?? 0,
     quantiteDisponible: offre.quantiteDisponible ?? offre.stock ?? 0,
     isDeleted: offre.isDeleted ?? false,
     forfaits,
+    ventes: toNumber(offre.ventes, 0),
+    revenu: toNumber(offre.revenu, 0),
   }
 }
 
@@ -100,12 +114,12 @@ const normalizeSouscription = (souscription = {}) => {
   const client = souscription.client || souscription.user || null
   const userAlias = client
     ? {
-        id: client.id,
-        nom: client.nom,
-        prenoms: client.prenoms,
-        email: client.email,
-        numero: client.telephone || client.numero,
-      }
+      id: client.id,
+      nom: client.nom,
+      prenoms: client.prenoms,
+      email: client.email,
+      numero: client.telephone || client.numero,
+    }
     : undefined
 
   return {
@@ -132,26 +146,36 @@ export const authAPI = {
 
 // API Partenaires
 export const partenairesAPI = {
-  getAll: () => api.get('/partenaires'),
+  getAll: (params) => api.get('/partenaires', { params }),
   getOne: (id) => api.get(`/partenaires/${id}`),
   create: (data) => api.post('/partenaires/inscription', data),
   update: (id, data) => api.patch(`/partenaires/${id}`, data),
   validate: (id) => api.patch(`/partenaires/${id}/valider`),
   toggleActive: (id) => api.patch(`/partenaires/${id}/toggle-active`),
   getStats: (id) => api.get(`/partenaires/${id}/stats`),
-  updateCommission: (id, newCommission) => api.patch(`/partenaires/${id}/update-commission`, { newCommission }),
-  modifyPassword: (id, newPassword, confirmPassword) => api.patch(`/partenaires/${id}/modify-password`, { newPassword, confirmPassword }),
+  updateCommission: (id, newCommission, commissionActive) =>
+    api.patch(`/partenaires/${id}/update-commission`, { newCommission, commissionActive }),
+  modifyPassword: (id, newPassword, confirmPassword) =>
+    api.patch(`/partenaires/${id}/modify-password`, { newPassword, confirmPassword }),
 }
 
 // API Offres
 export const offresAPI = {
-  getAll: () => withData(api.get('/offres'), (data) => (Array.isArray(data) ? data.map(normalizeOffre) : [])),
+  getAll: (params) =>
+    withData(api.get('/offres', { params }), (data) => (Array.isArray(data) ? data.map(normalizeOffre) : [])),
   getOne: (id) => withData(api.get(`/offres/${id}`), normalizeOffre),
-  getByPartenaire: (partenaireId) =>
-    withData(api.get(`/offres/partenaire/${partenaireId}`), (data) => (Array.isArray(data) ? data.map(normalizeOffre) : [])),
-  getByCategorie: (categorie) =>
-    withData(api.get(`/offres/categorie/${categorie}`), (data) => (Array.isArray(data) ? data.map(normalizeOffre) : [])),
-  search: (query) => withData(api.get(`/offres/search?q=${query}`), (data) => (Array.isArray(data) ? data.map(normalizeOffre) : [])),
+  getByPartenaire: (partenaireId, params) =>
+    withData(api.get(`/offres/partenaire/${partenaireId}`, { params }), (data) =>
+      Array.isArray(data) ? data.map(normalizeOffre) : []
+    ),
+  getByCategorie: (categorie, params) =>
+    withData(api.get(`/offres/categorie/${categorie}`, { params }), (data) =>
+      Array.isArray(data) ? data.map(normalizeOffre) : []
+    ),
+  search: (query, params) =>
+    withData(api.get(`/offres/search`, { params: { q: query, ...params } }), (data) =>
+      Array.isArray(data) ? data.map(normalizeOffre) : []
+    ),
   uploadImage: (file) => {
     const form = new FormData()
     form.append('file', file)
@@ -166,8 +190,16 @@ export const offresAPI = {
 }
 
 export const forfaitsAPI = {
-  getAll: () => api.get('/forfaits/rechercher-forfaits'),
-  getOne: (id) => api.get(`/forfaits/rechercher-forfait/${id}`),
+  getAll: (partenaireId) =>
+    api.get('/forfaits/rechercher-forfaits', {
+      params: {
+        ...(partenaireId ? { partenaireId } : {}),
+      },
+    }),
+  getOne: (id, partenaireId) =>
+    api.get(`/forfaits/rechercher-forfait/${id}`, {
+      params: partenaireId ? { partenaireId } : {},
+    }),
   create: (data) => api.post('/forfaits/enregistrer', data),
   update: (id, data) => api.post(`/forfaits/modifier/${id}`, data),
 }
@@ -198,7 +230,6 @@ export const promotionsAPI = {
 }
 
 // API Paiements BillMap (Unifiée)
-// Tous les paiements passent par BillMap: MTN, Moov, Orange, Wave
 export const billmapAPI = {
   debitMTN: (data) => api.post('/billmap/mtn', data),
   debitMoov: (data) => api.post('/billmap/moov', data),
@@ -206,7 +237,6 @@ export const billmapAPI = {
   debitWave: (data) => api.post('/billmap/wave', data),
 }
 
-// API Paiements (alias pour retrocompatibilité)
 export const paymentsAPI = {
   billmap: {
     debitMTN: (data) => api.post('/billmap/mtn', data),
@@ -230,17 +260,17 @@ export const souscriptionsAPI = {
     withData(api.get(`/souscription/partenaire/${partenaireId}/souscriptions`, { params }), (data) =>
       Array.isArray(data) ? data.map(normalizeSouscription) : []
     ),
-
   getOne: (id) => withData(api.get(`/souscription/rechercher-souscription/${id}`), normalizeSouscription),
-  getALivrer: () => withData(api.get('/souscription/a-livrer'), (data) => (Array.isArray(data) ? data.map(normalizeSouscription) : [])),
-  getAllByPartenaire: (partenaireId) =>
-    withData(api.get(`/souscription/partenaire/${partenaireId}`), (data) =>
+  getALivrer: () =>
+    withData(api.get('/souscription/a-livrer'), (data) => (Array.isArray(data) ? data.map(normalizeSouscription) : [])),
+  getAllByPartenaire: (partenaireId, params) =>
+    withData(api.get(`/souscription/partenaire/${partenaireId}`, { params }), (data) =>
       Array.isArray(data) ? data.map(normalizeSouscription) : []
     ),
   getByEmail: (email) =>
-    withData(api.get(`/souscription/by-email?${encodeURIComponent(email)}`), (data) =>
-      Array.isArray(data) ? data.map(normalizeSouscription) : []
-    ),
+    withData(api.post('/souscription/by-email', { email }), (data) => (Array.isArray(data) ? data.map(normalizeSouscription) : [])),
+  getByClientId: (clientId) =>
+    withData(api.get(`/souscription/by-client/${clientId}`), (data) => (Array.isArray(data) ? data.map(normalizeSouscription) : [])),
   getByReference: (reference) =>
     withData(api.get(`/souscription/reference/${encodeURIComponent(reference)}`), normalizeSouscription),
   livrer: (id, data) => api.patch(`/souscription/livrer/${id}`, data),
@@ -248,24 +278,22 @@ export const souscriptionsAPI = {
   creerDepuisPaiement: (data) => api.post('/souscription/creer-depuis-paiement', data),
   initierPaiement: (data) => api.post('/souscription/initier-paiement', data),
   updateEtat: (id, etat) => api.post(`/souscription/modifier-etat/${id}`, { etat }),
+  getByPseudoAndNumero: (data) =>
+    withData(api.post('/souscription/by-pseudo-and-numero', data), (data) => (Array.isArray(data) ? data.map(normalizeSouscription) : [])),
 }
 
 // API Abonnements (compatibilité front legacy vers /offres)
 export const abonnementsAPI = {
-  getAll: () => offresAPI.getAll(),
-  getPublic: () => offresAPI.getAll(),
+  getAll: (params) => offresAPI.getAll(params),
+  getPublic: (params) => offresAPI.getAll(params),
   getPopulaires: async () => {
-    const res = await offresAPI.getAll()
-    const sorted = [...(res.data || [])].sort((a, b) => {
-      const da = new Date(a.dateCreation || 0).getTime()
-      const db = new Date(b.dateCreation || 0).getTime()
-      return db - da
-    })
-    return { ...res, data: sorted.slice(0, 8) }
+    const res = await offresAPI.getAll({ limit: 8 })
+    const list = Array.isArray(res.data) ? res.data : (res.data?.data || [])
+    return { ...res, data: list }
   },
   getOne: (id) => offresAPI.getOne(id),
   getDetails: (id) => offresAPI.getOne(id),
-  getByPartenaire: (partenaireId) => offresAPI.getByPartenaire(partenaireId),
+  getByPartenaire: (partenaireId, params) => offresAPI.getByPartenaire(partenaireId, params),
   create: (data) => offresAPI.create(data),
   update: (id, data) => offresAPI.update(id, data),
   toggleActive: (id) => offresAPI.toggleActive(id),
@@ -274,7 +302,7 @@ export const abonnementsAPI = {
 
 // API Users/Clients
 export const usersAPI = {
-  getClients: (params) => api.get('/clients', { params }),
+  getClients: (params) => api.get('/users/clients', { params }),
   getClientsWithSouscriptions: (params) => api.get('/clients/liste-avec-souscriptions', { params }),
   getClient: (id) => api.get(`/users/clients/${id}`),
   getClientSouscriptions: (id) => api.get(`/users/clients/${id}/souscriptions`),
@@ -285,10 +313,12 @@ export const usersAPI = {
 }
 
 export const clientsAPI = {
-  getAll: () => api.get('/clients'),
+  getAll: (params) => api.get('/clients', { params }),
   getOne: (id) => api.get(`/clients/${id}`),
   getSouscriptions: (id) => api.get(`/clients/${id}/souscriptions`),
   getByEmail: (email) => api.post('/clients/get-by-email', { email }),
+  getByPseudoAndNumero: (data) => api.post('/clients/find-by-pseudo-and-numero', data),
+  create: (data) => api.post('/clients/enregistrer', data),
 }
 
 export const identifiantsStockAPI = {
@@ -297,15 +327,56 @@ export const identifiantsStockAPI = {
   listByPartenaire: (partenaireId) => api.get(`/identifiants-stock/partenaire/${partenaireId}`),
 }
 
+// API Reversements (Payouts)
+export const reversementsAPI = {
+  getAll: (params) => api.get('/reversements', { params }),
+  getOne: (id) => api.get(`/reversements/${id}`),
+  getAllBalances: (params) => api.get('/reversements/partenaires/balances', { params }),
+  getPartenaireBalance: (partenaireId) => api.get(`/reversements/partenaire/${partenaireId}/balance`),
+  create: (partenaireId, data) => api.post(`/reversements/partenaire/${partenaireId}`, data),
+  cancel: (id) => api.patch(`/reversements/${id}/annuler`),
+}
+
 // API Stats
 export const statsAPI = {
   adminDashboard: () => api.get('/stats/admin/dashboard'),
   topOffres: (limit) => api.get('/stats/admin/top-offres', { params: limit ? { limit } : {} }),
   partenaireDashboard: (id) => api.get(`/stats/partenaire/${id}/dashboard`),
+  partenaireDetailedStats: (id) => api.get(`/stats/partenaire/${id}/stats-detaillees`),
   ca: (params) => api.get('/stats/ca', { params }),
   grapheCA: (params) => api.get('/stats/graphe-ca', { params }),
   global: () => api.get('/stats/admin/dashboard'),
   partenaire: (partenaireId) => api.get(`/stats/partenaire/${partenaireId}/dashboard`),
+}
+
+// API WhatsApp (Baileys / Multi-Sessions Admin & Partenaires)
+export const whatsappAPI = {
+  // Endpoints Admin (Session plateforme / Notifications d'activation partenaires)
+  getAdminStatus: () => api.get('/whatsapp/admin/status'),
+  connectAdmin: () => api.post('/whatsapp/admin/connect'),
+  disconnectAdmin: () => api.post('/whatsapp/admin/disconnect'),
+  setAutoSendAdmin: (enabled) => api.post('/whatsapp/admin/auto-send', { enabled }),
+  sendAdminTest: (to, message) => api.post('/whatsapp/admin/test', { to, message }),
+
+  // Endpoints universels (Admin si pas de partenaireId, Partenaire sinon)
+  getStatus: (partenaireId) =>
+    partenaireId ? api.get(`/whatsapp/partenaire/${partenaireId}/status`) : api.get('/whatsapp/admin/status'),
+  connect: (partenaireId) =>
+    partenaireId ? api.post(`/whatsapp/partenaire/${partenaireId}/connect`) : api.post('/whatsapp/admin/connect'),
+  disconnect: (partenaireId) =>
+    partenaireId ? api.post(`/whatsapp/partenaire/${partenaireId}/disconnect`) : api.post('/whatsapp/admin/disconnect'),
+  setAutoSend: (arg1, arg2) => {
+    if (typeof arg1 === 'boolean') {
+      return api.post('/whatsapp/admin/auto-send', { enabled: arg1 })
+    }
+    return api.post(`/whatsapp/partenaire/${arg1}/auto-send`, { enabled: arg2 })
+  },
+  sendTest: (arg1, arg2, arg3) => {
+    if (typeof arg1 === 'string') {
+      return api.post('/whatsapp/admin/test', { to: arg1, message: arg2 })
+    }
+    return api.post(`/whatsapp/partenaire/${arg1}/test`, { to: arg2, message: arg3 })
+  },
 }
 
 export default api

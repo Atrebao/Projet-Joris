@@ -8,7 +8,9 @@ import {
   Package,
   ShieldCheck,
   ShoppingCart,
-  Users
+  Users,
+  Wallet,
+  MessageSquare,
 } from 'lucide-react'
 import { DashboardShell, SaasTopBar } from '../components/saas/SaasPrimitives'
 
@@ -16,6 +18,8 @@ export default function LayoutAdmin() {
   const nav = [
     { to: '/backoffice', label: 'Vue globale', icon: LayoutDashboard, exact: true },
     { to: '/backoffice/partenaires', label: 'Partenaires', icon: Users },
+    { to: '/backoffice/reversements', label: 'Versements', icon: Wallet },
+    { to: '/backoffice/whatsapp', label: 'WhatsApp', icon: MessageSquare },
     { to: '/backoffice/offres', label: 'Offres', icon: Package },
     { to: '/backoffice/commandes', label: 'Commandes', icon: ShoppingCart },
     { to: '/backoffice/clients', label: 'Clients', icon: Users },

@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useState } from 'react'
-import { Download, Eye, Mail, Phone, Search, UserCheck, Users, UserX, Wallet } from 'lucide-react'
+import { useEffect, useState } from 'react'
+import { Download, Eye, Mail, Phone, Search, UserCheck, Users, UserX, Wallet, ChevronLeft, ChevronRight } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { usersAPI } from '../../lib/api'
 import ModalDetail from '../../components/ModalDetail'
@@ -22,57 +22,68 @@ export default function ClientsAdminPage() {
   const [loading, setLoading] = useState(true)
   const [recherche, setRecherche] = useState('')
   const [filtreStatut, setFiltreStatut] = useState('TOUS')
+  const [page, setPage] = useState(1)
+  const [totalPages, setTotalPages] = useState(1)
+  const [stats, setStats] = useState({ total: 0, actifs: 0, inactifs: 0, totalAchats: 0, revenuTotal: 0 })
   const [detailClient, setDetailClient] = useState(null)
   const [detailLoading, setDetailLoading] = useState(false)
 
-  useEffect(() => {
-    const loadClients = async () => {
-      try {
-        setLoading(true)
-        const { data } = await usersAPI.getClients({ search: recherche })
-        setClients((data || []).map((user) => ({
-          id: user.id,
-          nom: user.nom ? `${user.prenoms || ''} ${user.nom}`.trim() : user.username,
-          email: user.email,
-          telephone: user.numero || user.telephone || '-',
-          dateInscription: user.dateCreation,
-          nbAchats: user.nbAchats || 0,
-          totalDepense: user.totalDepense || 0,
-          statut: user.enabled !== false ? 'ACTIF' : 'INACTIF'
-        })))
-      } catch (error) {
-        console.error('Erreur chargement clients:', error)
-        toast.error('Impossible de charger les clients')
-        setClients([])
-      } finally {
-        setLoading(false)
+  const loadClients = async () => {
+    try {
+      setLoading(true)
+      const res = await usersAPI.getClients({
+        search: recherche.trim() || undefined,
+        statut: filtreStatut !== 'TOUS' ? filtreStatut : undefined,
+        page,
+        limit: 10,
+      })
+      const data = res?.data
+      if (data && typeof data === 'object' && !Array.isArray(data)) {
+        const rawList = data.data || []
+        setClients(
+          rawList.map((user) => ({
+            id: user.id,
+            nom: user.nom ? `${user.prenoms || ''} ${user.nom}`.trim() : user.username,
+            email: user.email,
+            telephone: user.numero || user.telephone || '-',
+            dateInscription: user.dateCreation,
+            nbAchats: user.nbAchats || 0,
+            totalDepense: user.totalDepense || 0,
+            statut: user.enabled !== false ? 'ACTIF' : 'INACTIF',
+          }))
+        )
+        setTotalPages(data.totalPages || 1)
+        if (data.stats) setStats(data.stats)
+      } else {
+        const rawList = Array.isArray(data) ? data : []
+        setClients(
+          rawList.map((user) => ({
+            id: user.id,
+            nom: user.nom ? `${user.prenoms || ''} ${user.nom}`.trim() : user.username,
+            email: user.email,
+            telephone: user.numero || user.telephone || '-',
+            dateInscription: user.dateCreation,
+            nbAchats: user.nbAchats || 0,
+            totalDepense: user.totalDepense || 0,
+            statut: user.enabled !== false ? 'ACTIF' : 'INACTIF',
+          }))
+        )
       }
+    } catch (error) {
+      console.error('Erreur chargement clients:', error)
+      toast.error('Impossible de charger les clients')
+      setClients([])
+    } finally {
+      setLoading(false)
     }
+  }
 
-    loadClients()
-  }, [recherche])
-
-  const clientsFiltres = useMemo(
-    () =>
-      clients.filter((client) => {
-        const query = recherche.toLowerCase()
-        const matchRecherche = `${client.nom || ''} ${client.email || ''}`.toLowerCase().includes(query)
-        const matchStatut = filtreStatut === 'TOUS' || client.statut === filtreStatut
-        return matchRecherche && matchStatut
-      }),
-    [clients, filtreStatut, recherche]
-  )
-
-  const stats = useMemo(
-    () => ({
-      total: clients.length,
-      actifs: clients.filter((client) => client.statut === 'ACTIF').length,
-      inactifs: clients.filter((client) => client.statut === 'INACTIF').length,
-      achats: clients.reduce((sum, client) => sum + Number(client.nbAchats || 0), 0),
-      revenu: clients.reduce((sum, client) => sum + Number(client.totalDepense || 0), 0)
-    }),
-    [clients]
-  )
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      loadClients()
+    }, 200)
+    return () => clearTimeout(timer)
+  }, [recherche, filtreStatut, page])
 
   const handleVoirClient = async (id) => {
     setDetailClient(null)
@@ -87,13 +98,13 @@ export default function ClientsAdminPage() {
     }
   }
 
-  if (loading) return <LoadingState label="Chargement des clients..." />
+  if (loading && clients.length === 0) return <LoadingState label="Chargement des clients..." />
 
   return (
     <>
       <PageHeader
         title="Clients"
-        description={`${clients.length} client(s) enregistrés sur la plateforme.`}
+        description={`${stats.total} client(s) enregistrés sur la plateforme.`}
         action={
           <Button variant="secondary">
             <Download className="h-4 w-4" />
@@ -106,8 +117,8 @@ export default function ClientsAdminPage() {
         <KpiCard label="Total clients" value={String(stats.total)} icon={Users} />
         <KpiCard label="Clients actifs" value={String(stats.actifs)} icon={UserCheck} accent="chart3" />
         <KpiCard label="Inactifs" value={String(stats.inactifs)} icon={UserX} accent="chart4" />
-        <KpiCard label="Achats" value={String(stats.achats)} icon={Wallet} accent="accent" />
-        <KpiCard label="Revenu total" value={formatFCFA(stats.revenu)} icon={Wallet} />
+        <KpiCard label="Achats" value={String(stats.totalAchats || 0)} icon={Wallet} accent="accent" />
+        <KpiCard label="Revenu total" value={formatFCFA(stats.revenuTotal || 0)} icon={Wallet} />
       </div>
 
       <Card className="p-4">
@@ -118,10 +129,19 @@ export default function ClientsAdminPage() {
               className="pl-9"
               placeholder="Rechercher par nom ou email..."
               value={recherche}
-              onChange={(event) => setRecherche(event.target.value)}
+              onChange={(event) => {
+                setRecherche(event.target.value)
+                setPage(1)
+              }}
             />
           </label>
-          <Select value={filtreStatut} onChange={(event) => setFiltreStatut(event.target.value)}>
+          <Select
+            value={filtreStatut}
+            onChange={(event) => {
+              setFiltreStatut(event.target.value)
+              setPage(1)
+            }}
+          >
             <option value="TOUS">Tous les statuts</option>
             <option value="ACTIF">Actifs</option>
             <option value="INACTIF">Inactifs</option>
@@ -130,7 +150,7 @@ export default function ClientsAdminPage() {
       </Card>
 
       <DataTable
-        data={clientsFiltres}
+        data={clients}
         emptyLabel="Aucun client trouvé"
         columns={[
           {
@@ -183,6 +203,38 @@ export default function ClientsAdminPage() {
           }
         ]}
       />
+
+      {totalPages > 1 && (
+        <div className="flex items-center justify-between px-4 py-3 border-t border-slate-100 bg-slate-50/50">
+          <span className="text-xs text-slate-500 font-medium">
+            Page <span className="font-bold text-slate-700">{page}</span> sur <span className="font-bold text-slate-700">{totalPages}</span>
+          </span>
+          
+          <div className="flex items-center gap-1.5">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setPage((p) => Math.max(1, p - 1))}
+              disabled={page === 1}
+              className="h-8 px-2 text-xs border-slate-200"
+            >
+              <ChevronLeft className="h-4 w-4 mr-1" />
+              Précédent
+            </Button>
+            
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+              disabled={page === totalPages}
+              className="h-8 px-2 text-xs border-slate-200"
+            >
+              Suivant
+              <ChevronRight className="h-4 w-4 ml-1" />
+            </Button>
+          </div>
+        </div>
+      )}
 
       <ModalDetail
         open={!!detailClient || detailLoading}

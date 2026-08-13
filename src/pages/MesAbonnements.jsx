@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Check, Copy, Eye, EyeOff, KeyRound, Loader, Mail, Wallet } from 'lucide-react'
+import { Check, Copy, Eye, EyeOff, KeyRound, Loader, Mail, Wallet, User, Phone, X } from 'lucide-react'
 import toast from 'react-hot-toast'
-import { souscriptionsAPI } from '../lib/api'
+import { souscriptionsAPI, clientsAPI } from '../lib/api'
 
 const formatFCFA = (value) => `${new Intl.NumberFormat('fr-FR').format(Number(value) || 0)} FCFA`
 
@@ -10,26 +10,49 @@ export default function MesAbonnements() {
   const navigate = useNavigate()
   const [abonnements, setAbonnements] = useState([])
   const [loading, setLoading] = useState(true)
-  const [emailInput, setEmailInput] = useState('')
   const [showGate, setShowGate] = useState(false)
   const [visiblePasswords, setVisiblePasswords] = useState({})
   const [copied, setCopied] = useState('')
+  const [infoUser, setInfoUser] = useState(null)
+  
+  // États pour le Modal d'Authentification
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false)
+  const [authMode, setAuthMode] = useState('login')
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  
+  // Formulaires
+  const [loginForm, setLoginForm] = useState({ username: '', telephone: '' })
+  const [registerForm, setRegisterForm] = useState({ 
+    nom: '', 
+    prenoms: '', 
+    username: '', 
+    email: '', 
+    telephone: '' 
+  })
 
   useEffect(() => {
-    const email = localStorage.getItem('customerEmail')
-    if (!email) {
+    const user = localStorage.getItem('infoUser')
+    if (!user) {
       setShowGate(true)
       setLoading(false)
       return
     }
-    setEmailInput(email)
-    fetchAbonnements(email)
+    
+    try {
+      const parsedUser = JSON.parse(user)
+      setInfoUser(parsedUser)
+      fetchAbonnements(parsedUser.username, parsedUser.telephone)
+    } catch (error) {
+      console.error(error)
+      setShowGate(true)
+      setLoading(false)
+    }
   }, [])
 
-  const fetchAbonnements = async (email) => {
+  const fetchAbonnements = async (pseudo, telephone) => {
     setLoading(true)
     try {
-      const { data } = await souscriptionsAPI.getByEmail(email)
+      const { data } = await souscriptionsAPI.getByPseudoAndNumero({ pseudo, numero: telephone })
       setAbonnements((data || []).map((sub) => ({
         id: sub.id,
         reference: sub.reference || '-',
@@ -55,15 +78,86 @@ export default function MesAbonnements() {
   const active = abonnements.filter((item) => item.status === 'active')
   const totalSpent = useMemo(() => abonnements.reduce((sum, item) => sum + Number(item.amount || 0), 0), [abonnements])
 
-  const submitEmail = (event) => {
-    event.preventDefault()
-    const email = emailInput.trim()
-    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      toast.error('Veuillez entrer une adresse email valide')
-      return
+  // Soumission Connexion
+  const handleLoginSubmit = async (e) => {
+    e.preventDefault()
+    if (!loginForm.username || !loginForm.telephone) {
+      return toast.error('Veuillez remplir tous les champs')
     }
-    localStorage.setItem('customerEmail', email)
-    fetchAbonnements(email)
+
+    setIsSubmitting(true)
+    try {
+      const data = await clientsAPI.getByPseudoAndNumero({
+        pseudo: loginForm.username,
+        numero: loginForm.telephone
+      })
+      
+      const userData = {
+        id: data.id,
+        username: data.pseudo || loginForm.username,
+        telephone: data.telephone || loginForm.telephone,
+        email: data.email,
+        nom: data.nom,
+        prenoms: data.prenoms,
+        token: data.token
+      }
+      
+      localStorage.setItem('infoUser', JSON.stringify(userData))
+      setInfoUser(userData)
+      
+      toast.success('Connexion réussie !')
+      setIsAuthModalOpen(false)
+      setLoginForm({ username: '', telephone: '' })
+      fetchAbonnements(data.pseudo || loginForm.username, data.telephone || loginForm.telephone)
+    } catch (error) {
+      console.error(error)
+      toast.error(error.response?.data?.message || 'Identifiants incorrects')
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
+  // Soumission Inscription
+  const handleRegisterSubmit = async (e) => {
+    e.preventDefault()
+    const { nom, prenoms, username, email, telephone } = registerForm
+    if (!nom || !prenoms || !username || !email || !telephone) {
+      return toast.error('Veuillez remplir tous les champs')
+    }
+
+    setIsSubmitting(true)
+    try {
+      const data = await clientsAPI.create({
+        nom,
+        prenoms,
+        pseudo: username,
+        email,
+        telephone
+      })
+
+      const userData = {
+        id: data.id,
+        username: data.pseudo || username,
+        email,
+        telephone,
+        nom,
+        prenoms,
+        token: data.token
+      }
+
+      localStorage.setItem('infoUser', JSON.stringify(userData))
+      setInfoUser(userData)
+
+      toast.success('Compte créé avec succès !')
+      setIsAuthModalOpen(false)
+      setRegisterForm({ nom: '', prenoms: '', username: '', email: '', telephone: '' })
+      fetchAbonnements(registerForm.username, registerForm.telephone)
+    } catch (error) {
+      console.error(error)
+      toast.error(error.response?.data?.message || 'Erreur lors de la création du compte')
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
   const copyValue = async (value, label) => {
@@ -74,33 +168,36 @@ export default function MesAbonnements() {
     setTimeout(() => setCopied(''), 1200)
   }
 
-  if (showGate) {
+  // Si l'utilisateur n'est pas connecté, afficher le modal
+  if (showGate && !isAuthModalOpen) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-background p-4">
-        <form onSubmit={submitEmail} className="w-full max-w-md rounded-2xl border border-border bg-card p-6 shadow-xl">
+        <div className="w-full max-w-md rounded-2xl border border-border bg-card p-6 shadow-xl">
           <div className="mb-5 flex items-center gap-3">
             <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary">
-              <Mail className="h-5 w-5" />
+              <KeyRound className="h-5 w-5" />
             </span>
             <div>
               <h1 className="text-xl font-bold">Espace Client</h1>
-              <p className="text-sm text-muted-foreground">Entrez l'email utilisé pendant l'achat.</p>
+              <p className="text-sm text-muted-foreground">Connectez-vous pour accéder à vos abonnements.</p>
             </div>
           </div>
-          <input
-            type="email"
-            value={emailInput}
-            onChange={(event) => setEmailInput(event.target.value)}
-            placeholder="vous@exemple.com"
-            className="h-11 w-full rounded-lg border border-input bg-card px-3 text-sm outline-none"
-          />
-          <button className="mt-4 h-11 w-full rounded-lg bg-primary px-4 text-sm font-semibold text-primary-foreground">
-            Accéder à mes abonnements
+          
+          <button
+            onClick={() => setIsAuthModalOpen(true)}
+            className="h-11 w-full rounded-lg bg-primary px-4 text-sm font-semibold text-primary-foreground hover:bg-primary/90 transition"
+          >
+            Se connecter
           </button>
-          <button type="button" onClick={() => navigate('/')} className="mt-2 h-10 w-full rounded-lg border border-border text-sm font-medium">
+          
+          <button
+            type="button"
+            onClick={() => navigate('/')}
+            className="mt-2 h-10 w-full rounded-lg border border-border text-sm font-medium hover:bg-muted transition"
+          >
             Retour au marketplace
           </button>
-        </form>
+        </div>
       </div>
     )
   }
@@ -116,9 +213,28 @@ export default function MesAbonnements() {
   return (
     <div className="min-h-screen bg-background text-foreground">
       <div className="mx-auto max-w-[1400px] space-y-8 px-4 py-8">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">Espace Client</h1>
-          <p className="text-muted-foreground">Gérez vos abonnements et retrouvez vos identifiants.</p>
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-bold tracking-tight">Espace Client</h1>
+            <p className="text-muted-foreground">Gérez vos abonnements et retrouvez vos identifiants.</p>
+            {infoUser && (
+              <p className="text-sm text-muted-foreground mt-1">
+                Bonjour {infoUser.prenoms || infoUser.nom || infoUser.username}
+              </p>
+            )}
+          </div>
+          <button
+            onClick={() => {
+              localStorage.removeItem('infoUser')
+              localStorage.removeItem('customerEmail')
+              setInfoUser(null)
+              setShowGate(true)
+              toast.success('Déconnecté')
+            }}
+            className="rounded-lg border border-border px-4 py-2 text-sm font-medium hover:bg-muted transition"
+          >
+            Se déconnecter
+          </button>
         </div>
 
         <div className="grid gap-4 sm:grid-cols-3">
@@ -175,6 +291,190 @@ export default function MesAbonnements() {
           )}
         </section>
       </div>
+
+      {/* MODAL D'AUTHENTIFICATION */}
+      {isAuthModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+          <div className="w-full max-w-md rounded-2xl border border-border bg-card p-6 shadow-xl relative">
+            
+            <button 
+              onClick={() => setIsAuthModalOpen(false)}
+              className="absolute right-4 top-4 rounded-md p-1.5 text-muted-foreground hover:bg-muted transition-colors"
+            >
+              <X className="h-5 w-5" />
+            </button>
+
+            <div className="text-center mb-6">
+              <h2 className="text-2xl font-bold tracking-tight text-slate-900">
+                {authMode === 'login' ? 'Connexion requise' : 'Créer un compte'}
+              </h2>
+              <p className="text-xs text-muted-foreground mt-1">
+                {authMode === 'login' 
+                  ? 'Connectez-vous pour accéder à vos abonnements.' 
+                  : 'Créez un compte pour suivre vos abonnements.'}
+              </p>
+            </div>
+
+            {authMode === 'login' ? (
+              <form onSubmit={handleLoginSubmit} className="space-y-4">
+                <div className="space-y-1.5">
+                  <label className="text-xs font-semibold text-slate-700">Identifiant / Username</label>
+                  <div className="flex items-center gap-2 rounded-xl border border-border bg-slate-50 p-2.5 focus-within:border-primary focus-within:bg-card transition-all">
+                    <User className="h-4 w-4 text-muted-foreground" />
+                    <input 
+                      type="text" 
+                      required
+                      placeholder="Ex: akasuki_user"
+                      value={loginForm.username}
+                      onChange={(e) => setLoginForm({...loginForm, username: e.target.value})}
+                      className="w-full bg-transparent text-sm outline-none"
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-xs font-semibold text-slate-700">Numéro de téléphone</label>
+                  <div className="flex items-center gap-2 rounded-xl border border-border bg-slate-50 p-2.5 focus-within:border-primary focus-within:bg-card transition-all">
+                    <Phone className="h-4 w-4 text-muted-foreground" />
+                    <input 
+                      type="tel" 
+                      required
+                      placeholder="Ex: 0700000000"
+                      value={loginForm.telephone}
+                      onChange={(e) => setLoginForm({...loginForm, telephone: e.target.value})}
+                      className="w-full bg-transparent text-sm outline-none"
+                    />
+                  </div>
+                </div>
+
+                <button 
+                  type="submit" 
+                  disabled={isSubmitting}
+                  className="w-full h-11 mt-2 rounded-xl bg-primary text-sm font-semibold text-primary-foreground shadow-sm transition hover:bg-primary/90 flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
+                >
+                  {isSubmitting ? (
+                    <>
+                      <Loader className="h-4 w-4 animate-spin" />
+                      Connexion en cours...
+                    </>
+                  ) : (
+                    'Se connecter'
+                  )}
+                </button>
+
+                <p className="text-center text-xs text-muted-foreground mt-4">
+                  Nouveau sur Richesses ?{' '}
+                  <button type="button" onClick={() => setAuthMode('register')} className="text-primary font-bold hover:underline">
+                    Créer un compte
+                  </button>
+                </p>
+              </form>
+            ) : (
+              <form onSubmit={handleRegisterSubmit} className="space-y-3.5">
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-semibold text-slate-700">Nom</label>
+                    <div className="flex items-center gap-2 rounded-xl border border-border bg-slate-50 p-2.5 focus-within:border-primary focus-within:bg-card transition-all">
+                      <User className="h-4 w-4 text-muted-foreground" />
+                      <input 
+                        type="text" 
+                        required
+                        placeholder="Dupont"
+                        value={registerForm.nom}
+                        onChange={(e) => setRegisterForm({...registerForm, nom: e.target.value})}
+                        className="w-full bg-transparent text-sm outline-none"
+                      />
+                    </div>
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-semibold text-slate-700">Prénoms</label>
+                    <div className="flex items-center gap-2 rounded-xl border border-border bg-slate-50 p-2.5 focus-within:border-primary focus-within:bg-card transition-all">
+                      <User className="h-4 w-4 text-muted-foreground" />
+                      <input 
+                        type="text" 
+                        required
+                        placeholder="Jean"
+                        value={registerForm.prenoms}
+                        onChange={(e) => setRegisterForm({...registerForm, prenoms: e.target.value})}
+                        className="w-full bg-transparent text-sm outline-none"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-semibold text-slate-700">Pseudo / Username</label>
+                    <div className="flex items-center gap-2 rounded-xl border border-border bg-slate-50 p-2.5 focus-within:border-primary focus-within:bg-card transition-all">
+                      <User className="h-4 w-4 text-muted-foreground" />
+                      <input 
+                        type="text" 
+                        required
+                        placeholder="jean_dupont"
+                        value={registerForm.username}
+                        onChange={(e) => setRegisterForm({...registerForm, username: e.target.value})}
+                        className="w-full bg-transparent text-sm outline-none"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-semibold text-slate-700">Email</label>
+                    <div className="flex items-center gap-2 rounded-xl border border-border bg-slate-50 p-2.5 focus-within:border-primary focus-within:bg-card transition-all">
+                      <Mail className="h-4 w-4 text-muted-foreground" />
+                      <input 
+                        type="email" 
+                        required
+                        placeholder="jean.dupont@email.com"
+                        value={registerForm.email}
+                        onChange={(e) => setRegisterForm({...registerForm, email: e.target.value})}
+                        className="w-full bg-transparent text-sm outline-none"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-xs font-semibold text-slate-700">Numéro de téléphone</label>
+                  <div className="flex items-center gap-2 rounded-xl border border-border bg-slate-50 p-2.5 focus-within:border-primary focus-within:bg-card transition-all">
+                    <Phone className="h-4 w-4 text-muted-foreground" />
+                    <input 
+                      type="tel" 
+                      required
+                      placeholder="0700000000"
+                      value={registerForm.telephone}
+                      onChange={(e) => setRegisterForm({...registerForm, telephone: e.target.value})}
+                      className="w-full bg-transparent text-sm outline-none"
+                    />
+                  </div>
+                </div>
+
+                <button 
+                  type="submit" 
+                  disabled={isSubmitting}
+                  className="w-full h-11 mt-2 rounded-xl bg-primary text-sm font-semibold text-primary-foreground shadow-sm transition hover:bg-primary/90 flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
+                >
+                  {isSubmitting ? (
+                    <>
+                      <Loader className="h-4 w-4 animate-spin" />
+                      Inscription en cours...
+                    </>
+                  ) : (
+                    "S'inscrire"
+                  )}
+                </button>
+
+                <p className="text-center text-xs text-muted-foreground mt-4">
+                  Déjà un compte ?{' '}
+                  <button type="button" onClick={() => setAuthMode('login')} className="text-primary font-bold hover:underline">
+                    Se connecter
+                  </button>
+                </p>
+              </form>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   )
 }
