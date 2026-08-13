@@ -1,13 +1,12 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { 
-  BookOpen, Gamepad2, Gift, Headphones, Loader, Search, 
-  ShieldCheck, Sparkles, Tv, Zap, Store, ShoppingBag, Tag,
-  User, Phone, Mail, Lock, X 
+  Loader, Search, ShieldCheck, Sparkles, Store, Zap, 
+  User, Phone, Mail, X 
 } from 'lucide-react'
 import { abonnementsAPI, clientsAPI } from '../lib/api'
 import toast from 'react-hot-toast'
-import { CATEGORIES, OPERATOR_BADGES } from '@/Utils/Utils'
+import { CATEGORIES, OPERATOR_BADGES, getServiceMeta, normalizeOffer } from '@/Utils/Utils'
 
 const formatFCFA = (value) => `${new Intl.NumberFormat('fr-FR').format(Number(value) || 0)} FCFA`
 
@@ -38,8 +37,13 @@ export default function HomeNouvelle() {
     const load = async () => {
       setLoading(true)
       try {
-        const { data } = await abonnementsAPI.getAll()
-        setOffres((Array.isArray(data) ? data : []).map(normalizeOffer))
+        const { data } = await abonnementsAPI.getAll({
+          search: query.trim() || undefined,
+          categorie: category || undefined,
+          statut: 'ACTIF',
+        })
+        const items = Array.isArray(data) ? data : (data?.data || [])
+        setOffres(items.map(normalizeOffer))
       } catch (error) {
         console.error(error)
         toast.error('Impossible de charger les offres')
@@ -48,8 +52,13 @@ export default function HomeNouvelle() {
         setLoading(false)
       }
     }
-    load()
-  }, [])
+
+    const timer = setTimeout(() => {
+      load()
+    }, 200)
+
+    return () => clearTimeout(timer)
+  }, [query, category])
 
   // Vérification au clic sur Acheter
   const handleBuyClick = (offerId) => {
@@ -91,8 +100,6 @@ export default function HomeNouvelle() {
       }
 
       localStorage.setItem('infoUser', JSON.stringify(infoUser))
-      
-      
       toast.success('Connexion réussie !')
       setIsAuthModalOpen(false)
       setLoginForm({ username: '', telephone: '' })
@@ -145,14 +152,7 @@ export default function HomeNouvelle() {
     }
   }
 
-  const filtered = useMemo(() => {
-    return offres.filter((offre) => {
-      const inCategory = !category || offre.categorie === category
-      const text = `${offre.nom} ${offre.description}`.toLowerCase()
-      const matchQuery = !query.trim() || text.includes(query.toLowerCase())
-      return inCategory && matchQuery
-    })
-  }, [offres, category, query])
+  const filtered = offres
 
   return (
     <div className="min-h-screen bg-background text-foreground relative">
@@ -519,35 +519,23 @@ export function ServiceLogo({ offer, size = 'md' }) {
     lg: 'h-14 w-14 text-base rounded-2xl'
   }
 
-  if (offer.image) {
-    return <img src={offer.image} alt={offer.nom} className={`${sizes[size]} shrink-0 object-cover shadow-sm`} />
+  const meta = getServiceMeta(offer?.service || offer?.nom || '')
+
+  if (offer?.image) {
+    return <img src={offer.image} alt={offer?.nom || 'Logo'} className={`${sizes[size]} shrink-0 object-cover shadow-sm`} />
   }
 
   return (
-    <span className={`${sizes[size]} inline-flex shrink-0 items-center justify-center bg-primary font-bold text-primary-foreground shadow-sm`}>
-      {getInitials(offer.nom)}
+    <span
+      className={`${sizes[size]} inline-flex shrink-0 items-center justify-center font-bold text-white shadow-sm`}
+      style={{ backgroundColor: meta.color || '#0ea5e9' }}
+    >
+      {meta.initials || getInitials(offer?.nom || '')}
     </span>
   )
 }
 
 // ================= FONCTIONS UTILITAIRES =================
-
-function normalizeOffer(offre = {}) {
-  const firstPlan = offre.forfaits?.[0] || {}
-  return {
-    id: offre.id,
-    nom: offre.nom || offre.nomService || 'Offre',
-    description: offre.description || `Profitez de ${offre.nom || offre.nomService}`,
-    categorie: offre.categorie || '',
-    image: offre.image || offre.imageService || '',
-    prix: Number(firstPlan.prix || offre.prixMensuel || 0),
-    periode: firstPlan.periode || 'mois',
-    duree: Number(firstPlan.duree || offre.duree || 1),
-    stock: Number(offre.stock ?? offre.quantiteDisponible ?? 0),
-    partenaire: offre.partenaire?.nomBoutique || offre.partenaire?.nom || 'DigiStore CI',
-    forfaits: offre.forfaits || []
-  }
-}
 
 function getInitials(value = '') {
   return value

@@ -1,10 +1,10 @@
-import { useEffect, useMemo, useState } from 'react'
-import { Truck, Search, ShoppingBag, Wallet, Clock, CheckCircle2, PackageCheck } from 'lucide-react'
+import { useEffect, useState } from 'react'
+import { Truck, Search, ShoppingBag, Wallet, Clock, CheckCircle2, PackageCheck, ChevronLeft, ChevronRight } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { getPartenaireId } from '../../Utils/Utils'
 import { souscriptionsAPI } from '../../lib/api'
+import { onSocketEvent } from '../../lib/socket'
 import {
-  Badge,
   Button,
   Card,
   DataTable,
@@ -29,60 +29,61 @@ export default function CommandesPartenairePage() {
   const [selected, setSelected] = useState(null)
   const [delivery, setDelivery] = useState(emptyDelivery)
   const [submitting, setSubmitting] = useState(false)
+  const [page, setPage] = useState(1)
+  const [totalPages, setTotalPages] = useState(1)
+  const [stats, setStats] = useState({ total: 0, payees: 0, aLivrer: 0, livrees: 0, revenu: 0 })
 
-  const loadCommandes = async () => {
+  const loadCommandes = async (isBackground = false) => {
     if (!partenaireId) return
-    setLoading(true)
+    if (!isBackground) setLoading(true)
     try {
-      const { data } = await souscriptionsAPI.getSouscriptionsByPartenaire(partenaireId)
-      setCommandes(Array.isArray(data) ? data : [])
+      const res = await souscriptionsAPI.getSouscriptionsByPartenaire(partenaireId, {
+        search: query.trim() || undefined,
+        activeFilter: activeFilter !== 'TOUT' ? activeFilter : undefined,
+        page,
+        limit: 10,
+      })
+      const data = res?.data
+      if (data && typeof data === 'object' && !Array.isArray(data)) {
+        setCommandes(data.data || [])
+        setTotalPages(data.totalPages || 1)
+        if (data.stats) setStats(data.stats)
+      } else {
+        setCommandes(Array.isArray(data) ? data : [])
+      }
     } catch (error) {
       console.error('Erreur chargement commandes partenaire :', error)
-      toast.error('Impossible de charger les commandes')
+      if (!isBackground) toast.error('Impossible de charger les commandes')
       setCommandes([])
     } finally {
-      setLoading(false)
+      if (!isBackground) setLoading(false)
     }
   }
 
   useEffect(() => {
-    loadCommandes()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [partenaireId])
+    const timer = setTimeout(() => {
+      loadCommandes()
+    }, 200)
+    return () => clearTimeout(timer)
+  }, [partenaireId, query, activeFilter, page])
 
-  const stats = useMemo(() => {
-    const payees = commandes.filter((c) => c.statutPaiement === 'SUCCES')
-    const aLivrer = payees.filter((c) => !c.isLivred && c.etatSouscription !== 'LIVRE')
-    const livrees = payees.filter((c) => c.isLivred || c.etatSouscription === 'LIVRE')
-    const revenu = payees.reduce((sum, c) => sum + Number(c.montantPartenaire ?? c.montantTotal ?? c.montant ?? 0), 0)
-    return { total: commandes.length, payees: payees.length, aLivrer: aLivrer.length, livrees: livrees.length, revenu }
-  }, [commandes])
-
-  const filteredCommandes = useMemo(() => {
-    const value = query.trim().toLowerCase()
-    return commandes.filter((commande) => {
-      const delivered = commande.isLivred || commande.etatSouscription === 'LIVRE'
-      const paid = commande.statutPaiement === 'SUCCES'
-      const filterMatch =
-        activeFilter === 'TOUT' ||
-        (activeFilter === 'A_LIVRER' && paid && !delivered) ||
-        (activeFilter === 'LIVREES' && delivered) ||
-        (activeFilter === 'PAYEES' && paid)
-      const textMatch = [
-        commande.reference,
-        commande.emailClient,
-        commande.client?.email,
-        commande.user?.email,
-        commande.abonnement?.nom,
-        commande.offrePartenaire?.nom,
-      ]
-        .filter(Boolean)
-        .join(' ')
-        .toLowerCase()
-        .includes(value)
-      return filterMatch && (!value || textMatch)
+  useEffect(() => {
+    const unsubOrder = onSocketEvent('nouvelle_commande', () => {
+      loadCommandes(true)
     })
-  }, [commandes, query, activeFilter])
+    const unsubDelivery = onSocketEvent('commande_livree', () => {
+      loadCommandes(true)
+    })
+    const unsubStats = onSocketEvent('stats_updated', () => {
+      loadCommandes(true)
+    })
+
+    return () => {
+      unsubOrder()
+      unsubDelivery()
+      unsubStats()
+    }
+  }, [partenaireId, query, activeFilter, page])
 
   const openDelivery = (commande) => {
     setSelected(commande)
@@ -110,7 +111,7 @@ export default function CommandesPartenairePage() {
     }
   }
 
-  if (loading) return <LoadingState label="Chargement des ventes partenaire..." />
+  if (loading && commandes.length === 0) return <LoadingState label="Chargement des ventes partenaire..." />
 
   return (
     <div className="space-y-6">
@@ -133,7 +134,10 @@ export default function CommandesPartenairePage() {
             <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input
               value={query}
-              onChange={(event) => setQuery(event.target.value)}
+              onChange={(event) => {
+                setQuery(event.target.value)
+                setPage(1)
+              }}
               placeholder="Rechercher reference, client, offre..."
               className="pl-9"
             />
@@ -150,7 +154,10 @@ export default function CommandesPartenairePage() {
                 type="button"
                 variant={activeFilter === value ? 'primary' : 'secondary'}
                 size="sm"
-                onClick={() => setActiveFilter(value)}
+                onClick={() => {
+                  setActiveFilter(value)
+                  setPage(1)
+                }}
               >
                 {label}
               </Button>
@@ -166,112 +173,124 @@ export default function CommandesPartenairePage() {
           description="Les ventes de vos offres apparaitront ici des qu'un client paie une souscription."
         />
       ) : (
-        <DataTable
-          data={filteredCommandes}
-          emptyLabel="Aucune commande ne correspond au filtre."
-          columns={[
-            {
-              key: 'offre',
-              label: 'Offre',
-              render: (commande) => (
-                <div className="flex items-center gap-3">
-                  <ServiceLogo name={commande.abonnement?.nom || 'Offre'} image={commande.abonnement?.image} size="sm" />
-                  <div>
-                    <p className="font-medium text-foreground">{commande.abonnement?.nom || 'Offre'}</p>
-                    <p className="text-xs text-muted-foreground">{commande.reference || '-'}</p>
+        <>
+          <DataTable
+            data={commandes}
+            emptyLabel="Aucune commande ne correspond au filtre."
+            columns={[
+              {
+                key: 'offre',
+                label: 'Offre',
+                render: (commande) => (
+                  <div className="flex items-center gap-3">
+                    <ServiceLogo name={commande.abonnement?.nom || 'Offre'} image={commande.abonnement?.image} size="sm" />
+                    <div>
+                      <p className="font-medium text-foreground">{commande.abonnement?.nom || 'Offre'}</p>
+                      <p className="text-xs text-muted-foreground">{commande.reference || '-'}</p>
+                    </div>
                   </div>
-                </div>
-              ),
-            },
-            {
-              key: 'client',
-              label: 'Client',
-              render: (commande) => (
-                <div>
-                  <p className="font-medium text-foreground">{commande.client?.nom || commande.user?.nom || 'Client'}</p>
-                  <p className="text-xs text-muted-foreground">{commande.emailClient || commande.client?.email || commande.user?.email || '-'}</p>
-                </div>
-              ),
-            },
-            { key: 'montant', label: 'Montant', render: (commande) => <span className="font-semibold">{formatFCFA(commande.montantPartenaire ?? commande.montantTotal ?? commande.montant)}</span> },
-            { key: 'paiement', label: 'Paiement', render: (commande) => <StatusBadge status={commande.statutPaiement} /> },
-           {
-              key: 'livraison',
-              label: 'Livraison',
-              render: (commande) => { 
-                let message = 'EN ATTENTE';
-                let statusLivraison = 'warning';
+                ),
+              },
+              {
+                key: 'client',
+                label: 'Client',
+                render: (commande) => (
+                  <div>
+                    <p className="font-medium text-foreground">{commande.client?.nom || commande.user?.nom || 'Client'}</p>
+                    <p className="text-xs text-muted-foreground">{commande.emailClient || commande.client?.email || commande.user?.email || '-'}</p>
+                  </div>
+                ),
+              },
+              {
+                key: 'montant',
+                label: 'Montant',
+                render: (commande) => (
+                  <span className="font-semibold">
+                    {formatFCFA(commande.montantPartenaire ?? commande.montantTotal ?? commande.montant)}
+                  </span>
+                ),
+              },
+              {
+                key: 'paiement',
+                label: 'Paiement',
+                render: (commande) => <StatusBadge status={commande.statutPaiement} />,
+              },
+              {
+                key: 'livraison',
+                label: 'Livraison',
+                render: (commande) => {
+                  if (commande.isLivred || commande.etatSouscription === 'ACTIF' || commande.etatSouscription === 'LIVRE') {
+                    return <StatusBadge status="LIVRE" />
+                  } else if (commande.statutPaiement === 'ECHEC') {
+                    return <StatusBadge status="ECHEC" />
+                  } else {
+                    return <StatusBadge status="EN_ATTENTE" />
+                  }
+                },
+              },
+              {
+                key: 'date',
+                label: 'Date',
+                render: (commande) => (commande.dateCreation ? new Date(commande.dateCreation).toLocaleDateString('fr-FR') : '-'),
+              },
+              {
+                key: 'actions',
+                label: '',
+                className: 'text-right',
+                cellClassName: 'text-right',
+                render: (commande) => {
+                  if (commande.statutPaiement === 'SUCCES') {
+                    if (commande.etatSouscription === 'INACTIF' || !commande.isLivred) {
+                      return (
+                        <Button size="sm" variant="primary" onClick={() => openDelivery(commande)}>
+                          <Truck className="h-4 w-4" />
+                          Livrer
+                        </Button>
+                      )
+                    }
+                    if (commande.etatSouscription === 'ACTIF' || commande.isLivred) {
+                      return (
+                        <Button size="sm" variant="secondary" onClick={() => openDelivery(commande)}>
+                          <Truck className="h-4 w-4" />
+                          Voir
+                        </Button>
+                      )
+                    }
+                  }
+                  return null
+                },
+              },
+            ]}
+          />
 
-                
-                if (commande.isLivred || commande.etatSouscription === 'ACTIF' || commande.etatSouscription === 'LIVRE') {
-                  message = 'LIVRÉE';
-                  statusLivraison = 'success';
-                } 
-               
-                else if (commande.statutPaiement === 'ECHEC') {
-                  message = 'ANNULÉE';
-                  statusLivraison = 'danger';
-                }
-                
-                else {
-                  message = 'EN ATTENTE';
-                  statusLivraison = 'warning';
-                }
-
-                return <StatusBadge status={message} tone={statusLivraison} />;
-              }, 
-            },
-
-            {
-              key: 'date',
-              label: 'Date',
-              render: (commande) => commande.dateCreation ? new Date(commande.dateCreation).toLocaleDateString('fr-FR') : '-',
-            },
-            {
-  key: 'actions',
-  label: '',
-  className: 'text-right',
-  cellClassName: 'text-right',
-  render: (commande) => {
-   
-    if (commande.statutPaiement === 'SUCCES') {
-      
-        
-          if (commande.etatSouscription === 'INACTIF' || !commande.isLivred) {
-            return (
-              <Button
-                size="sm"
-                variant="primary"
-                onClick={() => openDelivery(commande)}
-              >
-                <Truck className="h-4 w-4" />
-                Livrer
-              </Button>
-            );
-          }
-          
-          // Si l'état est ACTIF -> On affiche le bouton pour Voir les détails
-          if (commande.etatSouscription === 'ACTIF' || commande.isLivred) {
-            return (
-              <Button
-                size="sm"
-                variant="secondary"
-                onClick={() => openDelivery(commande)}
-              >
-                <Truck className="h-4 w-4" />
-                Voir
-              </Button>
-            );
-          }
-        }
-
-      
-        return null;
-      },
-    }
-
-          ]}
-        />
+          {totalPages > 1 && (
+            <div className="flex items-center justify-between border-t border-border pt-4">
+              <span className="text-xs text-muted-foreground">
+                Page {page} sur {totalPages}
+              </span>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  disabled={page <= 1}
+                  onClick={() => setPage((p) => Math.max(1, p - 1))}
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                  Précédent
+                </Button>
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  disabled={page >= totalPages}
+                  onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                >
+                  Suivant
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+          )}
+        </>
       )}
 
       {selected && (

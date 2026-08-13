@@ -2,9 +2,9 @@ import { useEffect, useMemo, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { ArrowLeft, CheckCircle2, Loader, Smartphone, X } from 'lucide-react'
 import toast from 'react-hot-toast'
-import api, { abonnementsAPI, clientsAPI, codesPromoAPI, souscriptionsAPI, usersAPI } from '../lib/api'
+import { abonnementsAPI, codesPromoAPI, souscriptionsAPI } from '../lib/api'
 import { ServiceLogo } from './HomeNouvelle'
-import { OPERATOR_BADGES } from '@/Utils/Utils'
+import { OPERATOR_BADGES, normalizeOffer } from '@/Utils/Utils'
 
 const formatFCFA = (value) => `${new Intl.NumberFormat('fr-FR').format(Number(value) || 0)} FCFA`
 
@@ -25,12 +25,9 @@ export default function DetailOffre() {
   const [hasPromo, setHasPromo] = useState(false)
   const [clientData, setClientData] = useState(null)
 
-
   useEffect(() => {
     const fetchClientData = async () => {
       const dataClient = localStorage.getItem('infoUser')
-     
-      
       if (!dataClient) {
         navigate('/')
         return
@@ -40,7 +37,6 @@ export default function DetailOffre() {
         const data = JSON.parse(dataClient)
         setClientData(data)
         setEmail(data.email || '')
-        
       } catch (error) {
         console.error('Erreur lors de la récupération du client:', error)
         navigate('/')
@@ -75,7 +71,7 @@ export default function DetailOffre() {
     return offre.forfaits.find((forfait) => String(forfait.id) === String(selectedForfaitId)) || offre.forfaits[0]
   }, [offre, selectedForfaitId])
 
-  const amount = Number(selectedForfait?.prix || offre?.prix || 0)
+  const amount = Number(offre?.prix || 0)
   const discount = Number(promo?.remiseXof || 0)
   const total = Math.max(0, amount - discount)
 
@@ -143,8 +139,6 @@ export default function DetailOffre() {
         numeroClient: numeroClient.replace(/\s/g, ''),
         codePromo: promo?.codePromo
       }))
-
-    
 
       setSuccess(true)
       setTimeout(() => {
@@ -222,7 +216,7 @@ export default function DetailOffre() {
               <ServiceLogo offer={offre} size="lg" />
               <div className="min-w-0 flex-1">
                 <p className="truncate font-semibold">{offre.nom}</p>
-                <p className="text-sm text-muted-foreground">{selectedForfait?.duree || offre.duree} mois · {offre.partenaire}</p>
+                <p className="text-sm text-muted-foreground">{selectedForfait?.duree || offre.duree} {selectedForfait?.periode || 'mois'} · {offre.partenaire}</p>
               </div>
               <p className="font-bold text-primary">{formatFCFA(total)}</p>
             </div>
@@ -237,7 +231,7 @@ export default function DetailOffre() {
                 >
                   {offre.forfaits.map((forfait) => (
                     <option key={forfait.id} value={forfait.id}>
-                      {forfait.plan || `${forfait.duree} ${forfait.periode || 'mois'}`} - {formatFCFA(forfait.prix)}
+                      {forfait.plan || `${forfait.duree} ${forfait.periode || 'mois'}`}
                     </option>
                   ))}
                 </select>
@@ -368,26 +362,4 @@ export default function DetailOffre() {
       </div>
     </div>
   )
-}
-
-function normalizeOffer(data = {}) {
-  const forfaits = Array.isArray(data.forfaits) && data.forfaits.length > 0
-    ? data.forfaits
-    : [{ id: data.id, plan: 'Standard', prix: data.prixMensuel || 0, duree: data.duree || 1 }]
-
-  return {
-    id: data.id,
-    nom: data.nom || data.nomService || 'Offre',
-    description: data.description || '',
-    image: data.image || data.imageService || '',
-    prix: Number(forfaits[0]?.prix || 0),
-    duree: Number(forfaits[0]?.duree || 1),
-    stock: Number(data.stock ?? data.quantiteDisponible ?? 0),
-    partenaire: data.partenaire?.nomBoutique || data.partenaire?.nom || 'DigiStore CI',
-    partenaireId: data.partenaire?.id,
-    forfaits: forfaits.map(f => ({
-      ...f,
-      periode: f.periode || f.prediode || 'mois'
-    }))
-  }
 }

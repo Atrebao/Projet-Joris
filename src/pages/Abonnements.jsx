@@ -95,7 +95,7 @@ export default function Abonnements() {
           },
           { key: 'description', label: 'Description', render: (item) => <span className="line-clamp-1 text-muted-foreground">{item.description || '-'}</span> },
           { key: 'forfaits', label: 'Forfaits', render: (item) => item.forfaits?.length || item.forfaitOffres?.length || 0 },
-          { key: 'prix', label: 'Prix', render: (item) => formatFCFA(item.forfaits?.[0]?.prix || item.forfaitOffres?.[0]?.forfait?.prix || 0) },
+          { key: 'prix', label: 'Prix', render: (item) => formatFCFA(item.prixVente ?? item.prixOriginal ?? item.prix ?? 0) },
           { key: 'statut', label: 'Statut', render: (item) => <StatusBadge status={item.isDeleted ? 'SUSPENDU' : 'ACTIF'} /> }
         ]}
       />

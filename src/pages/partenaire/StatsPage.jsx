@@ -1,9 +1,9 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { BarChart3, Calendar, Package, ShoppingCart, TrendingUp, Users, Wallet } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { getPartenaireId } from '../../Utils/Utils'
-import { statsAPI, offresAPI, souscriptionsAPI } from '../../lib/api'
+import { statsAPI } from '../../lib/api'
 import { Badge, Card, DataTable, KpiCard, LoadingState, PageHeader, Select, formatFCFA } from '../../components/saas/SaasPrimitives'
 
 export default function StatsPage() {
@@ -31,48 +31,20 @@ export default function StatsPage() {
     const loadStats = async () => {
       setLoading(true)
       try {
-        const [statsRes, offresRes, souscriptionsRes] = await Promise.all([
-          statsAPI.partenaireDashboard(partenaireId),
-          offresAPI.getByPartenaire(partenaireId),
-          souscriptionsAPI.getByPartenaire(partenaireId),
-        ])
-        const s = statsRes?.data || {}
-        const subs = (souscriptionsRes?.data || []).filter((x) => x?.statutPaiement === 'SUCCES')
-
-        const now = new Date()
-        const days = []
-        for (let i = 6; i >= 0; i -= 1) {
-          const d = new Date(now)
-          d.setDate(now.getDate() - i)
-          d.setHours(0, 0, 0, 0)
-          const dayCount = subs.filter((sub) => {
-            const c = new Date(sub.dateCreation)
-            c.setHours(0, 0, 0, 0)
-            return c.getTime() === d.getTime()
-          }).length
-          days.push({ jour: d.toLocaleDateString('fr-FR', { weekday: 'short' }), ventes: dayCount })
-        }
-        setVentesParJour(days)
-
-        const byOffre = new Map()
-        subs.forEach((sub) => {
-          const nom = sub?.abonnement?.nom || 'Offre'
-          const current = byOffre.get(nom) || { nom, ventes: 0, revenu: 0 }
-          current.ventes += 1
-          current.revenu += Number(sub?.montantPartenaire ?? sub?.montantTotal ?? sub?.montant ?? 0)
-          byOffre.set(nom, current)
-        })
-        setOffreTop(Array.from(byOffre.values()).sort((a, b) => b.ventes - a.ventes).slice(0, 5))
+        const res = await statsAPI.partenaireDetailedStats(partenaireId)
+        const s = res?.data || {}
 
         setStats({
-          ventesMois: subs.length,
+          ventesMois: s.ventesMois ?? s.totalVentes ?? 0,
           revenuMois: s.revenusMois ?? 0,
           offresMois: s.offresActives ?? 0,
           clientsMois: s.clientsUniques ?? 0,
-          tendance: `${(s.croissance ?? 0) >= 0 ? '+' : ''}${Number(s.croissance ?? 0).toFixed(1)}%`,
-          meilleurOffre: offresRes?.data?.[0]?.nomService || offresRes?.data?.[0]?.nom || '-',
-          categorieTop: offresRes?.data?.[0]?.categorie || '-',
+          tendance: s.tendance || '+0%',
+          meilleurOffre: s.meilleurOffre || '-',
+          categorieTop: s.categorieTop || '-',
         })
+        setVentesParJour(s.ventesParJour || [])
+        setOffreTop(s.offreTop || [])
       } catch (error) {
         console.error(error)
         toast.error('Impossible de charger les statistiques')
@@ -96,7 +68,7 @@ export default function StatsPage() {
   ]
 
   const maxVentes = Math.max(1, ...ventesParJourAffichage.map((v) => v.ventes))
-  const totalTopRevenue = useMemo(() => offreTop.reduce((sum, offre) => sum + Number(offre.revenu || 0), 0), [offreTop])
+  const totalTopRevenue = offreTop.reduce((sum, offre) => sum + Number(offre.revenu || 0), 0)
 
   if (loading) return <LoadingState label="Chargement des statistiques..." />
 
@@ -110,7 +82,7 @@ export default function StatsPage() {
             <option value="semaine">Cette semaine</option>
             <option value="mois">Ce mois</option>
             <option value="trimestre">Ce trimestre</option>
-            <option value="annee">Cette annee</option>
+            <option value="annee">Cette année</option>
           </Select>
         }
       />
@@ -133,7 +105,7 @@ export default function StatsPage() {
           </div>
           <div className="space-y-3">
             {ventesParJourAffichage.map((jour) => (
-              <div key={jour.jour} className="grid grid-cols-[3rem_1fr_2rem] items-center gap-3">
+              <div key={jour.date || jour.jour} className="grid grid-cols-[3rem_1fr_2rem] items-center gap-3">
                 <span className="text-sm font-medium text-muted-foreground">{jour.jour}</span>
                 <div className="h-8 overflow-hidden rounded-full bg-muted">
                   <div
@@ -181,7 +153,7 @@ export default function StatsPage() {
           <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-lg bg-accent text-accent-foreground">
             <Calendar className="h-5 w-5" />
           </div>
-          <p className="text-sm text-muted-foreground">Categorie leader</p>
+          <p className="text-sm text-muted-foreground">Catégorie leader</p>
           <p className="mt-1 text-xl font-bold text-foreground">{stats.categorieTop}</p>
         </Card>
       </div>

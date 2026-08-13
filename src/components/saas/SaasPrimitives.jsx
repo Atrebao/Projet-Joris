@@ -129,7 +129,17 @@ export function ServiceLogo({ name = 'Service', color, size = 'md', image }) {
 
 export function StatusBadge({ status }) {
   const normalized = String(status || '').toUpperCase()
-  if (['ACTIF', 'SUCCES', 'SUCCESS', 'LIVRE', 'LIVREE', 'VALIDATED'].includes(normalized)) return <Badge tone="success">SUCCES</Badge>
+  if (['EXPIRE', 'EXPIRED'].includes(normalized)) {
+    return <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-extrabold bg-rose-100/80 border border-rose-300 text-rose-800 shadow-2xs">⚠️ EXPIRÉ</span>
+  }
+  if (['LIVRE', 'LIVREE'].includes(normalized)) {
+    return <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-50 border border-emerald-200 text-emerald-700">✓ LIVRÉ</span>
+  }
+  if (['A_LIVRER', 'EN ATTENTE LIVRAISON', 'NON_LIVRE'].includes(normalized)) {
+    return <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-50 border border-amber-200 text-amber-800">⏳ À LIVRER</span>
+  }
+  if (['ACTIF', 'VALIDATED'].includes(normalized)) return <Badge tone="success">ACTIF</Badge>
+  if (['SUCCES', 'SUCCESS'].includes(normalized)) return <Badge tone="success">SUCCÈS</Badge>
   if (['EN_ATTENTE', 'PENDING', 'ATTENTE'].includes(normalized)) return <Badge tone="warning">EN ATTENTE</Badge>
   if (['SUSPENDU', 'FAILED', 'ECHEC', 'INACTIF'].includes(normalized)) return <Badge tone="danger">ECHEC</Badge>
   return <Badge tone="muted">{status || '-'}</Badge>

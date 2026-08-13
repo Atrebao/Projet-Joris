@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react'
 import { Outlet, useNavigate } from "react-router-dom";
 import { getPartenaire, getPartenaireId } from '../Utils/Utils'
-import { Boxes, LayoutDashboard, Package, Receipt, Store, Tag, Users, Percent, BarChart3, KeyRound } from 'lucide-react'
+import { Boxes, LayoutDashboard, Package, Receipt, Store, Tag, Users, Percent, BarChart3, KeyRound, MessageSquare } from 'lucide-react'
 import { DashboardShell, SaasTopBar } from '../components/saas/SaasPrimitives'
 
 export default function LayoutPartenaire() {
@@ -15,6 +15,7 @@ export default function LayoutPartenaire() {
   const nav = [
     { to: '/partenaire', label: 'Tableau de bord', icon: LayoutDashboard, exact: true },
     { to: '/partenaire/commandes', label: 'Suivi des ventes', icon: Receipt },
+    { to: '/partenaire/whatsapp', label: 'Bot WhatsApp', icon: MessageSquare },
     // { to: '/partenaire/offres', label: 'Mes offres', icon: Package },
     { to: '/partenaire/offres/nouvelle', label: 'Nouvelle offre', icon: Package },
     { to: '/partenaire/forfaits', label: 'Forfaits', icon: Tag },
@@ -22,7 +23,7 @@ export default function LayoutPartenaire() {
     { to: '/partenaire/clients', label: 'Clients', icon: Users },
     { to: '/partenaire/promotions', label: 'Promotions', icon: Percent },
     { to: '/partenaire/stats', label: 'Statistiques', icon: BarChart3 },
-    {to: '/partenaire/modifier-password', label: 'Modifier mot de passe', icon: KeyRound}
+    { to: '/partenaire/modifier-password', label: 'Modifier mot de passe', icon: KeyRound }
   ]
 
   

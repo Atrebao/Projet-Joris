@@ -1,18 +1,10 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import { BookOpen, Gamepad2, Gift, Headphones, Loader, Search, Sparkles, Tv } from 'lucide-react'
+import { Loader, Search, Sparkles } from 'lucide-react'
 import { abonnementsAPI } from '../lib/api'
 import toast from 'react-hot-toast'
+import { CATEGORIES, getServiceMeta, normalizeOffer } from '../Utils/Utils'
 import { OfferCard } from './HomeNouvelle'
-
-const CATEGORIES = [
-  { value: '', label: 'Tout', icon: Sparkles },
-  { value: 'FILMS_SERIES', label: 'Streaming', icon: Tv },
-  { value: 'MUSIQUE', label: 'Musique', icon: Headphones },
-  { value: 'GAMING', label: 'Gaming', icon: Gamepad2 },
-  { value: 'EBOOKS', label: 'Cartes Cadeaux', icon: Gift },
-  { value: 'SPORT', label: 'Ebooks', icon: BookOpen }
-]
 
 export default function Catalogue() {
   const navigate = useNavigate()
@@ -26,8 +18,13 @@ export default function Catalogue() {
     const load = async () => {
       setLoading(true)
       try {
-        const { data } = await abonnementsAPI.getAll()
-        setOffres((Array.isArray(data) ? data : []).map(normalizeOffer))
+        const { data } = await abonnementsAPI.getAll({
+          search: query.trim() || undefined,
+          categorie: category || undefined,
+          statut: 'ACTIF',
+        })
+        const items = Array.isArray(data) ? data : (data?.data || [])
+        setOffres(items.map(normalizeOffer))
       } catch (error) {
         console.error(error)
         toast.error('Impossible de charger le catalogue')
@@ -37,17 +34,14 @@ export default function Catalogue() {
       }
     }
 
-    load()
-  }, [])
+    const timer = setTimeout(() => {
+      load()
+    }, 200)
 
-  const filtered = useMemo(() => {
-    return offres.filter((offre) => {
-      const inCategory = !category || offre.categorie === category
-      const text = `${offre.nom} ${offre.description} ${offre.partenaire}`.toLowerCase()
-      const matchQuery = !query.trim() || text.includes(query.toLowerCase())
-      return inCategory && matchQuery
-    })
-  }, [offres, category, query])
+    return () => clearTimeout(timer)
+  }, [category, query])
+
+  const filtered = offres
 
   return (
     <div className="min-h-screen bg-background text-foreground">
@@ -56,20 +50,23 @@ export default function Catalogue() {
           <div className="mx-auto max-w-2xl text-center">
             <span className="inline-flex items-center gap-1.5 rounded-full border border-primary/20 bg-primary/10 px-3 py-1 text-xs font-medium text-primary">
               <Sparkles className="h-3.5 w-3.5" />
-              Marketplace
+              Catalogue Complet
             </span>
             <h1 className="mt-4 text-3xl font-black tracking-tight sm:text-5xl">
-              Rechercher une offre
+              Explorer tous les abonnements
             </h1>
             <div className="mx-auto mt-6 flex max-w-xl items-center gap-2 rounded-xl border border-border bg-card p-2 shadow-sm">
               <Search className="ml-2 h-5 w-5 text-muted-foreground" />
               <input
                 value={query}
                 onChange={(event) => setQuery(event.target.value)}
-                placeholder="Netflix, Spotify, Game Pass..."
+                placeholder="Netflix, Spotify, Game Pass, Carte Visa..."
                 className="min-w-0 flex-1 border-0 bg-transparent px-1 text-sm outline-none"
               />
-              <button className="h-9 rounded-lg bg-primary px-4 text-sm font-semibold text-primary-foreground">
+              <button
+                onClick={() => {}}
+                className="h-9 rounded-lg bg-primary px-4 text-sm font-semibold text-primary-foreground transition hover:bg-primary/90"
+              >
                 Rechercher
               </button>
             </div>
@@ -100,7 +97,7 @@ export default function Catalogue() {
         <div className="mt-6">
           <div className="mb-3 flex items-center justify-between">
             <h2 className="text-lg font-semibold">
-              {filtered.length} offre{filtered.length > 1 ? 's' : ''} disponible{filtered.length > 1 ? 's' : ''}
+              {filtered.length} offre{filtered.length > 1 ? 's' : ''} trouvée{filtered.length > 1 ? 's' : ''}
             </h2>
           </div>
 
@@ -115,7 +112,11 @@ export default function Catalogue() {
           ) : (
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
               {filtered.map((offer) => (
-                <OfferCard key={offer.id} offer={offer} onBuy={() => navigate(`/offre/${offer.id}`)} />
+                <OfferCard
+                  key={offer.id}
+                  offer={offer}
+                  onBuy={() => navigate(`/offre/${offer.id}`)}
+                />
               ))}
             </div>
           )}
@@ -123,20 +124,4 @@ export default function Catalogue() {
       </section>
     </div>
   )
-}
-
-function normalizeOffer(offre = {}) {
-  const firstPlan = offre.forfaits?.[0] || {}
-  return {
-    id: offre.id,
-    nom: offre.nom || offre.nomService || 'Offre',
-    description: offre.description || `Profitez de ${offre.nom || offre.nomService}`,
-    categorie: offre.categorie || '',
-    image: offre.image || offre.imageService || '',
-    prix: Number(firstPlan.prix || offre.prixMensuel || 0),
-    duree: Number(firstPlan.duree || offre.duree || 1),
-    stock: Number(offre.stock ?? offre.quantiteDisponible ?? 0),
-    partenaire: offre.partenaire?.nomBoutique || offre.partenaire?.nom || 'DigiStore CI',
-    forfaits: offre.forfaits || []
-  }
 }

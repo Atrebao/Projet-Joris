@@ -89,7 +89,7 @@ export default function FormsClient({ abonnement, userProfile, forfait }) {
                 username:
                   souscription.client.nom + " " + souscription.client.prenoms,
                 abonnement:
-                  souscription.abonnement.nom + " " + forfait.categorie,
+                  souscription.abonnement.nom + " " + (forfait.plan || ''),
               };
               envoyerMail(dataMail);
               navigate("/");
@@ -127,7 +127,7 @@ export default function FormsClient({ abonnement, userProfile, forfait }) {
     e.preventDefault();
     setIsLoading(true);
 
-    const dataReturn = { ...formData, montant: forfait?.prix || 0, abonnementId: abonnement?.id || 0 , forfaitId: forfait?.id || 0};
+    const dataReturn = { ...formData, montant: abonnement?.prixVente || abonnement?.prixOriginal || abonnement?.prix || 0, abonnementId: abonnement?.id || 0 , forfaitId: forfait?.id || 0};
 
     //console.log("=====DATA RETURN=============== ", dataReturn);
 
@@ -136,13 +136,13 @@ export default function FormsClient({ abonnement, userProfile, forfait }) {
         if (res.data) {
           console.log("=====REPONSE SOUSCRITPION=============== ", res.data);
           if (formData.modePaiement === "VISA") {
-            if (forfait?.categorie === "STANDARD_PLUS") {
+            if (forfait?.plan === "STANDARD_PLUS") {
               window.open(
                 "https://amaterasu241.lemonsqueezy.com/buy/96897b67-3672-4724-b804-3d7203e18f33",
                 "_blank",
                 "noopener,noreferrer"
               );
-            } else if (forfait?.categorie === "PREMIUM") {
+            } else if (forfait?.plan === "PREMIUM") {
               window.open(
                 "https://amaterasu241.lemonsqueezy.com/buy/96897b67-3672-4724-b804-3d7203e18f33",
                 "_blank",
@@ -185,10 +185,10 @@ export default function FormsClient({ abonnement, userProfile, forfait }) {
       {/* Détails du forfait */}
       {forfait && (
         <div className="bg-gray-100 text-gray-500 p-4 rounded-lg mb-6 text-sm md:text-base">
-          <p><strong>Prix:</strong> {forfait.prix} FCFA</p>
+          <p><strong>Prix:</strong> {abonnement?.prixVente || abonnement?.prixOriginal || abonnement?.prix || 0} FCFA</p>
           <p><strong>Durée:</strong> {forfait.duree} {forfait.periode.toLowerCase()}  </p>
           {/* <p><strong>Période:</strong> {forfait.periode}</p> */}
-          <p><strong>Catégorie:</strong> {forfait.categorie}</p>
+          <p><strong>Forfait:</strong> {forfait.plan || '-'}</p>
         </div>
       )}
       

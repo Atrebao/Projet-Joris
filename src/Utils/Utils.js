@@ -1,8 +1,8 @@
-import { BookOpen, Gamepad2, Gift, Headphones, Loader, Search, ShieldCheck, Sparkles, Tv, Zap } from 'lucide-react'
+import { BookOpen, Gamepad2, Gift, Headphones, Sparkles, Tv } from 'lucide-react'
+
 export const HOMECLIENT = "/client";
 export const HOMEADMIN = "/backoffice";
 export const HOMEPARTENAIRE = "/partenaire";
-
 
 export const resetStorage = () => {
   localStorage.removeItem("infoUser");
@@ -32,14 +32,13 @@ export const getPartenaireId = () => {
   return partenaire?.id ?? null;
 };
 
-
 /** Retourne l'objet partenaire connecté (null si admin/client) */
 export const getPartenaire = () => {
   const info = getUserProfil();
   if (info?.partenaire) return info.partenaire;
   const partenaire = JSON.parse(localStorage.getItem("partenaire") || "null");
   return partenaire ?? null;
-}
+};
 
 /** Vérifie si l'utilisateur connecté est un partenaire */
 export const isPartenaire = () => !!getPartenaireId();
@@ -56,38 +55,32 @@ export const saveToken = (token) => {
 };
 
 export const savePaiement = (paiement) => {
-
   const p = getPaiement();
   if(p){
     if(p.status === "SUCCES" || p.status === "ECHEC"){
-     
       localStorage.removeItem("p");
-
       return localStorage.setItem("paiement", JSON.stringify(paiement));
     } 
-   
   }
-  
 };
 
 export const getPaiement = () => {
   return JSON.parse(localStorage.getItem("paiement"));
-}
+};
 
 export const getUserProfil = () => {
   return JSON.parse(localStorage.getItem("infoUser"));
 };
 
-export const getClient = ()=>{
+export const getClient = () => {
   const info = getUserProfil();
   if(info?.user) return info.user;
   const user = JSON.parse(localStorage.getItem("user") || "null");
   return user ?? null;
-}
+};
 
 export const userToken = () => {
   const user = getUserProfil();
-
   return user ? user.accessToken : null;
 };
 
@@ -107,49 +100,90 @@ export const months = [
 ];
 
 export const CATEGORIES = [
-  { value: '', label: 'Tout', icon: Sparkles },
-  { value: 'FILMS_SERIES', label: 'Streaming', icon: Tv },
-  { value: 'MUSIQUE', label: 'Musique', icon: Headphones },
-  { value: 'GAMING', label: 'Gaming', icon: Gamepad2 },
-  { value: 'EBOOKS', label: 'Cartes Cadeaux', icon: Gift },
-  { value: 'SPORT', label: 'Ebooks', icon: BookOpen }
-]
+  { value: '', label: 'Tout', icon: Sparkles, description: 'Tous les services' },
+  { value: 'streaming', label: 'Streaming', icon: Tv, description: 'Films & séries' },
+  { value: 'musique', label: 'Musique', icon: Headphones, description: 'Audio en illimité' },
+  { value: 'gaming', label: 'Gaming', icon: Gamepad2, description: 'Jeux & abonnements' },
+  { value: 'cartes', label: 'Cartes Cadeaux & Paiement', icon: Gift, description: 'Recharges, cartes bancaires & codes' },
+  { value: 'productivite', label: 'Productivité', icon: BookOpen, description: 'Logiciels & outils pro' },
+];
+
+export const SERVICES_MARKETPLACE = [
+  { value: 'netflix', label: 'Netflix', category: 'streaming', color: '#e50914', initials: 'N' },
+  { value: 'disney', label: 'Disney+', category: 'streaming', color: '#113ccf', initials: 'D+' },
+  { value: 'prime', label: 'Prime Video', category: 'streaming', color: '#1f9fe0', initials: 'PV' },
+  { value: 'canal', label: 'Canal+', category: 'streaming', color: '#1d1d1b', initials: 'C+' },
+  { value: 'crunchyroll', label: 'Crunchyroll', category: 'streaming', color: '#f47521', initials: 'CR' },
+  { value: 'spotify', label: 'Spotify', category: 'musique', color: '#1db954', initials: 'S' },
+  { value: 'deezer', label: 'Deezer', category: 'musique', color: '#a238ff', initials: 'Dz' },
+  { value: 'applemusic', label: 'Apple Music', category: 'musique', color: '#fa2d48', initials: 'AM' },
+  { value: 'ytmusic', label: 'YouTube Premium', category: 'musique', color: '#ff0000', initials: 'YT' },
+  { value: 'gamepass', label: 'Xbox Game Pass', category: 'gaming', color: '#107c10', initials: 'GP' },
+  { value: 'psplus', label: 'PlayStation Plus', category: 'gaming', color: '#0070d1', initials: 'PS' },
+  { value: 'steam', label: 'Steam', category: 'gaming', color: '#1b2838', initials: 'St' },
+  { value: 'amazongift', label: 'Amazon Gift Card', category: 'cartes', color: '#ff9900', initials: 'AZ' },
+  { value: 'playgift', label: 'Google Play', category: 'cartes', color: '#34a853', initials: 'GP' },
+  { value: 'appgift', label: 'App Store', category: 'cartes', color: '#0d96f6', initials: 'AS' },
+  { value: 'visaprepaid', label: 'Carte Visa Prépayée', category: 'cartes', color: '#1a1f71', initials: 'VISA' },
+  { value: 'mastercard', label: 'Carte Mastercard Prépayée', category: 'cartes', color: '#eb001b', initials: 'MC' },
+  { value: 'canva', label: 'Canva Pro', category: 'productivite', color: '#00c4cc', initials: 'Cv' },
+  { value: 'autre', label: 'Autre service', category: 'cartes', color: '#64748b', initials: 'AU' },
+];
+
+export const getServiceMeta = (serviceValue = '') => {
+  const normalized = String(serviceValue || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+  const found = SERVICES_MARKETPLACE.find((s) => {
+    const sNorm = s.value.toLowerCase().replace(/[^a-z0-9]/g, '');
+    const lNorm = s.label.toLowerCase().replace(/[^a-z0-9]/g, '');
+    return sNorm === normalized || lNorm === normalized || normalized.includes(sNorm);
+  });
+  if (found) return found;
+  return {
+    value: serviceValue || 'autre',
+    label: serviceValue || 'Service',
+    category: 'cartes',
+    color: '#0ea5e9',
+    initials: (serviceValue || 'S').slice(0, 2).toUpperCase(),
+  };
+};
 
 export const OPERATOR_BADGES = [
   { 
     id: 'orange',
-    label: 'Orange', 
+    label: 'Orange Money', 
+    short: 'Orange',
+    badgeClass: 'bg-[#ff7900] text-white',
     logoUrl: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRiNkcP-3jO9hJmuSHaXVo8yEzdoy-lOy8NcQgBHvbqCw&s=10',
-    className: 'border-orange-500 bg-black p-0.5', // Fond noir car le logo Orange est transparent/blanc parfois, ou 'bg-orange-500' selon le fichier,
     operateur: 'ORANGE'
   },
   { 
     id: 'mtn',
-    label: 'MTN', 
+    label: 'MTN MoMo', 
+    short: 'MTN',
+    badgeClass: 'bg-[#ffcc00] text-black',
     logoUrl: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTlqaD_Qzu_IV_656Imb1VC9S9ik-48CY-SEyRKzdKOVw&s=10',
-    className: 'bg-[#FFCC00] p-0.5 border-[#FFCC00]' ,
     operateur: 'MTN'
   },
   { 
     id: 'moov',
-    label: 'Moov', 
+    label: 'Moov Money', 
+    short: 'Moov',
+    badgeClass: 'bg-[#0066b3] text-white',
     logoUrl: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQ7iEvNAHsFlwe7yYgXHjcZif32WIRTgyLKb8jvuaJiaA&s=10',
-    className: 'bg-white p-0.5 border-slate-200' ,
     operateur: 'MOOV'
-    
   },
   { 
     id: 'wave',
     label: 'Wave', 
+    short: 'Wave',
+    badgeClass: 'bg-[#1dc8ff] text-black',
     logoUrl: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSZaeFi3xAkC86Ui29AojMASpYfFMPLDzf-1hTcDVS-0Q&s=10',
-    className: 'bg-[#00B4D8] p-1 border-[#00B4D8]' ,
     operateur: 'WAVE'
   }
 ];
 
-
 export const paymentMethods = [
-     {
+  {
     id: "visa",
     name: "Visa",
     icon: "",
@@ -163,11 +197,7 @@ export const paymentMethods = [
     value: "MOBILE_MONEY",
     color: "slate-600",
   },
-
-]
-
-
-
+];
 
 export const years = [
   { name: "2027" },
@@ -178,21 +208,10 @@ export const years = [
   { name: "2022" },
 ];
 
-export const categoriesForfait = [
-  { designation: "Prive", value: "PRIVE" },
-  { designation: "Public", value: "PUBLIC" },
-];
-
 export const periodes = [
-  { designation: "jours", value: "JOURS" },
+  { designation: "jours", value: "JOUR" },
   { designation: "mois", value: "MOIS" },
-  { designation: "annee", value: "ANNEE" },
-];
-
-export const plans = [
-  { designation: "Standard", value: "STANDARD" },
-  { designation: "Standard +", value: "STANDARD_PLUS" },
-  { designation: "Premium", value: "PREMIUM_PLUS" },
+  { designation: "année", value: "ANNEE" },
 ];
 
 export const statutPaiementsListe = [
@@ -206,3 +225,34 @@ export const etatSouscriptionsListe = [
   { libelle: "Inactif", value: "INACTIF" },
   { libelle: "Expiré", value: "EXPIRE" },
 ];
+
+export const normalizeOffer = (data = {}) => {
+  const forfaits = Array.isArray(data.forfaits) && data.forfaits.length > 0
+    ? data.forfaits
+    : data.forfaitOffres?.length > 0
+      ? data.forfaitOffres.map((fo) => fo?.forfait).filter(Boolean)
+      : [{ id: data.id, plan: data.typeCompte || 'Standard', duree: data.duree || 1, periode: 'MOIS' }];
+
+  const firstForfait = forfaits[0] || {};
+  const meta = getServiceMeta(data.service || data.nomService || data.nom);
+
+  return {
+    id: data.id,
+    service: data.service || data.nomService || meta.value || 'service',
+    nom: data.titreOffre || data.nom || data.nomService || `${meta.label} Abonnement`,
+    categorie: data.categorie || meta.category || 'streaming',
+    description: data.description || '',
+    image: data.imageService || data.image || '',
+    prix: Number(data.prixVente ?? data.prixOriginal ?? data.prix ?? 0),
+    duree: Number(firstForfait.duree || data.duree || 1),
+    periode: firstForfait.periode || 'MOIS',
+    stock: Number(data.stock ?? data.quantiteDisponible ?? 0),
+    partenaire: data.partenaire?.nomBoutique || data.partenaire?.nom || 'DigiStore CI',
+    partenaireId: data.partenaire?.id,
+    forfaitNom: firstForfait.plan || 'Standard',
+    forfaits: forfaits.map((f) => ({
+      ...f,
+      periode: f.periode || 'MOIS',
+    })),
+  };
+};

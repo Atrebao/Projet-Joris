@@ -30,6 +30,8 @@ import PaiementNouveau from "../pages/PaiementNouveau";
 // Nouvelles pages modernes
 import DashboardAdminNouveau from "../pages/admin/DashboardAdminNouveau";
 import PartenairesPage from "../pages/admin/PartenairesPage";
+import ReversementsPage from "../pages/admin/ReversementsPage";
+import WhatsappConfigPage from "../pages/admin/WhatsappConfigPage";
 import OffresPage from "../pages/admin/OffresPage";
 import ClientsAdminPage from "../pages/admin/ClientsAdminPage";
 import CommandesAdminPage from "../pages/admin/CommandesAdminPage";
@@ -43,6 +45,7 @@ import PromotionsPage from "../pages/partenaire/PromotionsPage";
 import CommandesPartenairePage from "../pages/partenaire/CommandesPartenairePage";
 import ForfaitsPage from "../pages/partenaire/ForfaitsPage";
 import IdentifiantsStockPage from "../pages/partenaire/IdentifiantsStockPage";
+import WhatsappPartenairePage from "../pages/partenaire/WhatsappPartenairePage";
 import EnConstruction from "../pages/EnConstruction";
 import ForgotPasswordPartenaire from "@/pages/ForgotPasswordPartenaire";
 import ModifierPasswordPartenaire from "@/pages/partenaire/ModifierPasswordPartenaire";
@@ -111,6 +114,14 @@ export const AppRoute = createHashRouter([
         element: <PartenairesPage />,
       },
       {
+        path: "reversements",
+        element: <ReversementsPage />,
+      },
+      {
+        path: "whatsapp",
+        element: <WhatsappConfigPage />,
+      },
+      {
         path: "offres",
         element: <OffresPage />,
       },
@@ -168,6 +179,10 @@ export const AppRoute = createHashRouter([
       {
         path: "commandes",
         element: <CommandesPartenairePage />,
+      },
+      {
+        path: "whatsapp",
+        element: <WhatsappPartenairePage />,
       },
       {
         path: "offres/nouvelle",

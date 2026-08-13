@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useState } from 'react'
-import { Eye, Search, Trash2 } from 'lucide-react'
+import { useEffect, useState } from 'react'
+import { Eye, Search, Trash2, ChevronLeft, ChevronRight } from 'lucide-react'
 import { abonnementsAPI } from '../../lib/api'
 import toast from 'react-hot-toast'
 import ModalDetail from '../../components/ModalDetail'
@@ -10,29 +10,58 @@ export default function OffresPage() {
   const [loading, setLoading] = useState(true)
   const [filtreStatut, setFiltreStatut] = useState('TOUS')
   const [recherche, setRecherche] = useState('')
+  const [page, setPage] = useState(1)
+  const [totalPages, setTotalPages] = useState(1)
+  const [total, setTotal] = useState(0)
   const [detailOffre, setDetailOffre] = useState(null)
   const [detailLoading, setDetailLoading] = useState(false)
-
-  useEffect(() => {
-    loadOffres()
-  }, [])
 
   const loadOffres = async () => {
     setLoading(true)
     try {
-      const { data } = await abonnementsAPI.getAll()
-      setOffres((data || []).map((offre) => ({
-        id: offre.id,
-        nom: offre.nom,
-        partenaire: offre.partenaire?.nom || offre.partenaire?.nomBoutique || 'N/A',
-        categorie: offre.categorie,
-        image: offre.image,
-        prix: offre.forfaits?.[0]?.prix || 0,
-        duree: offre.forfaits?.[0]?.duree || 1,
-        forfaits: offre.forfaits || [],
-        stock: offre.stock ?? offre.quantiteDisponible ?? 0,
-        statut: offre.isDeleted ? 'SUSPENDU' : 'ACTIF'
-      })))
+      const res = await abonnementsAPI.getAll({
+        search: recherche.trim() || undefined,
+        statut: filtreStatut !== 'TOUS' ? filtreStatut : undefined,
+        page,
+        limit: 10,
+      })
+      const data = res?.data
+      if (data && typeof data === 'object' && !Array.isArray(data)) {
+        const rawList = data.data || []
+        setOffres(
+          rawList.map((offre) => ({
+            id: offre.id,
+            nom: offre.titreOffre || offre.nom,
+            partenaire: offre.partenaire?.nomBoutique || offre.partenaire?.nom || 'N/A',
+            categorie: offre.categorie,
+            image: offre.image || offre.imageService,
+            prix: offre.prixVente ?? offre.prixOriginal ?? offre.prix ?? 0,
+            duree: offre.forfaits?.[0]?.duree || offre.duree || 1,
+            forfaits: offre.forfaits || [],
+            stock: offre.stock ?? offre.quantiteDisponible ?? 0,
+            statut: offre.isDeleted || offre.isActive === false ? 'SUSPENDU' : 'ACTIF',
+          }))
+        )
+        setTotalPages(data.totalPages || 1)
+        setTotal(data.total || rawList.length)
+      } else {
+        const rawList = Array.isArray(data) ? data : []
+        setOffres(
+          rawList.map((offre) => ({
+            id: offre.id,
+            nom: offre.titreOffre || offre.nom,
+            partenaire: offre.partenaire?.nomBoutique || offre.partenaire?.nom || 'N/A',
+            categorie: offre.categorie,
+            image: offre.image || offre.imageService,
+            prix: offre.prixVente ?? offre.prixOriginal ?? offre.prix ?? 0,
+            duree: offre.forfaits?.[0]?.duree || offre.duree || 1,
+            forfaits: offre.forfaits || [],
+            stock: offre.stock ?? offre.quantiteDisponible ?? 0,
+            statut: offre.isDeleted || offre.isActive === false ? 'SUSPENDU' : 'ACTIF',
+          }))
+        )
+        setTotal(rawList.length)
+      }
     } catch (error) {
       console.error('Erreur chargement offres:', error)
       toast.error('Impossible de charger les offres')
@@ -41,6 +70,13 @@ export default function OffresPage() {
       setLoading(false)
     }
   }
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      loadOffres()
+    }, 200)
+    return () => clearTimeout(timer)
+  }, [recherche, filtreStatut, page])
 
   const handleVoirOffre = async (id) => {
     setDetailOffre(null)
@@ -67,29 +103,33 @@ export default function OffresPage() {
     }
   }
 
-  const offresFiltrees = useMemo(
-    () =>
-      offres.filter((o) => {
-        const matchStatut = filtreStatut === 'TOUS' || o.statut === filtreStatut
-        const matchRecherche = `${o.nom || ''} ${o.partenaire || ''}`.toLowerCase().includes(recherche.toLowerCase())
-        return matchStatut && matchRecherche
-      }),
-    [offres, filtreStatut, recherche]
-  )
-
-  if (loading) return <LoadingState label="Chargement des offres..." />
+  if (loading && offres.length === 0) return <LoadingState label="Chargement des offres..." />
 
   return (
     <>
-      <PageHeader title="Offres" description={`${offres.length} offre(s) publiées par les partenaires.`} />
+      <PageHeader title="Offres" description={`${total} offre(s) publiées par les partenaires.`} />
 
       <Card className="p-4">
         <div className="flex flex-col gap-3 md:flex-row md:items-center">
           <label className="relative flex-1">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-            <Input className="pl-9" placeholder="Rechercher une offre ou un partenaire..." value={recherche} onChange={(e) => setRecherche(e.target.value)} />
+            <Input
+              className="pl-9"
+              placeholder="Rechercher une offre ou un partenaire..."
+              value={recherche}
+              onChange={(e) => {
+                setRecherche(e.target.value)
+                setPage(1)
+              }}
+            />
           </label>
-          <Select value={filtreStatut} onChange={(e) => setFiltreStatut(e.target.value)}>
+          <Select
+            value={filtreStatut}
+            onChange={(e) => {
+              setFiltreStatut(e.target.value)
+              setPage(1)
+            }}
+          >
             <option value="TOUS">Tous les statuts</option>
             <option value="ACTIF">Actives</option>
             <option value="SUSPENDU">Suspendues</option>
@@ -98,7 +138,7 @@ export default function OffresPage() {
       </Card>
 
       <DataTable
-        data={offresFiltrees}
+        data={offres}
         emptyLabel="Aucune offre trouvée"
         columns={[
           {
@@ -133,6 +173,38 @@ export default function OffresPage() {
         ]}
       />
 
+      {totalPages > 1 && (
+        <div className="flex items-center justify-between px-4 py-3 border-t border-slate-100 bg-slate-50/50">
+          <span className="text-xs text-slate-500 font-medium">
+            Page <span className="font-bold text-slate-700">{page}</span> sur <span className="font-bold text-slate-700">{totalPages}</span>
+          </span>
+          
+          <div className="flex items-center gap-1.5">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setPage((p) => Math.max(1, p - 1))}
+              disabled={page === 1}
+              className="h-8 px-2 text-xs border-slate-200"
+            >
+              <ChevronLeft className="h-4 w-4 mr-1" />
+              Précédent
+            </Button>
+            
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+              disabled={page === totalPages}
+              className="h-8 px-2 text-xs border-slate-200"
+            >
+              Suivant
+              <ChevronRight className="h-4 w-4 ml-1" />
+            </Button>
+          </div>
+        </div>
+      )}
+
       <ModalDetail
         open={!!detailOffre || detailLoading}
         onClose={() => { setDetailOffre(null); setDetailLoading(false) }}
@@ -155,7 +227,7 @@ export default function OffresPage() {
                 {detailOffre.forfaits.map((f, index) => (
                   <div key={index} className="flex justify-between rounded-lg border border-border bg-card p-3 text-sm">
                     <span>{f.plan || `${f.duree} ${f.periode || 'mois'}`}</span>
-                    <span className="font-semibold">{formatFCFA(f.prix)}</span>
+                    <span className="font-semibold">{f.duree} {f.periode || 'MOIS'}</span>
                   </div>
                 ))}
               </div>
