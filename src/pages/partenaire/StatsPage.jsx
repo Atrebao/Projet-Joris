@@ -135,11 +135,11 @@ export default function StatsPage() {
 
       {/* Cartes KPI Financières */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        {/* Revenu Net Partenaire */}
+        {/* Revenu Partenaire */}
         <Card className="p-5 border border-slate-200 shadow-2xs bg-white">
           <div className="flex items-center justify-between">
             <span className="text-[11px] font-bold uppercase tracking-wider text-emerald-700">
-              Votre Gain Net
+              Votre Gain Encaissé
             </span>
             <div className="h-8 w-8 rounded-lg bg-emerald-50 text-emerald-700 flex items-center justify-center font-bold">
               <Wallet className="h-4 w-4" />
@@ -149,7 +149,7 @@ export default function StatsPage() {
             {formatFCFA(stats.revenuMois)}
           </p>
           <p className="mt-1 text-xs text-slate-500">
-            Revenu après déduction commission
+            Total des ventes enregistrées
           </p>
         </Card>
 
