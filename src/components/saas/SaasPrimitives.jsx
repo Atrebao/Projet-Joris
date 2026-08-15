@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { NavLink, useLocation, useNavigate } from 'react-router-dom'
 import { Menu, X, LogOut, Sun, ShieldCheck, Store, Users } from 'lucide-react'
-import { resetStorage } from '../../Utils/Utils'
+import { resetStorage, getServiceMeta } from '../../Utils/Utils'
 
 export function cn(...classes) {
   return classes.filter(Boolean).join(' ')
@@ -112,17 +112,19 @@ export function ServiceLogo({ name = 'Service', color, size = 'md', image }) {
     lg: 'h-14 w-14 text-base rounded-2xl'
   }
 
-  if (image) {
+  const meta = getServiceMeta(name)
+
+  if (image && typeof image === 'string' && image.startsWith('http')) {
     return <img src={image} alt={name} className={cn('shrink-0 object-cover shadow-sm', sizes[size])} />
   }
 
   return (
     <span
       aria-hidden
-      className={cn('inline-flex shrink-0 items-center justify-center font-bold text-white shadow-sm', sizes[size])}
-      style={{ backgroundColor: color || serviceColor(name) }}
+      className={cn('inline-flex shrink-0 items-center justify-center font-black text-white shadow-sm', sizes[size])}
+      style={{ backgroundColor: color || meta.color || '#0ea5e9' }}
     >
-      {initials(name)}
+      {meta.initials || initials(name)}
     </span>
   )
 }

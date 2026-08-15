@@ -283,25 +283,25 @@ export default function OffresPartenairePage() {
                 {/* Haut de la Carte : Service + Statut Toggle */}
                 <div className="p-5 space-y-4">
                   <div className="flex items-start justify-between gap-3">
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-3 min-w-0 flex-1">
                       <ServiceLogo
                         name={offre.service || offre.nom}
                         image={offre.image}
                         size="md"
-                        className="shadow-2xs rounded-2xl"
+                        className="shadow-2xs rounded-2xl shrink-0"
                       />
-                      <div className="min-w-0">
+                      <div className="min-w-0 flex-1">
                         <span className="inline-block text-[10px] font-extrabold uppercase tracking-wider text-muted-foreground">
                           {offre.categorie}
                         </span>
-                        <h3 className="font-extrabold text-foreground text-base leading-snug truncate">
+                        <h3 className="font-extrabold text-foreground text-base leading-snug truncate" title={offre.nom}>
                           {offre.nom}
                         </h3>
                       </div>
                     </div>
 
                     {/* Switch Statut Actif */}
-                    <div className="flex flex-col items-end">
+                    <div className="flex flex-col items-end shrink-0 pl-2">
                       <button
                         onClick={() => handleToggleActif(offre.id, offre.actif)}
                         className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
@@ -315,7 +315,7 @@ export default function OffresPartenairePage() {
                           }`}
                         />
                       </button>
-                      <span className="text-[10px] font-bold mt-1 text-muted-foreground">
+                      <span className="text-[10px] font-bold mt-1 text-muted-foreground whitespace-nowrap">
                         {offre.actif ? 'En ligne' : 'En pause'}
                       </span>
                     </div>

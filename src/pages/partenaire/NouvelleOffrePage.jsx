@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom'
 import {
   ArrowLeft,
   CheckCircle2,
-  ImagePlus,
   Loader2,
   Plus,
   Save,
@@ -16,22 +15,19 @@ import {
   Info,
   Layers,
   HelpCircle,
+  Tv,
 } from 'lucide-react'
 import toast from 'react-hot-toast'
-import { CATEGORIES, OPERATOR_BADGES, SERVICES_MARKETPLACE, getPartenaireId, getServiceMeta } from '../../Utils/Utils'
-import { API_URL, forfaitsAPI, offresAPI, partenairesAPI } from '../../lib/api'
+import { CATEGORIES, SERVICES_MARKETPLACE, getPartenaireId, getServiceMeta } from '../../Utils/Utils'
+import { forfaitsAPI, offresAPI, partenairesAPI } from '../../lib/api'
 import { Button, Card, Input, PageHeader, Select, formatFCFA } from '../../components/saas/SaasPrimitives'
 
 export default function NouvelleOffrePage() {
   const navigate = useNavigate()
   const partenaireId = getPartenaireId()
   const [loading, setLoading] = useState(false)
-  const [uploadingImage, setUploadingImage] = useState(false)
   const [loadingForfaits, setLoadingForfaits] = useState(false)
-  const [imageFile, setImageFile] = useState(null)
-  const [imagePreview, setImagePreview] = useState(null)
   const [forfaitsDisponibles, setForfaitsDisponibles] = useState([])
-  const [selectedOperators, setSelectedOperators] = useState(['orange', 'mtn', 'moov', 'wave'])
 
   // Commission partenaire
   const [partenaireData, setPartenaireData] = useState(null)
@@ -40,12 +36,11 @@ export default function NouvelleOffrePage() {
   const [formData, setFormData] = useState({
     categorie: 'streaming',
     service: 'netflix',
-    titreOffre: '',
+    titreOffre: 'Netflix Premium Ultra HD 4K',
     forfaitId: '',
     prix: '',
     description: '',
     stock: '10',
-    imageUrl: '',
   })
 
   useEffect(() => {
@@ -86,7 +81,7 @@ export default function NouvelleOffrePage() {
   const tauxCommission = partenaireData?.commissionActive !== false ? Number(partenaireData?.tauxCommission || 10) : 0
   const isCommissionActive = partenaireData?.commissionActive !== false && tauxCommission > 0
 
-  // Calcul du prix et de la commission en direct
+  // Calcul du prix et de la commission en direct (uniquement si commission active)
   const pricingSimulation = useMemo(() => {
     const inputAmount = Number(formData.prix) || 0
     if (inputAmount <= 0) {
@@ -98,7 +93,6 @@ export default function NouvelleOffrePage() {
     }
 
     if (modeTarification === 'AJOUTER_COMMISSION') {
-      // Le partenaire veut inputAmount net -> On ajoute la commission
       const prixClient = Math.round(inputAmount * (1 + tauxCommission / 100))
       const commissionMontant = prixClient - inputAmount
       return {
@@ -107,7 +101,6 @@ export default function NouvelleOffrePage() {
         gainNet: inputAmount,
       }
     } else {
-      // Le partenaire a saisi le prix final client -> On déduit la commission
       const commissionMontant = Math.round((inputAmount * tauxCommission) / 100)
       const gainNet = Math.max(0, inputAmount - commissionMontant)
       return {
@@ -125,23 +118,8 @@ export default function NouvelleOffrePage() {
       ...prev,
       service: serviceVal,
       categorie: meta.category || prev.categorie,
-      titreOffre: prev.titreOffre || `${meta.label} Abonnement`,
+      titreOffre: `${meta.label} Abonnement`,
     }))
-  }
-
-  const handleImageChange = (e) => {
-    const file = e.target.files?.[0]
-    if (!file) return
-    if (!/^image\/(jpeg|jpg|png|gif|webp)/i.test(file.type)) {
-      toast.error('Format image non supporté (PNG, JPG, WebP acceptés)')
-      return
-    }
-    if (file.size > 5 * 1024 * 1024) {
-      toast.error('Image trop volumineuse (max 5 Mo)')
-      return
-    }
-    setImageFile(file)
-    setImagePreview(URL.createObjectURL(file))
   }
 
   const handleChange = (e) => {
@@ -177,34 +155,22 @@ export default function NouvelleOffrePage() {
 
     setLoading(true)
     try {
-      let imageService = formData.imageUrl?.trim() || ''
-      if (imageFile) {
-        setUploadingImage(true)
-        const { data: up } = await offresAPI.uploadImage(imageFile)
-        imageService = `${API_URL}${up.url}`
-        setUploadingImage(false)
-      }
-
-      if (imageService && !imageService.startsWith('http')) {
-        imageService = `${API_URL}${imageService.startsWith('/') ? '' : '/'}${imageService}`
-      }
-
       const forfait = forfaitsDisponibles.find((f) => String(f.id) === String(formData.forfaitId))
       const serviceMeta = getServiceMeta(formData.service)
 
       await offresAPI.create({
-        partenaireId,
+        partenaireId: Number(partenaireId),
         categorie: formData.categorie,
         service: formData.service,
         nomService: serviceMeta.label || formData.service,
         titreOffre: formData.titreOffre.trim(),
-        description: formData.description?.trim() || `${serviceMeta.label} - ${forfait?.plan || 'Standard'}`,
-        imageService: imageService || '',
+        description: formData.description?.trim() || `${serviceMeta.label} - ${forfait?.nom || forfait?.plan || 'Standard'}`,
+        imageService: '',
         prixBase: inputNum,
-        modeTarification,
-        prixOriginal: pricingSimulation.prixClient || inputNum,
-        prixVente: pricingSimulation.prixClient || inputNum,
-        margePartenaire: pricingSimulation.gainNet || inputNum,
+        modeTarification: isCommissionActive ? modeTarification : 'INCLURE_COMMISSION',
+        prixOriginal: isCommissionActive ? (pricingSimulation.prixClient || inputNum) : inputNum,
+        prixVente: isCommissionActive ? (pricingSimulation.prixClient || inputNum) : inputNum,
+        margePartenaire: isCommissionActive ? (pricingSimulation.gainNet || inputNum) : inputNum,
         duree: Number(forfait?.duree || 1),
         typeCompte: formData.titreOffre.trim(),
         quantiteDisponible: parseInt(formData.stock, 10) || 0,
@@ -214,6 +180,7 @@ export default function NouvelleOffrePage() {
       toast.success('Offre créée et mise en ligne avec succès !')
       navigate('/partenaire/offres')
     } catch (error) {
+      console.error(error)
       toast.error(error?.response?.data?.message || "Erreur lors de la création de l'offre")
     } finally {
       setLoading(false)
@@ -224,7 +191,7 @@ export default function NouvelleOffrePage() {
     <div className="space-y-6 max-w-4xl mx-auto">
       <PageHeader
         title="Créer une Nouvelle Offre"
-        description="Configurez votre abonnement, ajustez la tarification avec simulation de commission et publiez-le sur la marketplace."
+        description="Configurez votre abonnement, ajustez la tarification et publiez-le sur la marketplace."
         action={
           <Button variant="outline" onClick={() => navigate('/partenaire/offres')} className="gap-2 text-xs font-semibold rounded-lg">
             <ArrowLeft className="h-4 w-4" /> Retour aux offres
@@ -233,31 +200,37 @@ export default function NouvelleOffrePage() {
       />
 
       <form onSubmit={handleSubmit} className="space-y-6">
-        {/* Informations Générales */}
+        {/* Informations Générales & Choix du Service Marketplace */}
         <Card className="p-6 border border-slate-200 bg-white shadow-2xs space-y-4">
-          <h2 className="text-sm font-bold uppercase tracking-wider text-slate-900 border-b border-slate-100 pb-3">
-            1. Informations du Service
-          </h2>
+          <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+            <h2 className="text-sm font-bold uppercase tracking-wider text-slate-900">
+              1. Plateforme & Service de Streaming
+            </h2>
+            <span className="text-[11px] text-slate-500">Logo et marque officiels automatiques</span>
+          </div>
+
+          {/* Aperçu du badge de marque officiel (Style SaaS Marketplace) */}
+          <div className="p-4 rounded-xl bg-slate-50 border border-slate-200/80 flex items-center gap-4">
+            <div
+              className="h-12 w-12 rounded-xl flex items-center justify-center font-black text-white text-base shadow-xs shrink-0"
+              style={{ backgroundColor: selectedServiceMeta.color || '#0ea5e9' }}
+            >
+              {selectedServiceMeta.initials || 'S'}
+            </div>
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center gap-2">
+                <h3 className="font-bold text-slate-900 text-sm">{selectedServiceMeta.label}</h3>
+                <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-slate-200 text-slate-700">
+                  {selectedServiceMeta.category}
+                </span>
+              </div>
+              <p className="text-xs text-slate-500 mt-0.5">
+                Le logo de la marque sera automatiquement appliqué sur la marketplace avec une netteté optimale.
+              </p>
+            </div>
+          </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="text-xs font-semibold text-slate-700 mb-1.5 block">
-                Catégorie *
-              </label>
-              <select
-                name="categorie"
-                value={formData.categorie}
-                onChange={handleChange}
-                className="w-full h-10 rounded-lg border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-800 outline-none"
-              >
-                {CATEGORIES.filter((c) => c.id !== 'all').map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.label}
-                  </option>
-                ))}
-              </select>
-            </div>
-
             <div>
               <label className="text-xs font-semibold text-slate-700 mb-1.5 block">
                 Plateforme / Service *
@@ -266,11 +239,29 @@ export default function NouvelleOffrePage() {
                 name="service"
                 value={formData.service}
                 onChange={handleServiceChange}
-                className="w-full h-10 rounded-lg border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-800 outline-none"
+                className="w-full h-10 rounded-lg border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-800 outline-none shadow-2xs"
               >
                 {SERVICES_MARKETPLACE.map((s) => (
-                  <option key={s.id} value={s.id}>
+                  <option key={s.value} value={s.value}>
                     {s.label} ({s.category})
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label className="text-xs font-semibold text-slate-700 mb-1.5 block">
+                Catégorie *
+              </label>
+              <select
+                name="categorie"
+                value={formData.categorie}
+                onChange={handleChange}
+                className="w-full h-10 rounded-lg border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-800 outline-none shadow-2xs"
+              >
+                {CATEGORIES.filter((c) => c.value !== '').map((c) => (
+                  <option key={c.value} value={c.value}>
+                    {c.label}
                   </option>
                 ))}
               </select>
@@ -307,7 +298,7 @@ export default function NouvelleOffrePage() {
                   name="forfaitId"
                   value={formData.forfaitId}
                   onChange={handleChange}
-                  className="w-full h-10 rounded-lg border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-800 outline-none"
+                  className="w-full h-10 rounded-lg border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-800 outline-none shadow-2xs"
                 >
                   {forfaitsDisponibles.map((f) => (
                     <option key={f.id} value={f.id}>
@@ -320,7 +311,7 @@ export default function NouvelleOffrePage() {
           </div>
         </Card>
 
-        {/* Tarification & Calculateur de Commission Transparente (Uniquement si commission active) */}
+        {/* Tarification & Calculateur de Commission (Uniquement si commission active) */}
         <Card className="p-6 border border-slate-200 bg-white shadow-2xs space-y-4">
           <div className="flex items-center justify-between border-b border-slate-100 pb-3">
             <h2 className="text-sm font-bold uppercase tracking-wider text-slate-900">
@@ -343,11 +334,10 @@ export default function NouvelleOffrePage() {
                 <button
                   type="button"
                   onClick={() => setModeTarification('INCLURE_COMMISSION')}
-                  className={`p-3.5 rounded-xl border text-left transition-all cursor-pointer ${
-                    modeTarification === 'INCLURE_COMMISSION'
+                  className={`p-3.5 rounded-xl border text-left transition-all cursor-pointer ${modeTarification === 'INCLURE_COMMISSION'
                       ? 'border-indigo-600 bg-indigo-50/50 shadow-2xs'
                       : 'border-slate-200 bg-slate-50 hover:bg-slate-100'
-                  }`}
+                    }`}
                 >
                   <div className="flex items-center justify-between mb-1">
                     <span className="font-bold text-xs text-slate-900">
@@ -368,11 +358,10 @@ export default function NouvelleOffrePage() {
                 <button
                   type="button"
                   onClick={() => setModeTarification('AJOUTER_COMMISSION')}
-                  className={`p-3.5 rounded-xl border text-left transition-all cursor-pointer ${
-                    modeTarification === 'AJOUTER_COMMISSION'
+                  className={`p-3.5 rounded-xl border text-left transition-all cursor-pointer ${modeTarification === 'AJOUTER_COMMISSION'
                       ? 'border-indigo-600 bg-indigo-50/50 shadow-2xs'
                       : 'border-slate-200 bg-slate-50 hover:bg-slate-100'
-                  }`}
+                    }`}
                 >
                   <div className="flex items-center justify-between mb-1">
                     <span className="font-bold text-xs text-slate-900">
@@ -404,7 +393,7 @@ export default function NouvelleOffrePage() {
               <Input
                 name="prix"
                 type="number"
-                min="100"
+                min="5"
                 required
                 placeholder="Ex: 5000"
                 value={formData.prix}
@@ -481,7 +470,6 @@ export default function NouvelleOffrePage() {
             <span className="text-[11px] text-slate-500">Mise en forme soignée pour le client</span>
           </div>
 
-          {/* Raccourcis de modèles d'avantages */}
           <div className="space-y-1.5">
             <span className="text-xs text-slate-600 font-semibold block">
               Ajouter rapidement des caractéristiques types :
@@ -491,7 +479,7 @@ export default function NouvelleOffrePage() {
                 '1 Écran Privé avec code PIN',
                 'Qualité Ultra HD 4K',
                 'Compte renouvelable chaque mois',
-                'Livraison WhatsApp instantanée',
+                'Livraison instantanée',
                 'Garantie totale sur toute la durée',
                 'Compatible TV, Téléphone, PC',
               ].map((template) => (
