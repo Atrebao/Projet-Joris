@@ -148,13 +148,22 @@ export const authAPI = {
 export const partenairesAPI = {
   getAll: (params) => api.get('/partenaires', { params }),
   getOne: (id) => api.get(`/partenaires/${id}`),
+  getById: (id) => api.get(`/partenaires/${id}`),
   create: (data) => api.post('/partenaires/inscription', data),
   update: (id, data) => api.patch(`/partenaires/${id}`, data),
+  valider: (id) => api.patch(`/partenaires/${id}/valider`),
   validate: (id) => api.patch(`/partenaires/${id}/valider`),
   toggleActive: (id) => api.patch(`/partenaires/${id}/toggle-active`),
   getStats: (id) => api.get(`/partenaires/${id}/stats`),
-  updateCommission: (id, newCommission, commissionActive) =>
-    api.patch(`/partenaires/${id}/update-commission`, { newCommission, commissionActive }),
+  updateCommission: (id, newCommission, commissionActive = true) => {
+    if (typeof newCommission === 'object' && newCommission !== null) {
+      return api.patch(`/partenaires/${id}/update-commission`, {
+        newCommission: newCommission.tauxCommission ?? newCommission.newCommission,
+        commissionActive: newCommission.isCommissionActive ?? newCommission.commissionActive ?? true,
+      })
+    }
+    return api.patch(`/partenaires/${id}/update-commission`, { newCommission, commissionActive })
+  },
   modifyPassword: (id, newPassword, confirmPassword) =>
     api.patch(`/partenaires/${id}/modify-password`, { newPassword, confirmPassword }),
 }
@@ -332,8 +341,16 @@ export const reversementsAPI = {
   getAll: (params) => api.get('/reversements', { params }),
   getOne: (id) => api.get(`/reversements/${id}`),
   getAllBalances: (params) => api.get('/reversements/partenaires/balances', { params }),
+  getBalance: (partenaireId) => api.get(`/reversements/partenaire/${partenaireId}/balance`),
   getPartenaireBalance: (partenaireId) => api.get(`/reversements/partenaire/${partenaireId}/balance`),
-  create: (partenaireId, data) => api.post(`/reversements/partenaire/${partenaireId}`, data),
+  getByPartenaire: (partenaireId, params) => api.get(`/reversements/partenaire/${partenaireId}`, { params }),
+  create: (arg1, arg2) => {
+    if (typeof arg1 === 'object' && arg1 !== null) {
+      const pId = arg1.partenaireId
+      return api.post(`/reversements/partenaire/${pId}`, arg1)
+    }
+    return api.post(`/reversements/partenaire/${arg1}`, arg2)
+  },
   cancel: (id) => api.patch(`/reversements/${id}/annuler`),
 }
 

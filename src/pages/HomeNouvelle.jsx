@@ -463,47 +463,73 @@ export default function HomeNouvelle() {
 
 export function OfferCard({ offer, onBuy }) {
   const lowStock = Number(offer.stock) <= 5
+  const hasDirectPromo = Boolean(offer.promotionDirecte)
 
   return (
-    <article className="group flex min-h-[220px] flex-col overflow-hidden rounded-xl border border-border bg-card p-0 transition-all duration-200 hover:shadow-md hover:border-slate-300">
-      <div className="flex items-start gap-3.5 p-4 pb-2">
-        <ServiceLogo offer={offer} size="lg" />
-        <div className="min-w-0 flex-1">
-          <h3 className="truncate text-base font-bold text-slate-900 leading-tight tracking-tight group-hover:text-primary transition-colors">
-            {offer.nom}
-          </h3>
-          <span className="inline-flex items-center rounded-md bg-emerald-50 px-2 py-0.5 text-xs font-extrabold text-emerald-700 border border-emerald-200/60 mt-1.5 w-fit">
-            {offer.duree} {offer.periode || 'mois'}
-          </span>
-          <p className="mt-1 flex items-center gap-1 text-xs text-slate-500 font-medium">
-            <Store className="h-3.5 w-3.5 text-slate-400" />
-            {offer.partenaire}
+    <article className="group flex min-h-[230px] flex-col justify-between overflow-hidden rounded-2xl border border-border bg-card p-0 transition-all duration-200 hover:shadow-lg hover:border-primary/40 relative">
+      <div>
+        <div className="flex items-start gap-3.5 p-4 pb-2">
+          <ServiceLogo offer={offer} size="lg" />
+          <div className="min-w-0 flex-1">
+            <h3 className="truncate text-base font-extrabold text-slate-900 leading-tight tracking-tight group-hover:text-primary transition-colors">
+              {offer.nom}
+            </h3>
+            <div className="flex flex-wrap items-center gap-1.5 mt-1.5">
+              <span className="inline-flex items-center rounded-md bg-emerald-50 px-2 py-0.5 text-xs font-extrabold text-emerald-700 border border-emerald-200/60 w-fit">
+                {offer.duree} {offer.periode || 'mois'}
+              </span>
+
+              {hasDirectPromo && (
+                <span className="inline-flex items-center gap-1 rounded-md bg-rose-50 border border-rose-200 px-2 py-0.5 text-[11px] font-black text-rose-600 animate-pulse">
+                  <Sparkles className="h-3 w-3" />
+                  -{offer.promotionDirecte.valeur}
+                  {offer.promotionDirecte.type === 'POURCENTAGE' ? '%' : ' FCFA'}
+                </span>
+              )}
+            </div>
+            <p className="mt-1.5 flex items-center gap-1 text-xs text-slate-500 font-medium">
+              <Store className="h-3.5 w-3.5 text-slate-400" />
+              {offer.partenaire}
+            </p>
+          </div>
+          {lowStock && (
+            <span className="flex items-center gap-1 rounded-md bg-destructive/10 px-2 py-0.5 text-[10px] font-bold text-destructive whitespace-nowrap">
+              <Zap className="h-3 w-3 fill-current" />
+              Stock bas
+            </span>
+          )}
+        </div>
+
+        <div className="px-4 py-1">
+          <p className="line-clamp-2 text-xs text-slate-500 leading-relaxed whitespace-pre-line font-medium">
+            {offer.description || `${offer.nom} - Forfait ${offer.duree} ${offer.periode || 'mois'}. Livraison instantanée.`}
           </p>
         </div>
-        {lowStock && (
-          <span className="flex items-center gap-1 rounded-md bg-destructive/10 px-2 py-0.5 text-[10px] font-bold text-destructive whitespace-nowrap">
-            <Zap className="h-3 w-3 fill-current" />
-            Stock bas
-          </span>
-        )}
       </div>
 
-      <p className="line-clamp-2 px-4 py-1 text-xs text-slate-500 leading-relaxed">
-        {offer.description}
-      </p>
-
-      <div className="mt-auto flex items-center justify-between border-t border-slate-100 bg-slate-50/30 p-4">
+      <div className="mt-auto flex items-center justify-between border-t border-slate-100 bg-slate-50/50 p-4">
         <div>
-          <p className="text-base font-extrabold text-slate-950 tracking-tight">
-            {formatFCFA(offer.prix)}
-          </p>
+          {hasDirectPromo ? (
+            <div className="flex flex-col">
+              <span className="text-base font-black text-rose-600 tracking-tight">
+                {formatFCFA(offer.promotionDirecte.prixReduit)}
+              </span>
+              <span className="text-[11px] font-semibold text-slate-400 line-through">
+                {formatFCFA(offer.prix)}
+              </span>
+            </div>
+          ) : (
+            <p className="text-base font-black text-slate-950 tracking-tight">
+              {formatFCFA(offer.prix)}
+            </p>
+          )}
           <p className="text-[10px] font-medium text-slate-400 mt-0.5">
             {offer.stock} en stock
           </p>
         </div>
         <button 
           onClick={onBuy} 
-          className="h-9 rounded-lg bg-primary px-4 text-xs font-bold text-primary-foreground shadow-sm transition-all hover:bg-primary/90 active:scale-95"
+          className="h-9 rounded-xl bg-primary px-4 text-xs font-bold text-primary-foreground shadow-sm transition-all hover:bg-primary/90 active:scale-95 cursor-pointer"
         >
           Acheter
         </button>

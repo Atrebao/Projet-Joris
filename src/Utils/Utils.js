@@ -244,6 +244,8 @@ export const normalizeOffer = (data = {}) => {
     description: data.description || '',
     image: data.imageService || data.image || '',
     prix: Number(data.prixVente ?? data.prixOriginal ?? data.prix ?? 0),
+    prixOriginal: Number(data.prixOriginal ?? data.prixVente ?? data.prix ?? 0),
+    promotionDirecte: data.promotionDirecte || null,
     duree: Number(firstForfait.duree || data.duree || 1),
     periode: firstForfait.periode || 'MOIS',
     stock: Number(data.stock ?? data.quantiteDisponible ?? 0),
