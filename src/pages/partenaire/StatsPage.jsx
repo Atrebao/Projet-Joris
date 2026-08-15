@@ -1,10 +1,34 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { BarChart3, Calendar, Package, ShoppingCart, TrendingUp, Users, Wallet } from 'lucide-react'
+import {
+  BarChart3,
+  Calendar,
+  Package,
+  ShoppingCart,
+  TrendingUp,
+  Users,
+  Wallet,
+  Percent,
+  DollarSign,
+  Zap,
+  Sparkles,
+  ArrowUpRight,
+} from 'lucide-react'
 import toast from 'react-hot-toast'
 import { getPartenaireId } from '../../Utils/Utils'
-import { statsAPI } from '../../lib/api'
-import { Badge, Card, DataTable, KpiCard, LoadingState, PageHeader, Select, formatFCFA } from '../../components/saas/SaasPrimitives'
+import { statsAPI, reversementsAPI } from '../../lib/api'
+import {
+  Badge,
+  Button,
+  Card,
+  EmptyState,
+  KpiCard,
+  LoadingState,
+  PageHeader,
+  Select,
+  ServiceLogo,
+  formatFCFA,
+} from '../../components/saas/SaasPrimitives'
 
 export default function StatsPage() {
   const navigate = useNavigate()
@@ -14,6 +38,8 @@ export default function StatsPage() {
   const [stats, setStats] = useState({
     ventesMois: 0,
     revenuMois: 0,
+    revenuBrut: 0,
+    commissionsPayees: 0,
     offresMois: 0,
     clientsMois: 0,
     tendance: '+0%',
@@ -22,29 +48,42 @@ export default function StatsPage() {
   })
   const [ventesParJour, setVentesParJour] = useState([])
   const [offreTop, setOffreTop] = useState([])
+  const [balance, setBalance] = useState(null)
 
   useEffect(() => {
     if (!partenaireId) {
       navigate('/backoffice/login')
       return
     }
+
     const loadStats = async () => {
       setLoading(true)
       try {
-        const res = await statsAPI.partenaireDetailedStats(partenaireId)
-        const s = res?.data || {}
+        const [statsRes, balanceRes] = await Promise.allSettled([
+          statsAPI.partenaireDetailedStats(partenaireId),
+          reversementsAPI.getBalance(partenaireId),
+        ])
 
-        setStats({
-          ventesMois: s.ventesMois ?? s.totalVentes ?? 0,
-          revenuMois: s.revenusMois ?? 0,
-          offresMois: s.offresActives ?? 0,
-          clientsMois: s.clientsUniques ?? 0,
-          tendance: s.tendance || '+0%',
-          meilleurOffre: s.meilleurOffre || '-',
-          categorieTop: s.categorieTop || '-',
-        })
-        setVentesParJour(s.ventesParJour || [])
-        setOffreTop(s.offreTop || [])
+        if (statsRes.status === 'fulfilled') {
+          const s = statsRes.value?.data || {}
+          setStats({
+            ventesMois: s.ventesMois ?? s.totalVentes ?? 0,
+            revenuMois: s.revenusMois ?? 0,
+            revenuBrut: s.chiffreAffairesBrut ?? s.revenusMois ?? 0,
+            commissionsPayees: s.commissionsPayees ?? 0,
+            offresMois: s.offresActives ?? 0,
+            clientsMois: s.clientsUniques ?? 0,
+            tendance: s.tendance || '+0%',
+            meilleurOffre: s.meilleurOffre || '-',
+            categorieTop: s.categorieTop || '-',
+          })
+          setVentesParJour(s.ventesParJour || [])
+          setOffreTop(s.offreTop || [])
+        }
+
+        if (balanceRes.status === 'fulfilled') {
+          setBalance(balanceRes.value?.data || null)
+        }
       } catch (error) {
         console.error(error)
         toast.error('Impossible de charger les statistiques')
@@ -54,6 +93,7 @@ export default function StatsPage() {
         setLoading(false)
       }
     }
+
     loadStats()
   }, [partenaireId, navigate, periode])
 
@@ -70,91 +110,198 @@ export default function StatsPage() {
   const maxVentes = Math.max(1, ...ventesParJourAffichage.map((v) => v.ventes))
   const totalTopRevenue = offreTop.reduce((sum, offre) => sum + Number(offre.revenu || 0), 0)
 
-  if (loading) return <LoadingState label="Chargement des statistiques..." />
+  if (loading) return <LoadingState label="Chargement des statistiques partenaires..." />
 
   return (
-    <div className="space-y-6">
-      <PageHeader
-        title="Statistiques"
-        description="Analyse de vos ventes, revenus et offres les plus performantes."
-        action={
-          <Select value={periode} onChange={(e) => setPeriode(e.target.value)}>
-            <option value="semaine">Cette semaine</option>
-            <option value="mois">Ce mois</option>
-            <option value="trimestre">Ce trimestre</option>
-            <option value="annee">Cette année</option>
-          </Select>
-        }
-      />
+    <div className="space-y-6 max-w-7xl mx-auto">
+      {/* En-tête */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <PageHeader
+          title="Performances & Analyses des Ventes"
+          description="Suivi de vos volumes de vente, revenus nets réels et performance de vos forfaits de streaming."
+        />
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <KpiCard label="Ventes ce mois" value={String(stats.ventesMois)} icon={ShoppingCart} trend={stats.tendance} />
-        <KpiCard label="Revenu ce mois" value={formatFCFA(stats.revenuMois)} icon={Wallet} accent="chart3" />
-        <KpiCard label="Offres actives" value={String(stats.offresMois)} icon={Package} accent="accent" />
-        <KpiCard label="Clients actifs" value={String(stats.clientsMois)} icon={Users} accent="chart4" />
+        <select
+          value={periode}
+          onChange={(e) => setPeriode(e.target.value)}
+          className="h-10 rounded-xl border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-800 outline-none shadow-2xs self-start sm:self-center"
+        >
+          <option value="semaine">Cette semaine</option>
+          <option value="mois">Ce mois-ci</option>
+          <option value="trimestre">Ce trimestre</option>
+          <option value="annee">Cette année</option>
+        </select>
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-2">
-        <Card className="p-5">
-          <div className="mb-5 flex items-center justify-between gap-3">
-            <div>
-              <h2 className="font-semibold text-foreground">Ventes par jour</h2>
-              <p className="text-sm text-muted-foreground">Les 7 derniers jours.</p>
+      {/* Cartes KPI Financières */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        {/* Revenu Net Partenaire */}
+        <Card className="p-5 border border-slate-200 shadow-2xs bg-white">
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] font-bold uppercase tracking-wider text-emerald-700">
+              Votre Gain Net
+            </span>
+            <div className="h-8 w-8 rounded-lg bg-emerald-50 text-emerald-700 flex items-center justify-center font-bold">
+              <Wallet className="h-4 w-4" />
             </div>
-            <BarChart3 className="h-5 w-5 text-primary" />
           </div>
-          <div className="space-y-3">
-            {ventesParJourAffichage.map((jour) => (
-              <div key={jour.date || jour.jour} className="grid grid-cols-[3rem_1fr_2rem] items-center gap-3">
-                <span className="text-sm font-medium text-muted-foreground">{jour.jour}</span>
-                <div className="h-8 overflow-hidden rounded-full bg-muted">
-                  <div
-                    className="flex h-full items-center justify-end rounded-full bg-primary pr-3 text-xs font-semibold text-primary-foreground"
-                    style={{ width: `${Math.max(8, (jour.ventes / maxVentes) * 100)}%` }}
-                  >
-                    {jour.ventes > 0 ? jour.ventes : ''}
+          <p className="mt-3 text-2xl font-bold text-slate-900 tracking-tight font-mono">
+            {formatFCFA(stats.revenuMois)}
+          </p>
+          <p className="mt-1 text-xs text-slate-500">
+            Revenu après déduction commission
+          </p>
+        </Card>
+
+        {/* Volume Brut */}
+        <Card className="p-5 border border-slate-200 shadow-2xs bg-white">
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500">
+              Ventes Réalisées
+            </span>
+            <div className="h-8 w-8 rounded-lg bg-slate-100 text-slate-700 flex items-center justify-center font-bold">
+              <ShoppingCart className="h-4 w-4" />
+            </div>
+          </div>
+          <p className="mt-3 text-2xl font-bold text-slate-900 tracking-tight">
+            {stats.ventesMois} commande{stats.ventesMois > 1 ? 's' : ''}
+          </p>
+          <div className="mt-1 flex items-center gap-1 text-xs text-emerald-700 font-semibold">
+            <TrendingUp className="h-3.5 w-3.5" />
+            <span>{stats.tendance} vs période préc.</span>
+          </div>
+        </Card>
+
+        {/* Offres Actives */}
+        <Card className="p-5 border border-slate-200 shadow-2xs bg-white">
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500">
+              Offres en Ligne
+            </span>
+            <div className="h-8 w-8 rounded-lg bg-slate-100 text-slate-700 flex items-center justify-center font-bold">
+              <Package className="h-4 w-4" />
+            </div>
+          </div>
+          <p className="mt-3 text-2xl font-bold text-slate-900 tracking-tight">
+            {stats.offresMois} offre{stats.offresMois > 1 ? 's' : ''}
+          </p>
+          <p className="mt-1 text-xs text-slate-500">
+            Visibles sur la marketplace
+          </p>
+        </Card>
+
+        {/* Clients Uniques */}
+        <Card className="p-5 border border-slate-200 shadow-2xs bg-white">
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500">
+              Clients Uniques
+            </span>
+            <div className="h-8 w-8 rounded-lg bg-slate-100 text-slate-700 flex items-center justify-center font-bold">
+              <Users className="h-4 w-4" />
+            </div>
+          </div>
+          <p className="mt-3 text-2xl font-bold text-slate-900 tracking-tight">
+            {stats.clientsMois} client{stats.clientsMois > 1 ? 's' : ''}
+          </p>
+          <p className="mt-1 text-xs text-slate-500">
+            Abonnés ayant souscrit
+          </p>
+        </Card>
+      </div>
+
+      {/* Graphique Ventes & Top Offres */}
+      <div className="grid gap-6 lg:grid-cols-12">
+        {/* Évolution Journalière (7 colonnes) */}
+        <Card className="lg:col-span-7 p-6 border border-slate-200 shadow-2xs bg-white">
+          <div className="flex items-center justify-between border-b border-slate-100 pb-4 mb-4">
+            <div>
+              <h2 className="text-sm font-bold uppercase tracking-wider text-slate-900">
+                Rythme des Ventes (7 Derniers Jours)
+              </h2>
+              <p className="text-xs text-slate-500 mt-0.5">
+                Nombre de commandes quotidiennes enregistrées
+              </p>
+            </div>
+            <BarChart3 className="h-4 w-4 text-slate-400" />
+          </div>
+
+          <div className="mt-4 flex h-56 items-end gap-3 sm:gap-6 px-2">
+            {ventesParJourAffichage.map((item) => {
+              const height = Math.max(8, (item.ventes / maxVentes) * 170)
+              return (
+                <div key={item.date || item.jour} className="flex flex-1 flex-col items-center gap-2">
+                  <div className="flex h-44 w-full items-end justify-center">
+                    <div
+                      className="w-full max-w-8 rounded-t-lg bg-slate-900 hover:bg-slate-800 transition-colors cursor-pointer"
+                      style={{ height }}
+                      title={`${item.jour}: ${item.ventes} vente(s)`}
+                    />
                   </div>
+                  <span className="text-[11px] font-semibold text-slate-600">{item.jour}</span>
                 </div>
-                <span className="text-right text-sm font-semibold">{jour.ventes}</span>
-              </div>
-            ))}
+              )
+            })}
           </div>
         </Card>
 
-        <Card className="p-5">
-          <div className="mb-5 flex items-center justify-between gap-3">
-            <div>
-              <h2 className="font-semibold text-foreground">Top offres</h2>
-              <p className="text-sm text-muted-foreground">{formatFCFA(totalTopRevenue)} sur les meilleures offres.</p>
+        {/* Top Offres Performantes (5 colonnes) */}
+        <Card className="lg:col-span-5 p-6 border border-slate-200 shadow-2xs bg-white flex flex-col justify-between">
+          <div>
+            <div className="border-b border-slate-100 pb-4 mb-4">
+              <h2 className="text-sm font-bold uppercase tracking-wider text-slate-900">
+                Vos Offres les Plus Prisées
+              </h2>
+              <p className="text-xs text-slate-500 mt-0.5">
+                Classement par chiffre d&apos;affaires généré
+              </p>
             </div>
-            <TrendingUp className="h-5 w-5 text-primary" />
-          </div>
-          <DataTable
-            data={offreTop}
-            emptyLabel="Aucune vente disponible"
-            columns={[
-              { key: 'nom', label: 'Offre', render: (offre) => <span className="font-medium text-foreground">{offre.nom}</span> },
-              { key: 'ventes', label: 'Ventes', render: (offre) => <Badge tone="muted">{offre.ventes}</Badge> },
-              { key: 'revenu', label: 'Revenu', render: (offre) => <span className="font-semibold">{formatFCFA(offre.revenu)}</span> },
-            ]}
-          />
-        </Card>
-      </div>
 
-      <div className="grid gap-4 md:grid-cols-2">
-        <Card className="p-5">
-          <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 text-primary">
-            <TrendingUp className="h-5 w-5" />
+            <div className="space-y-3.5">
+              {offreTop.length === 0 ? (
+                <div className="py-12 text-center text-xs text-slate-500">
+                  Aucune vente enregistrée sur cette période.
+                </div>
+              ) : (
+                offreTop.slice(0, 4).map((offre, index) => {
+                  const percent = totalTopRevenue > 0 ? Math.round((Number(offre.revenu || 0) / totalTopRevenue) * 100) : 0
+                  return (
+                    <div key={offre.nom} className="p-3 rounded-xl bg-slate-50 border border-slate-100">
+                      <div className="flex items-center justify-between text-xs mb-1.5">
+                        <div className="flex items-center gap-2 min-w-0">
+                          <span className="h-5 w-5 rounded-full bg-slate-200 text-slate-700 font-bold text-[10px] flex items-center justify-center shrink-0">
+                            #{index + 1}
+                          </span>
+                          <span className="font-bold text-slate-900 truncate">{offre.nom}</span>
+                        </div>
+                        <span className="font-mono font-bold text-slate-900 shrink-0">
+                          {formatFCFA(offre.revenu)}
+                        </span>
+                      </div>
+                      <div className="h-1.5 overflow-hidden rounded-full bg-slate-200">
+                        <div
+                          className="h-full rounded-full bg-slate-900 transition-all duration-500"
+                          style={{ width: `${Math.max(5, percent)}%` }}
+                        />
+                      </div>
+                      <div className="flex items-center justify-between text-[10px] text-slate-500 mt-1">
+                        <span>{offre.ventes || 0} vente(s)</span>
+                        <span>{percent}% du revenu</span>
+                      </div>
+                    </div>
+                  )
+                })
+              )}
+            </div>
           </div>
-          <p className="text-sm text-muted-foreground">Meilleure offre</p>
-          <p className="mt-1 text-xl font-bold text-foreground">{stats.meilleurOffre}</p>
-        </Card>
-        <Card className="p-5">
-          <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-lg bg-accent text-accent-foreground">
-            <Calendar className="h-5 w-5" />
+
+          <div className="mt-4 p-3.5 rounded-xl bg-slate-50 border border-slate-100 text-xs">
+            <span className="font-bold text-slate-800 block mb-0.5">
+              💡 Conseil de Croissance
+            </span>
+            <p className="text-slate-500 text-[11px] leading-relaxed">
+              Consultez régulièrement vos stocks d&apos;identifiants pour éviter toute rupture sur vos offres les plus vendues.
+            </p>
           </div>
-          <p className="text-sm text-muted-foreground">Catégorie leader</p>
-          <p className="mt-1 text-xl font-bold text-foreground">{stats.categorieTop}</p>
         </Card>
       </div>
     </div>

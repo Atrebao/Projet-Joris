@@ -71,9 +71,11 @@ export default function DetailOffre() {
     return offre.forfaits.find((forfait) => String(forfait.id) === String(selectedForfaitId)) || offre.forfaits[0]
   }, [offre, selectedForfaitId])
 
-  const amount = Number(offre?.prix || 0)
+  const hasDirectPromo = Boolean(offre?.promotionDirecte)
+  const basePrice = hasDirectPromo ? Number(offre.promotionDirecte.prixReduit) : Number(offre?.prix || 0)
+  const originalPrice = Number(offre?.prixOriginal || offre?.prix || 0)
   const discount = Number(promo?.remiseXof || 0)
-  const total = Math.max(0, amount - discount)
+  const total = Math.max(0, basePrice - discount)
 
   const applyPromo = async () => {
     const code = promoCode.trim()
@@ -89,8 +91,8 @@ export default function DetailOffre() {
         abonnementId: offre.id
       })
       const remiseValeur = Number(data?.remise || 0)
-      const remiseXof = data?.typeRemise === 'POURCENTAGE' ? (amount * remiseValeur) / 100 : remiseValeur
-      setPromo({ codePromo: data?.codePromo?.code || code, remiseXof })
+      const remiseXof = data?.typeRemise === 'POURCENTAGE' ? (basePrice * remiseValeur) / 100 : remiseValeur
+      setPromo({ codePromo: data?.codePromo?.code || code, remiseXof, promotionId: data?.codePromo?.promotionId })
       toast.success('Code promo appliqué')
     } catch (error) {
       setPromo(null)
@@ -218,7 +220,24 @@ export default function DetailOffre() {
                 <p className="truncate font-semibold">{offre.nom}</p>
                 <p className="text-sm text-muted-foreground">{selectedForfait?.duree || offre.duree} {selectedForfait?.periode || 'mois'} · {offre.partenaire}</p>
               </div>
-              <p className="font-bold text-primary">{formatFCFA(total)}</p>
+              <div className="text-right">
+                <p className="font-extrabold text-primary text-base">{formatFCFA(total)}</p>
+                {(hasDirectPromo || promo) && (
+                  <p className="text-[11px] text-muted-foreground line-through font-semibold">
+                    {formatFCFA(originalPrice)}
+                  </p>
+                )}
+              </div>
+            </div>
+
+            {/* Caractéristiques & Description de l'offre */}
+            <div className="rounded-xl border border-slate-200/80 bg-slate-50/70 p-3 text-xs space-y-1">
+              <span className="font-bold text-slate-900 block text-[11px] uppercase tracking-wider">
+                Détails de l&apos;Abonnement
+              </span>
+              <div className="text-slate-600 leading-relaxed whitespace-pre-line text-xs font-medium">
+                {offre.description || `${offre.nom} - Forfait ${selectedForfait?.duree || offre.duree} mois. Identifiants livrés automatiquement dès confirmation du paiement.`}
+              </div>
             </div>
 
             {offre.forfaits && offre.forfaits.length > 1 && (

@@ -14,14 +14,13 @@ export default function LayoutPartenaire() {
 
   const nav = [
     { to: '/partenaire', label: 'Tableau de bord', icon: LayoutDashboard, exact: true },
+    { to: '/partenaire/offres', label: 'Mes offres', icon: Package },
     { to: '/partenaire/commandes', label: 'Suivi des ventes', icon: Receipt },
-    { to: '/partenaire/whatsapp', label: 'Bot WhatsApp', icon: MessageSquare },
-    // { to: '/partenaire/offres', label: 'Mes offres', icon: Package },
-    { to: '/partenaire/offres/nouvelle', label: 'Nouvelle offre', icon: Package },
     { to: '/partenaire/forfaits', label: 'Forfaits', icon: Tag },
     { to: '/partenaire/identifiants', label: 'Stocks & Identifiants', icon: Boxes },
-    { to: '/partenaire/clients', label: 'Clients', icon: Users },
+    { to: '/partenaire/whatsapp', label: 'Bot WhatsApp', icon: MessageSquare },
     { to: '/partenaire/promotions', label: 'Promotions', icon: Percent },
+    { to: '/partenaire/clients', label: 'Clients', icon: Users },
     { to: '/partenaire/stats', label: 'Statistiques', icon: BarChart3 },
     { to: '/partenaire/modifier-password', label: 'Modifier mot de passe', icon: KeyRound }
   ]

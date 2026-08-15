@@ -9,9 +9,33 @@ import {
   CheckCircle2,
   XCircle,
   Code,
+  Sparkles,
+  Copy,
+  Check,
+  Percent,
+  Calendar,
+  Layers,
+  Users,
+  Eye,
+  EyeOff,
+  Wand2,
+  Radio,
+  Zap,
 } from 'lucide-react'
 import { promotionsAPI, codesPromoAPI, offresAPI } from '../../lib/api'
 import { getPartenaireId } from '../../Utils/Utils'
+import {
+  Button,
+  Card,
+  EmptyState,
+  Input,
+  KpiCard,
+  LoadingState,
+  PageHeader,
+  Select,
+  StatusBadge,
+  formatFCFA,
+} from '../../components/saas/SaasPrimitives'
 
 const toDateInput = (d) => {
   if (!d) return ''
@@ -27,10 +51,10 @@ export default function PromotionsPage() {
   const [loading, setLoading] = useState(true)
   const [offres, setOffres] = useState([])
   const [promotions, setPromotions] = useState([])
+  const [copiedCode, setCopiedCode] = useState(null)
 
-  const [expandedPromotionId, setExpandedPromotionId] = useState(null)
-  const [codesByPromotion, setCodesByPromotion] = useState({})
-  const [codesLoadingFor, setCodesLoadingFor] = useState(null)
+  // Mode de création de promotion : 'DIRECT' (Promotion directe sans code) ou 'CODE' (Avec code promo)
+  const [promoKind, setPromoKind] = useState('DIRECT') // 'DIRECT' | 'CODE'
 
   const emptyPromotionForm = useMemo(
     () => ({
@@ -39,9 +63,14 @@ export default function PromotionsPage() {
       description: '',
       type: 'POURCENTAGE',
       valeur: '',
+      isDirecte: true,
+      nbUtilisationsMax: -1, // -1 = illimité
+      maxUtilisationsParClient: -1, // -1 = illimité
       dateDebut: '',
       dateFin: '',
-      abonnementId: '',
+      offreId: '',
+      // Si création avec code promo direct
+      initialCode: '',
     }),
     []
   )
@@ -49,22 +78,22 @@ export default function PromotionsPage() {
   const [promoForm, setPromoForm] = useState(emptyPromotionForm)
   const [promoSubmitting, setPromoSubmitting] = useState(false)
 
-  const [codeForm, setCodeForm] = useState({
+  // Formulaire pour ajouter un code supplémentaire à une promotion existante
+  const [expandedPromotionId, setExpandedPromotionId] = useState(null)
+  const [newCodeInput, setNewCodeInput] = useState({
     code: '',
     nbUtilisationsMax: -1,
+    maxUtilisationsParClient: 1,
     dateExpiration: '',
   })
+  const [codeSubmitting, setCodeSubmitting] = useState(false)
 
-  useEffect(() => {
+  const load = async () => {
     if (!partenaireId) {
       navigate('/backoffice/login')
       return
     }
-    load()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [partenaireId])
 
-  const load = async () => {
     setLoading(true)
     try {
       const [offresRes, promosRes] = await Promise.all([
@@ -72,8 +101,8 @@ export default function PromotionsPage() {
         promotionsAPI.getByPartenaire(partenaireId),
       ])
 
-      setOffres(Array.isArray(offresRes.data) ? offresRes.data : [])
-      setPromotions(Array.isArray(promosRes.data) ? promosRes.data : [])
+      setOffres(Array.isArray(offresRes?.data) ? offresRes.data : [])
+      setPromotions(Array.isArray(promosRes?.data) ? promosRes.data : [])
     } catch (e) {
       console.error(e)
       toast.error('Impossible de charger les promotions')
@@ -82,428 +111,757 @@ export default function PromotionsPage() {
     }
   }
 
-  const offreLabelById = (id) => offres.find((o) => Number(o.id) === Number(id))?.nom || 'Toutes offres'
+  useEffect(() => {
+    load()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [partenaireId])
+
+  const generateRandomCode = () => {
+    const prefixes = ['PROMO', 'STREAM', 'VIP', 'OFFRE', 'BONUS', 'DEAL']
+    const prefix = prefixes[Math.floor(Math.random() * prefixes.length)]
+    const randomNum = Math.floor(1000 + Math.random() * 9000)
+    return `${prefix}${randomNum}`
+  }
+
+  const handleCopy = (code) => {
+    navigator.clipboard.writeText(code)
+    setCopiedCode(code)
+    toast.success(`Code ${code} copié !`)
+    setTimeout(() => setCopiedCode(null), 2000)
+  }
 
   const submitPromotion = async (e) => {
     e.preventDefault()
     setPromoSubmitting(true)
     try {
+      const isDirect = promoKind === 'DIRECT'
+
       const payload = {
         nom: promoForm.nom.trim(),
-        description: promoForm.description || undefined,
+        description: promoForm.description?.trim() || undefined,
         type: promoForm.type,
         valeur: Number(promoForm.valeur),
+        isDirecte: isDirect,
+        nbUtilisationsMax:
+          promoForm.nbUtilisationsMax === '' || Number(promoForm.nbUtilisationsMax) <= 0
+            ? -1
+            : Number(promoForm.nbUtilisationsMax),
+        maxUtilisationsParClient:
+          promoForm.maxUtilisationsParClient === '' || Number(promoForm.maxUtilisationsParClient) <= 0
+            ? -1
+            : Number(promoForm.maxUtilisationsParClient),
         dateDebut: promoForm.dateDebut ? new Date(promoForm.dateDebut) : undefined,
         dateFin: promoForm.dateFin ? new Date(promoForm.dateFin) : undefined,
         partenaireId,
-        abonnementId: promoForm.abonnementId ? Number(promoForm.abonnementId) : undefined,
+        offreId: promoForm.offreId ? Number(promoForm.offreId) : undefined,
+        abonnementId: promoForm.offreId ? Number(promoForm.offreId) : undefined,
       }
 
+      let createdPromo = null
       if (promoForm.id) {
         await promotionsAPI.update(promoForm.id, payload)
-        toast.success('Promotion mise à jour')
+        toast.success('Promotion modifiée avec succès')
       } else {
-        await promotionsAPI.create(payload)
-        toast.success('Promotion créée')
+        const { data } = await promotionsAPI.create(payload)
+        createdPromo = data
+        toast.success(
+          isDirect
+            ? 'Promotion directe créée ! Elle est désormais visible publiquement sur vos offres.'
+            : 'Promotion créée !'
+        )
+
+        // Si l'utilisateur a saisi ou généré un code promo initial
+        if (!isDirect && promoForm.initialCode.trim() && createdPromo?.id) {
+          try {
+            await codesPromoAPI.create({
+              code: promoForm.initialCode.trim().toUpperCase(),
+              promotionId: createdPromo.id,
+              nbUtilisationsMax: payload.nbUtilisationsMax,
+              maxUtilisationsParClient: payload.maxUtilisationsParClient === -1 ? 1 : payload.maxUtilisationsParClient,
+              dateExpiration: payload.dateFin,
+              partenaireId,
+            })
+            toast.success(`Code promo "${promoForm.initialCode.trim().toUpperCase()}" généré !`)
+          } catch (codeErr) {
+            console.error('Erreur création code promo initial:', codeErr)
+          }
+        }
       }
 
       setPromoForm(emptyPromotionForm)
       await load()
     } catch (e) {
       console.error(e)
-      toast.error(e?.response?.data?.message || "Erreur lors de l'enregistrement de la promotion")
+      toast.error(e?.response?.data?.message || 'Erreur lors de l’enregistrement de la promotion')
     } finally {
       setPromoSubmitting(false)
     }
   }
 
-  const editPromotion = (p) => {
-    setPromoForm({
-      id: p.id,
-      nom: p.nom || '',
-      description: p.description || '',
-      type: p.type || 'POURCENTAGE',
-      valeur: String(p.valeur ?? ''),
-      dateDebut: toDateInput(p.dateDebut),
-      dateFin: toDateInput(p.dateFin),
-      abonnementId: p.abonnementId ? String(p.abonnementId) : '',
-    })
-    setExpandedPromotionId(null)
-  }
-
-  const cancelEdit = () => {
-    setPromoForm(emptyPromotionForm)
-    setExpandedPromotionId(null)
-  }
-
-  const togglePromoActive = async (p, active) => {
-    try {
-      if (active) {
-        await promotionsAPI.activer(p.id)
-      } else {
-        await promotionsAPI.desactiver(p.id)
-      }
-      await load()
-    } catch (e) {
-      console.error(e)
-      toast.error('Erreur lors de la mise à jour du statut')
+  const handleAddCodeToPromo = async (promotionId) => {
+    if (!newCodeInput.code.trim()) {
+      toast.error('Veuillez saisir ou générer un code promo')
+      return
     }
-  }
 
-  const deletePromotion = async (p) => {
-    if (!confirm('Supprimer cette promotion ?')) return
+    setCodeSubmitting(true)
     try {
-      await promotionsAPI.supprimer(p.id)
-      toast.success('Promotion supprimée')
-      await load()
-    } catch (e) {
-      console.error(e)
-      toast.error('Erreur suppression promotion')
-    }
-  }
-
-  const loadCodesFor = async (promotionId) => {
-    setCodesLoadingFor(promotionId)
-    try {
-      const res = await codesPromoAPI.getByPromotion(promotionId)
-      setCodesByPromotion((prev) => ({
-        ...prev,
-        [promotionId]: Array.isArray(res.data) ? res.data : [],
-      }))
-    } catch (e) {
-      console.error(e)
-      toast.error('Impossible de charger les codes promo')
-    } finally {
-      setCodesLoadingFor(null)
-    }
-  }
-
-  const toggleExpanded = async (promotionId) => {
-    setExpandedPromotionId((prev) => (prev === promotionId ? null : promotionId))
-    if (expandedPromotionId !== promotionId && !codesByPromotion[promotionId]) {
-      await loadCodesFor(promotionId)
-    }
-  }
-
-  const submitCode = async (promotionId) => {
-    try {
-      const code = codeForm.code.trim()
-      if (!code) {
-        toast.error('Code promo requis')
-        return
-      }
-
       await codesPromoAPI.create({
-        code,
+        code: newCodeInput.code.trim().toUpperCase(),
         promotionId,
-        nbUtilisationsMax: Number(codeForm.nbUtilisationsMax ?? -1),
-        dateExpiration: codeForm.dateExpiration ? new Date(codeForm.dateExpiration) : undefined,
+        nbUtilisationsMax:
+          newCodeInput.nbUtilisationsMax === '' || Number(newCodeInput.nbUtilisationsMax) <= 0
+            ? -1
+            : Number(newCodeInput.nbUtilisationsMax),
+        maxUtilisationsParClient:
+          newCodeInput.maxUtilisationsParClient === '' || Number(newCodeInput.maxUtilisationsParClient) <= 0
+            ? 1
+            : Number(newCodeInput.maxUtilisationsParClient),
+        dateExpiration: newCodeInput.dateExpiration ? new Date(newCodeInput.dateExpiration) : undefined,
+        partenaireId,
       })
 
-      toast.success('Code promo créé')
-      await loadCodesFor(promotionId)
-      setCodeForm({ code: '', nbUtilisationsMax: -1, dateExpiration: '' })
-    } catch (e) {
-      console.error(e)
-      toast.error(e?.response?.data?.message || 'Erreur création code promo')
+      toast.success(`Code "${newCodeInput.code.trim().toUpperCase()}" ajouté avec succès`)
+      setNewCodeInput({
+        code: '',
+        nbUtilisationsMax: -1,
+        maxUtilisationsParClient: 1,
+        dateExpiration: '',
+      })
+      await load()
+    } catch (error) {
+      console.error(error)
+      toast.error(error?.response?.data?.message || 'Erreur lors de l’ajout du code promo')
+    } finally {
+      setCodeSubmitting(false)
     }
   }
 
-  const disableCode = async (codePromo) => {
+  const handleTogglePromo = async (promo) => {
     try {
-      await codesPromoAPI.desactiver(codePromo.id)
-      toast.success('Code promo désactivé')
-      await loadCodesFor(codePromo.promotionId)
-    } catch (e) {
-      console.error(e)
-      toast.error('Erreur désactivation code')
+      if (promo.enabled) {
+        await promotionsAPI.desactiver(promo.id)
+        toast.success('Promotion désactivée')
+      } else {
+        await promotionsAPI.activer(promo.id)
+        toast.success('Promotion activée')
+      }
+      await load()
+    } catch {
+      toast.error('Erreur lors du changement de statut')
     }
   }
 
-  const codesOfExpanded = expandedPromotionId ? codesByPromotion[expandedPromotionId] || [] : []
+  const handleDeletePromo = async (promoId, promoNom) => {
+    if (!window.confirm(`Supprimer définitivement la promotion "${promoNom}" ?`)) return
+    try {
+      await promotionsAPI.supprimer(promoId)
+      toast.success('Promotion supprimée')
+      await load()
+    } catch {
+      toast.error('Erreur lors de la suppression')
+    }
+  }
+
+  const startEdit = (promo) => {
+    setPromoKind(promo.isDirecte !== false ? 'DIRECT' : 'CODE')
+    setPromoForm({
+      id: promo.id,
+      nom: promo.nom || '',
+      description: promo.description || '',
+      type: promo.type || 'POURCENTAGE',
+      valeur: String(promo.valeur || ''),
+      isDirecte: promo.isDirecte !== false,
+      nbUtilisationsMax: promo.nbUtilisationsMax ?? -1,
+      maxUtilisationsParClient: promo.maxUtilisationsParClient ?? -1,
+      dateDebut: toDateInput(promo.dateDebut),
+      dateFin: toDateInput(promo.dateFin),
+      offreId: promo.offreId ? String(promo.offreId) : '',
+      initialCode: '',
+    })
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
+
+  // Statistiques
+  const stats = useMemo(() => {
+    const total = promotions.length
+    const directes = promotions.filter((p) => p.isDirecte !== false && (!p.codePromos || p.codePromos.length === 0)).length
+    const codes = promotions.filter((p) => p.isDirecte === false || (p.codePromos && p.codePromos.length > 0)).length
+    const actives = promotions.filter((p) => p.enabled).length
+    return { total, directes, codes, actives }
+  }, [promotions])
+
+  if (loading && promotions.length === 0) return <LoadingState label="Chargement des promotions..." />
 
   return (
     <div className="space-y-6">
-      <div className="mx-auto max-w-6xl">
-        <div className="mb-6">
-          <h1 className="text-3xl font-bold mb-2 flex items-center gap-3">
-            <Tags className="h-8 w-8 text-primary" />
-            Promotions & Codes promo
-          </h1>
-          <p className="text-gray-600">Gérez les réductions de vos offres (optionnellement liées à une offre précise).</p>
-        </div>
+      {/* En-tête */}
+      <PageHeader
+        title="Promotions & Codes Réduction"
+        description="Créez des remises automatiques visibles sur vos offres ou générez des codes promo privés à partager à vos clients."
+      />
 
-        {loading ? (
-          <div className="bg-white rounded-2xl border border-gray-200 p-8 text-center">
-            Chargement...
-          </div>
-        ) : (
-          <div className="grid lg:grid-cols-2 gap-8">
-            {/* Formulaire */}
-            <div className="rounded-xl border border-border bg-card p-6 shadow-sm">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-xl font-bold">{promoForm.id ? 'Modifier promotion' : 'Créer promotion'}</h2>
-                {promoForm.id ? (
-                  <button onClick={cancelEdit} className="text-sm font-medium text-muted-foreground hover:text-foreground">
-                    Annuler
-                  </button>
-                ) : null}
+      {/* Cartes KPI */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <KpiCard title="Total Promotions" value={stats.total} subtext={`${stats.actives} active(s)`} icon={Tags} />
+        <KpiCard
+          title="Promotions Directes"
+          value={stats.directes}
+          subtext="Visibles publiquement sur les offres"
+          icon={Eye}
+        />
+        <KpiCard
+          title="Promotions avec Code"
+          value={stats.codes}
+          subtext="Exigent la saisie d'un code"
+          icon={Code}
+        />
+        <KpiCard
+          title="Taux de Remise Moyen"
+          value={
+            promotions.length > 0
+              ? `${Math.round(
+                  promotions.reduce((acc, p) => acc + Number(p.valeur || 0), 0) / promotions.length
+                )}%`
+              : '0%'
+          }
+          subtext="Sur l'ensemble du catalogue"
+          icon={Percent}
+        />
+      </div>
+
+      <div className="grid gap-6 lg:grid-cols-12">
+        {/* Colonne Gauche : Formulaire de Création / Modification (5 colonnes) */}
+        <div className="lg:col-span-5 space-y-6">
+          <Card className="p-6 border border-border shadow-xs">
+            <div className="flex items-center justify-between border-b border-border pb-4 mb-5">
+              <div className="flex items-center gap-3">
+                <div className="h-10 w-10 rounded-2xl bg-primary/10 text-primary flex items-center justify-center font-bold">
+                  {promoForm.id ? <Edit3 className="h-5 w-5" /> : <Plus className="h-5 w-5" />}
+                </div>
+                <div>
+                  <h3 className="font-extrabold text-foreground text-base">
+                    {promoForm.id ? 'Modifier la Promotion' : 'Créer une Promotion'}
+                  </h3>
+                  <p className="text-xs text-muted-foreground">Paramétrez votre offre promotionnelle</p>
+                </div>
               </div>
-
-              <form onSubmit={submitPromotion} className="space-y-4">
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">Nom *</label>
-                  <input
-                    className="w-full rounded-lg border border-input bg-card px-4 py-3 text-sm outline-none transition focus:ring-2 focus:ring-ring/20"
-                    value={promoForm.nom}
-                    onChange={(e) => setPromoForm((s) => ({ ...s, nom: e.target.value }))}
-                    required
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">Description</label>
-                  <textarea
-                    className="w-full rounded-lg border border-input bg-card px-4 py-3 text-sm outline-none transition focus:ring-2 focus:ring-ring/20"
-                    value={promoForm.description}
-                    onChange={(e) => setPromoForm((s) => ({ ...s, description: e.target.value }))}
-                    rows={3}
-                  />
-                </div>
-
-                <div className="grid sm:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-2">Type *</label>
-                    <select
-                      className="w-full rounded-lg border border-input bg-card px-4 py-3 text-sm outline-none transition focus:ring-2 focus:ring-ring/20"
-                      value={promoForm.type}
-                      onChange={(e) => setPromoForm((s) => ({ ...s, type: e.target.value }))}
-                    >
-                      <option value="POURCENTAGE">Pourcentage</option>
-                      <option value="MONTANT_FIXE">Montant fixe (FCFA)</option>
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-2">Valeur *</label>
-                    <input
-                      type="number"
-                      className="w-full rounded-lg border border-input bg-card px-4 py-3 text-sm outline-none transition focus:ring-2 focus:ring-ring/20"
-                      value={promoForm.valeur}
-                      onChange={(e) => setPromoForm((s) => ({ ...s, valeur: e.target.value }))}
-                      required
-                    />
-                  </div>
-                </div>
-
-                <div className="grid sm:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-2">Date début *</label>
-                    <input
-                      type="date"
-                      className="w-full rounded-lg border border-input bg-card px-4 py-3 text-sm outline-none transition focus:ring-2 focus:ring-ring/20"
-                      value={promoForm.dateDebut}
-                      onChange={(e) => setPromoForm((s) => ({ ...s, dateDebut: e.target.value }))}
-                      required
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-2">Date fin *</label>
-                    <input
-                      type="date"
-                      className="w-full rounded-lg border border-input bg-card px-4 py-3 text-sm outline-none transition focus:ring-2 focus:ring-ring/20"
-                      value={promoForm.dateFin}
-                      onChange={(e) => setPromoForm((s) => ({ ...s, dateFin: e.target.value }))}
-                      required
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">
-                    Offre concernée (optionnel)
-                  </label>
-                  <select
-                    className="w-full rounded-lg border border-input bg-card px-4 py-3 text-sm outline-none transition focus:ring-2 focus:ring-ring/20"
-                    value={promoForm.abonnementId}
-                    onChange={(e) => setPromoForm((s) => ({ ...s, abonnementId: e.target.value }))}
-                  >
-                    <option value="">Toutes offres</option>
-                    {offres.map((o) => (
-                      <option key={o.id} value={o.id}>
-                        {o.nom}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <button
-                  disabled={promoSubmitting}
-                  type="submit"
-                  className="flex w-full items-center justify-center gap-2 rounded-lg bg-primary px-4 py-3 font-semibold text-primary-foreground transition hover:bg-primary/90 disabled:opacity-50"
+              {promoForm.id && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setPromoForm(emptyPromotionForm)}
+                  className="text-xs text-muted-foreground"
                 >
-                  {promoSubmitting ? '...' : promoForm.id ? 'Enregistrer' : 'Créer'}
-                </button>
-              </form>
-            </div>
-
-            {/* Liste promotions */}
-            <div className="space-y-4">
-              {promotions.length === 0 ? (
-                  <div className="rounded-xl border border-border bg-card p-6 text-center text-muted-foreground">
-                  Aucune promotion pour le moment.
-                </div>
-              ) : (
-                promotions.map((p) => {
-                  const connectedOffre = p.abonnementId ? offreLabelById(p.abonnementId) : 'Toutes offres'
-                  return (
-                    <div key={p.id} className="rounded-xl border border-border bg-card p-6 shadow-sm">
-                      <div className="flex items-start justify-between gap-4 mb-3">
-                        <div className="min-w-0">
-                          <div className="flex items-center gap-2">
-                            <h3 className="font-bold text-lg truncate">{p.nom}</h3>
-                            <span
-                              className={`px-3 py-1 rounded-full text-xs font-semibold ${
-                                p.enabled ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-700'
-                              }`}
-                            >
-                              {p.enabled ? 'Actif' : 'Inactif'}
-                            </span>
-                          </div>
-                          <div className="text-sm text-gray-600 mt-1">
-                            {p.type === 'POURCENTAGE'
-                              ? `-${Number(p.valeur) || 0}%`
-                              : `-${Number(p.valeur) || 0} FCFA`}
-                            {' '}• {connectedOffre}
-                          </div>
-                          <div className="text-xs text-gray-500 mt-1">
-                            {p.dateDebut ? new Date(p.dateDebut).toLocaleDateString('fr-FR') : '-'} -{' '}
-                            {p.dateFin ? new Date(p.dateFin).toLocaleDateString('fr-FR') : '-'}
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <button
-                            onClick={() => editPromotion(p)}
-                            className="rounded-lg p-2 transition hover:bg-muted"
-                            title="Modifier"
-                          >
-                            <Edit3 className="h-5 w-5 text-slate-700" />
-                          </button>
-                          <button
-                            onClick={() => togglePromoActive(p, !p.enabled)}
-                            className="rounded-lg p-2 transition hover:bg-muted"
-                            title={p.enabled ? 'Désactiver' : 'Activer'}
-                          >
-                            {p.enabled ? <XCircle className="h-5 w-5 text-orange-600" /> : <CheckCircle2 className="h-5 w-5 text-green-600" />}
-                          </button>
-                          <button
-                            onClick={() => deletePromotion(p)}
-                            className="p-2 hover:bg-red-50 rounded-lg transition-all"
-                            title="Supprimer"
-                          >
-                            <Trash2 className="h-5 w-5 text-red-600" />
-                          </button>
-                        </div>
-                      </div>
-
-                      <div className="flex items-center justify-between gap-3">
-                        <button
-                          type="button"
-                          onClick={() => toggleExpanded(p.id)}
-                          className="flex items-center gap-2 font-semibold text-primary hover:text-primary/80"
-                        >
-                          <Code className="h-4 w-4" />
-                          {expandedPromotionId === p.id ? 'Masquer codes' : 'Gérer codes'}
-                        </button>
-                        <div className="text-xs text-gray-500">
-                          {p.abonnementId ? `Offre ${p.abonnementId}` : 'Non lié'}
-                        </div>
-                      </div>
-
-                      {expandedPromotionId === p.id && (
-                        <div className="mt-4 pt-4 border-t border-gray-100">
-                          {codesLoadingFor === p.id ? (
-                            <div className="text-sm text-gray-600">Chargement des codes...</div>
-                          ) : (
-                            <>
-                              {/* Form code */}
-                              <div className="flex flex-col sm:flex-row gap-2 mb-3">
-                                <input
-                                  className="flex-1 rounded-lg border border-input bg-card px-4 py-3 text-sm outline-none transition focus:ring-2 focus:ring-ring/20"
-                                  placeholder="Code (ex: SAVE20)"
-                                  value={codeForm.code}
-                                  onChange={(e) => setCodeForm((s) => ({ ...s, code: e.target.value }))}
-                                />
-                                <input
-                                  type="number"
-                                  className="w-full rounded-lg border border-input bg-card px-4 py-3 text-sm outline-none transition focus:ring-2 focus:ring-ring/20 sm:w-40"
-                                  value={codeForm.nbUtilisationsMax}
-                                  onChange={(e) => setCodeForm((s) => ({ ...s, nbUtilisationsMax: e.target.value }))}
-                                  title="Limite d'utilisations (-1 = illimité)"
-                                />
-                                <input
-                                  type="date"
-                                  className="w-full rounded-lg border border-input bg-card px-4 py-3 text-sm outline-none transition focus:ring-2 focus:ring-ring/20 sm:w-44"
-                                  value={codeForm.dateExpiration}
-                                  onChange={(e) => setCodeForm((s) => ({ ...s, dateExpiration: e.target.value }))}
-                                />
-                                <button
-                                  type="button"
-                                  onClick={() => submitCode(p.id)}
-                                  className="flex items-center gap-2 rounded-lg bg-primary px-4 py-3 font-semibold text-primary-foreground transition hover:bg-primary/90"
-                                >
-                                  <Plus className="h-4 w-4" />
-                                  Ajouter
-                                </button>
-                              </div>
-
-                              {/* Codes */}
-                              <div className="space-y-2">
-                                {(codesByPromotion[p.id] || []).length === 0 ? (
-                                  <div className="text-sm text-gray-600">Aucun code pour cette promotion.</div>
-                                ) : (
-                                  (codesByPromotion[p.id] || []).map((cp) => (
-                                    <div key={cp.id} className="flex items-center justify-between gap-3 rounded-lg border border-border bg-muted/30 p-3">
-                                      <div className="min-w-0">
-                                        <div className="font-semibold truncate">{cp.code}</div>
-                                        <div className="text-xs text-gray-500">
-                                          Utilisations: {cp.nbUtilisations}{' '}
-                                          {cp.nbUtilisationsMax === -1 ? '(illimité)' : `/ ${cp.nbUtilisationsMax}`}
-                                        </div>
-                                        <div className="text-xs text-gray-500">
-                                          Exp: {cp.dateExpiration ? new Date(cp.dateExpiration).toLocaleDateString('fr-FR') : '-'}
-                                        </div>
-                                        <div className="text-xs mt-1">
-                                          <span className={`px-2 py-1 rounded-full text-[11px] font-semibold ${cp.enabled ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-700'}`}>
-                                            {cp.enabled ? 'Actif' : 'Inactif'}
-                                          </span>
-                                        </div>
-                                      </div>
-                                      <button
-                                        type="button"
-                                        onClick={() => disableCode(cp)}
-                                        disabled={!cp.enabled}
-                                        className="px-3 py-2 bg-white border border-gray-200 rounded-lg font-semibold hover:bg-red-50 disabled:opacity-50 transition-all"
-                                      >
-                                        <span className="text-red-600">Désactiver</span>
-                                      </button>
-                                    </div>
-                                  ))
-                                )}
-                              </div>
-                            </>
-                          )}
-                        </div>
-                      )}
-                    </div>
-                  )
-                })
+                  Annuler
+                </Button>
               )}
             </div>
+
+            {/* Sélecteur du Type de Promotion : DIRECTE vs CODE PROMO */}
+            <div className="mb-5 space-y-2">
+              <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground block">
+                Type de Réduction *
+              </label>
+              <div className="grid grid-cols-2 gap-2 p-1 bg-muted/40 rounded-2xl border border-border">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setPromoKind('DIRECT')
+                    setPromoForm((prev) => ({ ...prev, isDirecte: true }))
+                  }}
+                  className={`flex flex-col items-center justify-center p-3 rounded-xl text-center transition-all cursor-pointer ${
+                    promoKind === 'DIRECT'
+                      ? 'bg-card text-foreground font-black shadow-sm border border-border/80'
+                      : 'text-muted-foreground font-semibold hover:text-foreground'
+                  }`}
+                >
+                  <Eye className="h-4 w-4 mb-1 text-emerald-600" />
+                  <span className="text-xs">Promotion Directe</span>
+                  <span className="text-[10px] text-muted-foreground font-normal mt-0.5">
+                    Prix barré public
+                  </span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setPromoKind('CODE')
+                    setPromoForm((prev) => ({
+                      ...prev,
+                      isDirecte: false,
+                      initialCode: prev.initialCode || generateRandomCode(),
+                    }))
+                  }}
+                  className={`flex flex-col items-center justify-center p-3 rounded-xl text-center transition-all cursor-pointer ${
+                    promoKind === 'CODE'
+                      ? 'bg-card text-foreground font-black shadow-sm border border-border/80'
+                      : 'text-muted-foreground font-semibold hover:text-foreground'
+                  }`}
+                >
+                  <Code className="h-4 w-4 mb-1 text-primary" />
+                  <span className="text-xs">Code Promo Requis</span>
+                  <span className="text-[10px] text-muted-foreground font-normal mt-0.5">
+                    Saisi au paiement
+                  </span>
+                </button>
+              </div>
+
+              {/* Message d'explication dynamique */}
+              <div className="p-3 rounded-xl text-xs bg-muted/30 border border-border/60 text-muted-foreground flex items-start gap-2">
+                {promoKind === 'DIRECT' ? (
+                  <>
+                    <Zap className="h-4 w-4 text-emerald-600 shrink-0 mt-0.5" />
+                    <span>
+                      <strong>Promotion directe :</strong> La réduction s&apos;applique automatiquement à tous les clients. Le prix d&apos;origine sera barré avec un badge sur votre boutique.
+                    </span>
+                  </>
+                ) : (
+                  <>
+                    <EyeOff className="h-4 w-4 text-primary shrink-0 mt-0.5" />
+                    <span>
+                      <strong>Code Promo :</strong> Le prix normal reste affiché publiquement. Le client doit obligatoirement entrer le code promo au panier pour débloquer la remise.
+                    </span>
+                  </>
+                )}
+              </div>
+            </div>
+
+            <form onSubmit={submitPromotion} className="space-y-4">
+              {/* Titre / Nom */}
+              <div>
+                <label className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground mb-1 block">
+                  Nom de la promotion *
+                </label>
+                <Input
+                  required
+                  placeholder={promoKind === 'DIRECT' ? 'Ex: Promo Rentrée -20%' : 'Ex: Remise Privilège VIP'}
+                  value={promoForm.nom}
+                  onChange={(e) => setPromoForm((prev) => ({ ...prev, nom: e.target.value }))}
+                />
+              </div>
+
+              {/* Offre ciblée */}
+              <div>
+                <label className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground mb-1 block">
+                  Offre concernée
+                </label>
+                <select
+                  value={promoForm.offreId}
+                  onChange={(e) => setPromoForm((prev) => ({ ...prev, offreId: e.target.value }))}
+                  className="w-full h-10 rounded-xl border border-input bg-card px-3 text-xs font-semibold outline-none shadow-2xs"
+                >
+                  <option value="">Toutes mes offres (Offre globale)</option>
+                  {offres.map((o) => (
+                    <option key={o.id} value={o.id}>
+                      {o.titreOffre || o.nom || o.nomService} ({formatFCFA(o.prixVente || o.prixOriginal || 0)})
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Type de remise & Valeur */}
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground mb-1 block">
+                    Type de remise *
+                  </label>
+                  <select
+                    value={promoForm.type}
+                    onChange={(e) => setPromoForm((prev) => ({ ...prev, type: e.target.value }))}
+                    className="w-full h-10 rounded-xl border border-input bg-card px-3 text-xs font-semibold outline-none shadow-2xs"
+                  >
+                    <option value="POURCENTAGE">Pourcentage (%)</option>
+                    <option value="MONTANT_FIXE">Montant fixe (FCFA)</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground mb-1 block">
+                    Valeur de remise *
+                  </label>
+                  <Input
+                    type="number"
+                    required
+                    min="1"
+                    placeholder={promoForm.type === 'POURCENTAGE' ? 'Ex: 20 (%)' : 'Ex: 1000 (FCFA)'}
+                    value={promoForm.valeur}
+                    onChange={(e) => setPromoForm((prev) => ({ ...prev, valeur: e.target.value }))}
+                  />
+                </div>
+              </div>
+
+              {/* Code Promo Initial si mode CODE */}
+              {promoKind === 'CODE' && !promoForm.id && (
+                <div className="p-3.5 rounded-2xl bg-primary/5 border border-primary/20 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <label className="text-[11px] font-bold uppercase tracking-wider text-primary">
+                      Code Promo à diffuser *
+                    </label>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setPromoForm((prev) => ({ ...prev, initialCode: generateRandomCode() }))
+                      }
+                      className="text-[11px] text-primary font-bold hover:underline flex items-center gap-1 cursor-pointer"
+                    >
+                      <Wand2 className="h-3 w-3" /> Générer
+                    </button>
+                  </div>
+                  <Input
+                    required
+                    placeholder="Ex: SUMMER2026"
+                    value={promoForm.initialCode}
+                    onChange={(e) =>
+                      setPromoForm((prev) => ({
+                        ...prev,
+                        initialCode: e.target.value.toUpperCase().replace(/\s/g, ''),
+                      }))
+                    }
+                    className="font-mono font-bold tracking-wider uppercase text-sm"
+                  />
+                </div>
+              )}
+
+              {/* Quotas & Limites d'utilisation (Optionnels) */}
+              <div className="grid grid-cols-2 gap-3 pt-2 border-t border-border/80">
+                <div>
+                  <label className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground mb-1 block">
+                    Quota total utilisations
+                  </label>
+                  <Input
+                    type="number"
+                    min="-1"
+                    placeholder="Illimité (-1)"
+                    value={promoForm.nbUtilisationsMax === -1 ? '' : promoForm.nbUtilisationsMax}
+                    onChange={(e) =>
+                      setPromoForm((prev) => ({
+                        ...prev,
+                        nbUtilisationsMax: e.target.value === '' ? -1 : Number(e.target.value),
+                      }))
+                    }
+                  />
+                  <span className="text-[10px] text-muted-foreground">Laisser vide = illimité</span>
+                </div>
+                <div>
+                  <label className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground mb-1 block">
+                    Max fois par client
+                  </label>
+                  <Input
+                    type="number"
+                    min="-1"
+                    placeholder="1 fois par client"
+                    value={
+                      promoForm.maxUtilisationsParClient === -1 ? '' : promoForm.maxUtilisationsParClient
+                    }
+                    onChange={(e) =>
+                      setPromoForm((prev) => ({
+                        ...prev,
+                        maxUtilisationsParClient: e.target.value === '' ? -1 : Number(e.target.value),
+                      }))
+                    }
+                  />
+                  <span className="text-[10px] text-muted-foreground">1 par défaut ou illimité (-1)</span>
+                </div>
+              </div>
+
+              {/* Dates Optionnelles (Début & Fin) */}
+              <div className="grid grid-cols-2 gap-3 pt-2 border-t border-border/80">
+                <div>
+                  <label className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground mb-1 block">
+                    Date début (optionnelle)
+                  </label>
+                  <Input
+                    type="date"
+                    value={promoForm.dateDebut}
+                    onChange={(e) => setPromoForm((prev) => ({ ...prev, dateDebut: e.target.value }))}
+                  />
+                </div>
+                <div>
+                  <label className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground mb-1 block">
+                    Date fin (optionnelle)
+                  </label>
+                  <Input
+                    type="date"
+                    value={promoForm.dateFin}
+                    onChange={(e) => setPromoForm((prev) => ({ ...prev, dateFin: e.target.value }))}
+                  />
+                </div>
+              </div>
+
+              <div className="pt-2">
+                <Button
+                  type="submit"
+                  disabled={promoSubmitting}
+                  className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-bold shadow-sm rounded-xl py-2.5 h-auto"
+                >
+                  {promoSubmitting ? 'Enregistrement...' : promoForm.id ? 'Mettre à jour' : 'Créer la promotion'}
+                </Button>
+              </div>
+            </form>
+          </Card>
+        </div>
+
+        {/* Colonne Droite : Liste des Promotions & Gestion des Codes (7 colonnes) */}
+        <div className="lg:col-span-7 space-y-4">
+          <div className="flex items-center justify-between">
+            <h3 className="font-extrabold text-foreground text-base">
+              Promotions Actives & Historique ({promotions.length})
+            </h3>
+            <span className="text-xs text-muted-foreground">
+              {stats.directes} directe(s) • {stats.codes} avec code
+            </span>
           </div>
-        )}
+
+          {promotions.length === 0 ? (
+            <Card className="p-8">
+              <EmptyState
+                icon={Tags}
+                title="Aucune promotion pour le moment"
+                description="Créez votre première réduction directe ou générez un code promo pour stimuler vos ventes."
+              />
+            </Card>
+          ) : (
+            <div className="space-y-4">
+              {promotions.map((p) => {
+                const isDirect = p.isDirecte !== false && (!p.codePromos || p.codePromos.length === 0)
+                const isExpanded = expandedPromotionId === p.id
+                const targetedOffer = offres.find((o) => Number(o.id) === Number(p.offreId))
+
+                return (
+                  <Card
+                    key={p.id}
+                    className={`p-5 border transition-all duration-200 ${
+                      !p.enabled ? 'opacity-60 bg-muted/20 border-dashed' : 'border-border bg-card shadow-2xs'
+                    }`}
+                  >
+                    {/* Ligne 1 : Titre + Badge Type + Toggle Statut */}
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="space-y-1">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <h4 className="font-extrabold text-foreground text-base">{p.nom}</h4>
+
+                          {isDirect ? (
+                            <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 border border-emerald-200 px-2.5 py-0.5 text-[11px] font-extrabold text-emerald-700">
+                              <Eye className="h-3 w-3" /> DIRECTE (VISIBLE)
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 border border-primary/20 px-2.5 py-0.5 text-[11px] font-extrabold text-primary">
+                              <Code className="h-3 w-3" /> CODE PROMO REQUIS
+                            </span>
+                          )}
+
+                          <span className="inline-flex items-center gap-1 rounded-full bg-rose-50 border border-rose-200 px-2.5 py-0.5 text-[11px] font-black text-rose-600">
+                            -{p.valeur}
+                            {p.type === 'POURCENTAGE' ? '%' : ' FCFA'}
+                          </span>
+                        </div>
+
+                        <p className="text-xs text-muted-foreground">
+                          Cible :{' '}
+                          <strong className="text-foreground">
+                            {targetedOffer ? (targetedOffer.titreOffre || targetedOffer.nom) : 'Toutes vos offres'}
+                          </strong>
+                        </p>
+                      </div>
+
+                      {/* Statut & Actions */}
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => handleTogglePromo(p)}
+                          className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out ${
+                            p.enabled ? 'bg-emerald-500' : 'bg-slate-300'
+                          }`}
+                          title={p.enabled ? 'Désactiver' : 'Activer'}
+                        >
+                          <span
+                            className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+                              p.enabled ? 'translate-x-4' : 'translate-x-0'
+                            }`}
+                          />
+                        </button>
+
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => startEdit(p)}
+                          className="h-8 w-8 p-0 rounded-lg text-muted-foreground hover:text-primary"
+                        >
+                          <Edit3 className="h-3.5 w-3.5" />
+                        </Button>
+
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleDeletePromo(p.id, p.nom)}
+                          className="h-8 w-8 p-0 rounded-lg text-muted-foreground hover:text-destructive"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </Button>
+                      </div>
+                    </div>
+
+                    {/* Ligne 2 : Quotas & Validité */}
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mt-3 pt-3 border-t border-border/60 text-xs">
+                      <div>
+                        <span className="text-[10px] uppercase font-bold text-muted-foreground block">
+                          Utilisations
+                        </span>
+                        <span className="font-semibold text-foreground">
+                          {p.nbUtilisations || 0} /{' '}
+                          {p.nbUtilisationsMax === -1 ? 'Illimité' : p.nbUtilisationsMax}
+                        </span>
+                      </div>
+
+                      <div>
+                        <span className="text-[10px] uppercase font-bold text-muted-foreground block">
+                          Max / client
+                        </span>
+                        <span className="font-semibold text-foreground">
+                          {p.maxUtilisationsParClient === -1
+                            ? 'Illimité'
+                            : `${p.maxUtilisationsParClient} fois`}
+                        </span>
+                      </div>
+
+                      <div>
+                        <span className="text-[10px] uppercase font-bold text-muted-foreground block">
+                          Période
+                        </span>
+                        <span className="font-semibold text-foreground">
+                          {p.dateDebut || p.dateFin
+                            ? `${p.dateDebut ? new Date(p.dateDebut).toLocaleDateString('fr-FR') : '—'} au ${
+                                p.dateFin ? new Date(p.dateFin).toLocaleDateString('fr-FR') : '—'
+                              }`
+                            : 'Permanente'}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Section Codes Promo Associés si non directe ou si des codes existent */}
+                    {(!isDirect || (p.codePromos && p.codePromos.length > 0)) && (
+                      <div className="mt-4 pt-3 border-t border-border">
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="text-xs font-bold text-foreground flex items-center gap-1.5">
+                            <Code className="h-3.5 w-3.5 text-primary" />
+                            Codes Promo Associés ({p.codePromos?.length || 0})
+                          </span>
+
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setExpandedPromotionId((prev) => (prev === p.id ? null : p.id))
+                            }
+                            className="text-xs text-primary font-bold hover:underline cursor-pointer"
+                          >
+                            {isExpanded ? 'Fermer la gestion' : '+ Ajouter un code'}
+                          </button>
+                        </div>
+
+                        {/* Liste des codes */}
+                        {p.codePromos && p.codePromos.length > 0 ? (
+                          <div className="flex flex-wrap gap-2">
+                            {p.codePromos.map((cp) => (
+                              <div
+                                key={cp.id}
+                                className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-muted/60 border border-border text-xs font-mono font-bold"
+                              >
+                                <span>{cp.code}</span>
+                                <span className="text-[10px] font-sans text-muted-foreground font-normal">
+                                  ({cp.nbUtilisations || 0}
+                                  {cp.nbUtilisationsMax !== -1 ? `/${cp.nbUtilisationsMax}` : ''})
+                                </span>
+                                <button
+                                  type="button"
+                                  onClick={() => handleCopy(cp.code)}
+                                  className="text-muted-foreground hover:text-foreground cursor-pointer"
+                                  title="Copier le code"
+                                >
+                                  {copiedCode === cp.code ? (
+                                    <Check className="h-3.5 w-3.5 text-emerald-600" />
+                                  ) : (
+                                    <Copy className="h-3.5 w-3.5" />
+                                  )}
+                                </button>
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <p className="text-xs text-muted-foreground italic">
+                            Aucun code promo créé pour cette promotion.
+                          </p>
+                        )}
+
+                        {/* Formulaire dépliable pour ajouter un code à cette promotion */}
+                        {isExpanded && (
+                          <div className="mt-3 p-3.5 rounded-2xl bg-muted/40 border border-border space-y-3">
+                            <div className="flex items-center justify-between">
+                              <span className="text-xs font-bold text-foreground">
+                                Ajouter un code pour &quot;{p.nom}&quot;
+                              </span>
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  setNewCodeInput((prev) => ({
+                                    ...prev,
+                                    code: generateRandomCode(),
+                                  }))
+                                }
+                                className="text-[11px] text-primary font-bold hover:underline flex items-center gap-1 cursor-pointer"
+                              >
+                                <Wand2 className="h-3 w-3" /> Générer
+                              </button>
+                            </div>
+
+                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                              <Input
+                                placeholder="Ex: SUMMER2026"
+                                value={newCodeInput.code}
+                                onChange={(e) =>
+                                  setNewCodeInput((prev) => ({
+                                    ...prev,
+                                    code: e.target.value.toUpperCase().replace(/\s/g, ''),
+                                  }))
+                                }
+                                className="font-mono text-xs uppercase font-bold"
+                              />
+                              <Input
+                                type="number"
+                                min="-1"
+                                placeholder="Quota (-1 = illimité)"
+                                value={
+                                  newCodeInput.nbUtilisationsMax === -1
+                                    ? ''
+                                    : newCodeInput.nbUtilisationsMax
+                                }
+                                onChange={(e) =>
+                                  setNewCodeInput((prev) => ({
+                                    ...prev,
+                                    nbUtilisationsMax:
+                                      e.target.value === '' ? -1 : Number(e.target.value),
+                                  }))
+                                }
+                                className="text-xs"
+                              />
+                              <Button
+                                size="sm"
+                                disabled={codeSubmitting}
+                                onClick={() => handleAddCodeToPromo(p.id)}
+                                className="bg-primary hover:bg-primary/90 text-primary-foreground font-bold text-xs rounded-xl"
+                              >
+                                {codeSubmitting ? 'Ajout...' : 'Valider le code'}
+                              </Button>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </Card>
+                )
+              })}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   )
 }
-
