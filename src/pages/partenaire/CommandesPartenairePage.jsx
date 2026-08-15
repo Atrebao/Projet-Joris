@@ -215,9 +215,9 @@ export default function CommandesPartenairePage() {
       {/* Cartes KPI */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <KpiCard
-          title="Votre Revenu Net Encaissé"
+          title="Votre Revenu Encaissé"
           value={formatFCFA(stats.revenu)}
-          subtext="Gains réels après commission"
+          subtext="Total des ventes réalisées"
           icon={Wallet}
         />
         <KpiCard
@@ -303,7 +303,7 @@ export default function CommandesPartenairePage() {
                   <th className="px-4 py-3.5">Service & Forfait</th>
                   <th className="px-4 py-3.5">Client Bénéficiaire</th>
                   <th className="px-4 py-3.5">Opérateur</th>
-                  <th className="px-4 py-3.5">Décomposition Financière</th>
+                  <th className="px-4 py-3.5">Montant & Revenu</th>
                   <th className="px-4 py-3.5">Statut Livraison</th>
                   <th className="px-5 py-3.5 text-right">Actions</th>
                 </tr>
@@ -358,22 +358,28 @@ export default function CommandesPartenairePage() {
                         </span>
                       </td>
 
-                      {/* Décomposition financière */}
+                      {/* Décomposition financière (affichée uniquement si commission > 0) */}
                       <td className="px-4 py-3.5">
-                        <div className="space-y-0.5 text-[11px]">
-                          <div className="flex items-center justify-between gap-2 text-slate-500">
-                            <span>Prix client :</span>
-                            <span className="font-mono">{formatFCFA(totalClient)}</span>
+                        {comPlateforme > 0 ? (
+                          <div className="space-y-0.5 text-[11px]">
+                            <div className="flex items-center justify-between gap-2 text-slate-500">
+                              <span>Prix client :</span>
+                              <span className="font-mono">{formatFCFA(totalClient)}</span>
+                            </div>
+                            <div className="flex items-center justify-between gap-2 text-indigo-700 font-medium">
+                              <span>Com. ({tauxCom}%) :</span>
+                              <span className="font-mono">- {formatFCFA(comPlateforme)}</span>
+                            </div>
+                            <div className="flex items-center justify-between gap-2 font-bold text-emerald-700 border-t border-slate-200/60 pt-0.5">
+                              <span>Votre gain net :</span>
+                              <span className="font-mono">{formatFCFA(netPartenaire)}</span>
+                            </div>
                           </div>
-                          <div className="flex items-center justify-between gap-2 text-indigo-700 font-medium">
-                            <span>Com. ({tauxCom}%) :</span>
-                            <span className="font-mono">- {formatFCFA(comPlateforme)}</span>
+                        ) : (
+                          <div className="font-mono font-bold text-slate-900 text-xs">
+                            {formatFCFA(totalClient)}
                           </div>
-                          <div className="flex items-center justify-between gap-2 font-bold text-emerald-700 border-t border-slate-200/60 pt-0.5">
-                            <span>Votre gain net :</span>
-                            <span className="font-mono">{formatFCFA(netPartenaire)}</span>
-                          </div>
-                        </div>
+                        )}
                       </td>
 
                       <td className="px-4 py-3.5">

@@ -326,11 +326,11 @@ export default function EditerOffrePage() {
           </div>
         </Card>
 
-        {/* Tarification & Calculateur de Commission Transparente */}
+        {/* Tarification & Calculateur de Commission Transparente (Uniquement si commission active) */}
         <Card className="p-6 border border-slate-200 bg-white shadow-2xs space-y-4">
           <div className="flex items-center justify-between border-b border-slate-100 pb-3">
             <h2 className="text-sm font-bold uppercase tracking-wider text-slate-900">
-              2. Tarification & Commission Plateforme
+              {isCommissionActive ? '2. Tarification & Commission Plateforme' : '2. Tarification de l\'offre'}
             </h2>
             {isCommissionActive && (
               <span className="text-xs font-semibold text-indigo-700 bg-indigo-50 border border-indigo-100 px-2.5 py-0.5 rounded-full">
@@ -339,8 +339,8 @@ export default function EditerOffrePage() {
             )}
           </div>
 
-          {/* Sélecteur de Mode de Tarification */}
-          {isCommissionActive ? (
+          {/* Sélecteur de Mode de Tarification (Uniquement si commission active) */}
+          {isCommissionActive && (
             <div className="space-y-3">
               <label className="text-xs font-semibold text-slate-700 block">
                 Comment souhaitez-vous appliquer la commission plateforme ?
@@ -397,20 +397,15 @@ export default function EditerOffrePage() {
                 </button>
               </div>
             </div>
-          ) : (
-            <div className="p-3 rounded-xl bg-emerald-50 border border-emerald-200 text-xs text-emerald-800 flex items-center gap-2">
-              <CheckCircle2 className="h-4 w-4 text-emerald-600 shrink-0" />
-              <span>Aucune commission plateforme active sur votre compte (0%). Vous recevez 100% du prix de vente.</span>
-            </div>
           )}
 
           {/* Champ de Saisie Prix & Stock */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
             <div>
               <label className="text-xs font-semibold text-slate-700 mb-1.5 block">
-                {modeTarification === 'AJOUTER_COMMISSION'
+                {isCommissionActive && modeTarification === 'AJOUTER_COMMISSION'
                   ? 'Votre Revenu Net souhaité par vente (FCFA) *'
-                  : 'Prix de Vente Public affiché au client (FCFA) *'}
+                  : 'Prix de vente de l\'offre (FCFA) *'}
               </label>
               <Input
                 name="prix"
@@ -439,8 +434,8 @@ export default function EditerOffrePage() {
             </div>
           </div>
 
-          {/* Simulateur Financier Transparent */}
-          {Number(formData.prix) > 0 && (
+          {/* Simulateur Financier Transparent (Uniquement si commission active) */}
+          {isCommissionActive && Number(formData.prix) > 0 && (
             <div className="p-4 rounded-xl bg-slate-900 text-slate-100 space-y-2.5 text-xs mt-2 border border-slate-800">
               <div className="flex items-center justify-between font-bold text-slate-300 border-b border-slate-800 pb-2">
                 <span className="flex items-center gap-1.5">
