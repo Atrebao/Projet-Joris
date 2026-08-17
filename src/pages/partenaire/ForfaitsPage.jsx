@@ -1,9 +1,18 @@
 import { useEffect, useMemo, useState } from 'react'
 import toast from 'react-hot-toast'
-import { CalendarDays, Clock, Edit3, Layers, Plus, Save, Sparkles, X } from 'lucide-react'
+import { CalendarDays, Clock, Edit3, Layers, Plus, Save, Trash2, X } from 'lucide-react'
 import { forfaitsAPI, offresAPI } from '../../lib/api'
 import { getPartenaireId } from '../../Utils/Utils'
-import { Button, Card, DataTable, EmptyState, Input, KpiCard, PageHeader, Select } from '../../components/saas/SaasPrimitives'
+import {
+  Button,
+  Card,
+  DataTable,
+  EmptyState,
+  Input,
+  KpiCard,
+  PageHeader,
+  Select,
+} from '../../components/saas/SaasPrimitives'
 
 const PERIODES = [
   { value: 'JOUR', label: 'Jour(s)' },
@@ -120,6 +129,19 @@ export default function ForfaitsPage() {
     }
   }
 
+  const handleDelete = async (id, plan) => {
+    if (!window.confirm(`Êtes-vous sûr de vouloir supprimer le forfait "${plan}" ?`)) return
+    try {
+      await forfaitsAPI.delete(id)
+      toast.success('Forfait supprimé avec succès')
+      loadData()
+      if (form.id === id) resetForm()
+    } catch (err) {
+      console.error(err)
+      toast.error('Erreur lors de la suppression du forfait')
+    }
+  }
+
   const startEdit = (f) => {
     setForm({
       id: f.id,
@@ -134,8 +156,9 @@ export default function ForfaitsPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Forfaits & Modèles de Durée"
-        description="Créez des modèles de durée réutilisables (1 mois, 3 mois, 1 an). Le prix est ensuite fixé librement dans chaque offre."
+        title="Gestion des Forfaits & Durées"
+        description="Configurez les durées d'abonnements utilisables pour l'ensemble de vos offres (1 mois, 3 mois, 6 mois, 1 an)."
+        badge="Catalogue"
         action={
           form.id ? (
             <Button variant="secondary" onClick={resetForm}>
@@ -147,17 +170,17 @@ export default function ForfaitsPage() {
 
       {/* KPI Cards */}
       <div className="grid gap-4 sm:grid-cols-3">
-        <KpiCard label="Modèles de forfaits" value={String(stats.total)} icon={Layers} accent="primary" />
-        <KpiCard label="Forfaits mensuels" value={String(stats.mois)} icon={CalendarDays} accent="accent" />
-        <KpiCard label="Forfaits annuels" value={String(stats.annee)} icon={Clock} accent="chart3" />
+        <KpiCard label="Total Forfaits" value={String(stats.total)} icon={Layers} accent="primary" />
+        <KpiCard label="Forfaits Mensuels" value={String(stats.mois)} icon={Clock} accent="accent" />
+        <KpiCard label="Forfaits Annuels" value={String(stats.annee)} icon={CalendarDays} accent="chart3" />
       </div>
 
-      {/* Mes Forfaits - Grille Visuelle Moderne inspirée de saa-s-marketplace-app */}
+      {/* Mes Forfaits - Grille Visuelle */}
       {sortedForfaits.length > 0 && (
         <Card className="p-5">
           <div className="mb-4 flex items-center justify-between">
             <div>
-              <h2 className="text-base font-bold text-foreground">Mes Forfaits Réutilisables</h2>
+              <h2 className="text-base font-bold text-foreground">Mes Forfaits Configurés</h2>
               <p className="text-xs text-muted-foreground">Sélectionnables lors de la création de vos offres.</p>
             </div>
             <span className="text-xs font-semibold text-primary">{sortedForfaits.length} disponible(s)</span>
@@ -190,10 +213,17 @@ export default function ForfaitsPage() {
                   </p>
 
                   <div className="mt-3 flex items-center justify-between border-t border-border/60 pt-2 text-[11px] text-muted-foreground">
-                    <span>{f.description ? f.description.slice(0, 25) + '...' : 'Aucune description'}</span>
-                    <span className="font-medium text-primary opacity-0 transition-opacity group-hover:opacity-100">
-                      Modifier
-                    </span>
+                    <span className="truncate max-w-[100px]">{f.description || 'Aucune description'}</span>
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        handleDelete(f.id, f.plan)
+                      }}
+                      className="text-rose-500 hover:text-rose-700 p-1 text-xs font-bold hover:underline"
+                    >
+                      Supprimer
+                    </button>
                   </div>
                 </div>
               )
@@ -208,7 +238,7 @@ export default function ForfaitsPage() {
           <div className="mb-4">
             <h2 className="font-bold text-foreground">{form.id ? 'Modifier le forfait' : 'Créer un forfait'}</h2>
             <p className="text-xs text-muted-foreground">
-              Définissez uniquement le nom, la durée et la période.
+              Définissez le nom, la valeur de durée et la période.
             </p>
           </div>
 
@@ -279,10 +309,17 @@ export default function ForfaitsPage() {
               />
             </div>
 
-            <Button type="submit" className="w-full" disabled={submitting}>
-              {form.id ? <Save className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
-              {submitting ? 'Enregistrement...' : form.id ? 'Mettre à jour le forfait' : 'Créer le forfait'}
-            </Button>
+            <div className="flex gap-2">
+              {form.id && (
+                <Button type="button" variant="secondary" onClick={resetForm} className="w-1/3">
+                  Annuler
+                </Button>
+              )}
+              <Button type="submit" className={form.id ? 'w-2/3' : 'w-full'} disabled={submitting}>
+                {form.id ? <Save className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
+                {submitting ? 'Enregistrement...' : form.id ? 'Mettre à jour' : 'Créer le forfait'}
+              </Button>
+            </div>
           </form>
         </Card>
 
@@ -340,9 +377,19 @@ export default function ForfaitsPage() {
                   className: 'text-right',
                   cellClassName: 'text-right',
                   render: (f) => (
-                    <Button size="sm" variant="secondary" onClick={() => startEdit(f)}>
-                      <Edit3 className="h-3.5 w-3.5" /> Modifier
-                    </Button>
+                    <div className="flex items-center justify-end gap-1.5">
+                      <Button size="sm" variant="secondary" onClick={() => startEdit(f)}>
+                        <Edit3 className="h-3.5 w-3.5" /> Modifier
+                      </Button>
+                      <button
+                        type="button"
+                        onClick={() => handleDelete(f.id, f.plan)}
+                        className="p-1.5 rounded-lg text-rose-500 hover:bg-rose-500/10 transition"
+                        title="Supprimer"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    </div>
                   ),
                 },
               ]}

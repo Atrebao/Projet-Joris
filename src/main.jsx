@@ -4,10 +4,13 @@ import './index.css'
 import { RouterProvider } from "react-router-dom";
 import { AppRoute } from './router/AppRoute.jsx'
 import { Toaster } from "react-hot-toast";
+import { CurrencyProvider } from './context/CurrencyContext.jsx'
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
-    <Toaster position="top-right" reverseOrder={false} />
-    <RouterProvider router={AppRoute} />
+    <CurrencyProvider>
+      <Toaster position="top-right" reverseOrder={false} />
+      <RouterProvider router={AppRoute} />
+    </CurrencyProvider>
   </StrictMode>,
 )

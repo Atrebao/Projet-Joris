@@ -17,14 +17,16 @@ import {
   X,
   Send,
   Loader2,
-  DollarSign,
-  Percent,
+  AlertTriangle,
+  Sparkles,
+  PhoneCall,
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { getPartenaireId } from '../../Utils/Utils'
 import { souscriptionsAPI, identifiantsStockAPI } from '../../lib/api'
 import { onSocketEvent } from '../../lib/socket'
 import {
+  Badge,
   Button,
   Card,
   DataTable,
@@ -37,6 +39,7 @@ import {
   StatusBadge,
   formatFCFA,
 } from '../../components/saas/SaasPrimitives'
+import { useCurrency } from '../../context/CurrencyContext'
 
 const OPERATOR_BADGES = {
   WAVE: 'bg-sky-50 text-sky-700 border border-sky-200',
@@ -49,10 +52,12 @@ const emptyDelivery = { login: '', password: '', instructions: '' }
 
 export default function CommandesPartenairePage() {
   const partenaireId = getPartenaireId()
+  const { formatPrice } = useCurrency()
+
   const [commandes, setCommandes] = useState([])
   const [loading, setLoading] = useState(true)
   const [query, setQuery] = useState('')
-  const [activeFilter, setActiveFilter] = useState('TOUT')
+  const [activeFilter, setActiveFilter] = useState('TOUT') // 'TOUT' | 'A_LIVRER' | 'LIVREES' | 'PRIVE' | 'ECHOUE'
   const [page, setPage] = useState(1)
   const [totalPages, setTotalPages] = useState(1)
   const [total, setTotal] = useState(0)
@@ -74,7 +79,7 @@ export default function CommandesPartenairePage() {
           search: query.trim() || undefined,
           activeFilter: activeFilter !== 'TOUT' ? activeFilter : undefined,
           page,
-          limit: 12,
+          limit: 15,
         })
         const data = res?.data
         if (data && typeof data === 'object' && !Array.isArray(data)) {
@@ -124,13 +129,13 @@ export default function CommandesPartenairePage() {
     }
   }, [loadCommandes])
 
-  // Ouvrir modal de livraison et charger le stock disponible
+  // Ouvrir modal de livraison
   const openDeliveryModal = async (commande) => {
     setSelectedCommande(commande)
     setDelivery({
       login: commande.login || '',
       password: commande.password || '',
-      instructions: commande.instructions || '',
+      instructions: commande.instructions || (commande.nomProfilSouhaite ? `Profil: ${commande.nomProfilSouhaite} (PIN: ${commande.codePinSouhaite || 'Non défini'})` : ''),
     })
 
     const offreId = commande.offrePartenaire?.id || commande.abonnement?.id
@@ -154,7 +159,7 @@ export default function CommandesPartenairePage() {
     setDelivery({
       login: item.login,
       password: item.password,
-      instructions: item.instructions || '',
+      instructions: item.nomProfil ? `Profil: ${item.nomProfil} ${item.codePin ? `(PIN: ${item.codePin})` : ''} - ${item.instructions || ''}` : item.instructions || '',
     })
     toast.success('Compte du stock inséré !')
   }
@@ -171,7 +176,7 @@ export default function CommandesPartenairePage() {
     setSubmitting(true)
     try {
       await souscriptionsAPI.livrer(selectedCommande.id, delivery)
-      toast.success('Commande livrée avec succès au client !')
+      toast.success('Commande livrée avec succès au client ! 🎉')
       setSelectedCommande(null)
       setDelivery(emptyDelivery)
       await loadCommandes()
@@ -182,12 +187,13 @@ export default function CommandesPartenairePage() {
     }
   }
 
-  const generateWhatsAppLink = (cmd, del) => {
-    const phone = cmd.telephoneClient || cmd.client?.telephone
+  const generateRelanceWhatsAppLink = (cmd) => {
+    const phone = cmd.client?.numeroWhatsapp || cmd.client?.telephone || cmd.telephoneClient || cmd.numeroClient
     if (!phone) return null
     const cleanPhone = phone.replace(/[^0-9]/g, '')
     const serviceName = cmd.offrePartenaire?.titreOffre || cmd.offrePartenaire?.nomService || 'Abonnement'
-    const msg = `Bonjour ! Voici vos identifiants pour votre abonnement ${serviceName} :\n\n📧 Identifiant : ${del.login || cmd.login || '-'}\n🔑 Mot de passe : ${del.password || cmd.password || '-'}\n${del.instructions || cmd.instructions ? `📝 Note : ${del.instructions || cmd.instructions}\n` : ''}\nMerci de votre confiance !`
+    const clientNom = cmd.client?.pseudo || cmd.client?.prenoms || 'Bonjour'
+    const msg = `Bonjour ${clientNom} ! Nous avons remarqué que votre tentative de paiement pour l'offre *${serviceName}* (${formatPrice(cmd.montant || 0)}) n'a pas pu aboutir. Avez-vous besoin d'assistance pour valider votre abonnement ? 😊`
     return `https://wa.me/${cleanPhone}?text=${encodeURIComponent(msg)}`
   }
 
@@ -200,213 +206,234 @@ export default function CommandesPartenairePage() {
     return 'WAVE'
   }
 
-  if (loading && commandes.length === 0) {
-    return <LoadingState label="Chargement du journal des ventes partenaire..." />
-  }
-
   return (
     <div className="space-y-6 max-w-7xl mx-auto">
-      {/* En-tête */}
       <PageHeader
-        title="Journal des Ventes & Livraisons"
-        description="Consultez les commandes de streaming de vos clients, suivez vos gains nets par vente et livrez les identifiants en 1 clic."
+        title="Journal des Ventes & Commandes"
+        description="Consultez l'historique en temps réel de vos ventes, effectuez les livraisons manuelles ou privées et relancez les paiements non aboutis."
+        badge="Ventes"
+        action={
+          <Button
+            variant="outline"
+            onClick={() => loadCommandes()}
+            className="text-xs font-semibold rounded-lg gap-2"
+          >
+            <Clock className="h-3.5 w-3.5" /> Actualiser
+          </Button>
+        }
       />
 
       {/* Cartes KPI */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <KpiCard
-          title="Votre Revenu Encaissé"
-          value={formatFCFA(stats.revenu)}
-          subtext="Total des ventes réalisées"
+          title="Chiffre d'Affaires Reçu"
+          value={formatPrice(stats.revenu || 0)}
           icon={Wallet}
+          color="emerald"
         />
         <KpiCard
           title="Commandes Payées"
-          value={stats.payees}
-          subtext="Total souscriptions réglées"
-          icon={ShoppingBag}
+          value={stats.payees || 0}
+          icon={CheckCircle2}
+          color="primary"
         />
         <KpiCard
-          title="À Livrer d'Urgence"
-          value={stats.aLivrer}
-          subtext="Identifiants en attente"
-          icon={Clock}
+          title="En Attente de Livraison"
+          value={stats.aLivrer || 0}
+          icon={Truck}
+          color="amber"
         />
         <KpiCard
           title="Livrées avec Succès"
-          value={stats.livrees}
-          subtext="Clients servis"
-          icon={CheckCircle2}
+          value={stats.livrees || 0}
+          icon={PackageCheck}
+          color="slate"
         />
       </div>
 
-      {/* Barre d'outils et Filtres */}
-      <Card className="p-4 border border-slate-200 bg-white shadow-2xs">
-        <div className="flex flex-col md:flex-row items-center justify-between gap-3">
-          {/* Onglets Filtres */}
-          <div className="flex flex-wrap items-center gap-1.5 p-1 bg-slate-100 rounded-xl border border-slate-200/80">
+      {/* Barre d'Outils et Filtres (Points 4/5, 7) */}
+      <Card className="p-4 border border-border bg-card shadow-xs">
+        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+          <div className="flex flex-wrap items-center gap-1.5">
             {[
-              { id: 'TOUT', label: `Toutes (${stats.total})`, icon: ShoppingBag },
-              { id: 'A_LIVRER', label: `À livrer (${stats.aLivrer})`, icon: Clock },
-              { id: 'LIVREES', label: `Livrées (${stats.livrees})`, icon: CheckCircle2 },
-            ].map((tab) => {
-              const isActive = activeFilter === tab.id
-              return (
-                <button
-                  key={tab.id}
-                  onClick={() => {
-                    setActiveFilter(tab.id)
-                    setPage(1)
-                  }}
-                  className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-                    isActive
-                      ? 'bg-white text-slate-900 shadow-2xs'
-                      : 'text-slate-500 hover:text-slate-800'
-                  }`}
-                >
-                  <tab.icon className="h-3.5 w-3.5" />
-                  {tab.label}
-                </button>
-              )
-            })}
+              { id: 'TOUT', label: 'Toutes les Commandes' },
+              { id: 'A_LIVRER', label: `À Livrer (${stats.aLivrer || 0})` },
+              { id: 'LIVREES', label: 'Livrées' },
+              { id: 'PRIVE', label: '👑 Profils Privés' },
+              { id: 'ECHOUE', label: '⚠️ Échecs / En Attente' },
+            ].map((tab) => (
+              <button
+                key={tab.id}
+                onClick={() => {
+                  setActiveFilter(tab.id)
+                  setPage(1)
+                }}
+                className={`rounded-xl px-3 py-1.5 text-xs font-extrabold transition cursor-pointer ${
+                  activeFilter === tab.id
+                    ? 'bg-primary text-white shadow-xs'
+                    : 'bg-muted/40 text-muted-foreground hover:text-foreground hover:bg-muted'
+                }`}
+              >
+                {tab.label}
+              </button>
+            ))}
           </div>
 
-          {/* Recherche */}
-          <div className="relative w-full md:w-80">
-            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+          <div className="relative w-full md:w-72">
+            <Search className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
             <Input
-              type="text"
-              placeholder="Rechercher réf, client, tel..."
               value={query}
               onChange={(e) => {
                 setQuery(e.target.value)
                 setPage(1)
               }}
-              className="pl-9 text-xs"
+              placeholder="Rechercher client, réf..."
+              className="pl-9 h-9 text-xs"
             />
           </div>
         </div>
       </Card>
 
-      {/* Tableau des Commandes avec Décomposition Financière */}
-      <Card className="p-0 border border-slate-200 bg-white shadow-2xs overflow-hidden">
-        {commandes.length === 0 ? (
-          <div className="p-12 text-center text-xs text-slate-500">
-            Aucune commande ne correspond aux filtres sélectionnés.
-          </div>
+      {/* Tableau des Commandes */}
+      <Card className="p-6 border border-border bg-card shadow-xs space-y-4">
+        {loading ? (
+          <LoadingState message="Chargement des commandes..." />
+        ) : commandes.length === 0 ? (
+          <EmptyState
+            icon={ShoppingBag}
+            title="Aucune commande trouvée"
+            description="Aucune transaction ne correspond à vos filtres actuels."
+          />
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full text-xs text-left">
-              <thead className="bg-slate-50 border-b border-slate-200 text-[11px] uppercase tracking-wider text-slate-500 font-bold">
-                <tr>
-                  <th className="px-5 py-3.5">Réf & Date</th>
-                  <th className="px-4 py-3.5">Service & Forfait</th>
-                  <th className="px-4 py-3.5">Client Bénéficiaire</th>
-                  <th className="px-4 py-3.5">Opérateur</th>
-                  <th className="px-4 py-3.5">Montant & Revenu</th>
-                  <th className="px-4 py-3.5">Statut Livraison</th>
-                  <th className="px-5 py-3.5 text-right">Actions</th>
+            <table className="w-full text-left text-xs border-collapse">
+              <thead>
+                <tr className="border-b border-border text-muted-foreground font-black uppercase text-[10px]">
+                  <th className="py-3 px-3">Service & Forfait</th>
+                  <th className="py-3 px-3">Client (Pseudo / N°)</th>
+                  <th className="py-3 px-3">Type</th>
+                  <th className="py-3 px-3">Montant</th>
+                  <th className="py-3 px-3">Paiement</th>
+                  <th className="py-3 px-3">Livraison</th>
+                  <th className="py-3 px-3 text-right">Actions</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100">
-                {commandes.map((c) => {
-                  const serviceName =
-                    c.offrePartenaire?.titreOffre ||
-                    c.offrePartenaire?.nomService ||
-                    c.abonnement?.nom ||
-                    'Abonnement'
-                  const client = c.client || c.user
-                  const opKey = normalizeOp(c.operateur || c.modePaiement)
-                  const isDelivered = c.isLivred || c.estLivre || c.statutLivraison === 'LIVRE'
-
-                  // Calculs financiers transparents
-                  const totalClient = Number(c.montantTotal || c.montant || 0)
-                  const tauxCom = Number(c.tauxCommissionPlateforme || 10)
-                  const comPlateforme = Number(c.montantPlateforme || (totalClient * tauxCom) / 100)
-                  const netPartenaire = Number(c.montantPartenaire || Math.max(0, totalClient - comPlateforme))
+              <tbody className="divide-y divide-border">
+                {commandes.map((cmd) => {
+                  const isPaid = cmd.statutPaiement === 'SUCCES' || cmd.statutPaiement === 'PAYE'
+                  const isDelivered = cmd.isLivred || cmd.etatSouscription === 'ACTIF'
+                  const isPrive = cmd.typeAbonnement === 'PRIVE' || Boolean(cmd.nomProfilSouhaite)
+                  const op = normalizeOp(cmd.modePaiement || cmd.operateur)
+                  const relanceLink = generateRelanceWhatsAppLink(cmd)
 
                   return (
-                    <tr key={c.id} className="hover:bg-slate-50/60 transition-colors">
-                      <td className="px-5 py-3.5">
-                        <span className="font-mono font-bold text-slate-900 block">
-                          {c.reference || `#${c.id}`}
-                        </span>
-                        <span className="text-[10px] text-slate-400">
-                          {new Date(c.dateCreation || c.createdAt).toLocaleDateString('fr-FR')} {new Date(c.dateCreation || c.createdAt).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
-                        </span>
+                    <tr key={cmd.id} className="hover:bg-muted/30 transition">
+                      <td className="py-3 px-3">
+                        <div className="flex items-center gap-2.5">
+                          <ServiceLogo
+                            name={cmd.offrePartenaire?.titreOffre || cmd.offrePartenaire?.nomService || 'Offre'}
+                            image={cmd.offrePartenaire?.imageService}
+                            size="sm"
+                          />
+                          <div>
+                            <p className="font-extrabold text-foreground truncate max-w-[150px]">
+                              {cmd.offrePartenaire?.titreOffre || cmd.offrePartenaire?.nomService || 'Abonnement'}
+                            </p>
+                            <p className="text-[10px] text-muted-foreground">
+                              {cmd.duree || 1} {cmd.periode || 'mois'} · Réf: {cmd.reference?.slice(-6) || cmd.id}
+                            </p>
+                          </div>
+                        </div>
                       </td>
 
-                      <td className="px-4 py-3.5">
-                        <p className="font-bold text-slate-900 text-xs">{serviceName}</p>
-                        <p className="text-[10px] text-slate-500">
-                          {c.duree || 1} {c.periode ? c.periode.toLowerCase() : 'mois'}
-                        </p>
+                      <td className="py-3 px-3">
+                        <div className="font-bold text-foreground">
+                          {cmd.client?.pseudo || cmd.client?.prenoms || 'Client'}
+                        </div>
+                        <div className="text-[10px] text-muted-foreground flex items-center gap-1">
+                          <span>{cmd.client?.numeroWhatsapp || cmd.client?.telephone || cmd.numeroClient || '-'}</span>
+                        </div>
                       </td>
 
-                      <td className="px-4 py-3.5">
-                        <p className="font-bold text-slate-900">
-                          {client ? `${client.nom || ''} ${client.prenoms || ''}`.trim() : 'Client'}
-                        </p>
-                        <p className="text-[10px] text-slate-500 font-mono">
-                          {c.telephoneClient || client?.telephone || c.emailClient || '-'}
-                        </p>
-                      </td>
-
-                      <td className="px-4 py-3.5">
-                        <span className={`px-2 py-0.5 rounded-md text-[10px] font-semibold ${OPERATOR_BADGES[opKey] || 'bg-slate-100 text-slate-700'}`}>
-                          {opKey}
-                        </span>
-                      </td>
-
-                      {/* Décomposition financière (affichée uniquement si commission > 0) */}
-                      <td className="px-4 py-3.5">
-                        {comPlateforme > 0 ? (
-                          <div className="space-y-0.5 text-[11px]">
-                            <div className="flex items-center justify-between gap-2 text-slate-500">
-                              <span>Prix client :</span>
-                              <span className="font-mono">{formatFCFA(totalClient)}</span>
-                            </div>
-                            <div className="flex items-center justify-between gap-2 text-indigo-700 font-medium">
-                              <span>Com. ({tauxCom}%) :</span>
-                              <span className="font-mono">- {formatFCFA(comPlateforme)}</span>
-                            </div>
-                            <div className="flex items-center justify-between gap-2 font-bold text-emerald-700 border-t border-slate-200/60 pt-0.5">
-                              <span>Votre gain net :</span>
-                              <span className="font-mono">{formatFCFA(netPartenaire)}</span>
-                            </div>
+                      <td className="py-3 px-3">
+                        {isPrive ? (
+                          <div>
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400 font-extrabold text-[10px]">
+                              <Sparkles className="w-3 h-3" /> Privé
+                            </span>
+                            {cmd.nomProfilSouhaite && (
+                              <p className="text-[10px] text-muted-foreground mt-0.5">👤 {cmd.nomProfilSouhaite}</p>
+                            )}
                           </div>
                         ) : (
-                          <div className="font-mono font-bold text-slate-900 text-xs">
-                            {formatFCFA(totalClient)}
-                          </div>
+                          <span className="text-[10px] text-muted-foreground font-semibold">👥 Partagé</span>
                         )}
                       </td>
 
-                      <td className="px-4 py-3.5">
-                        <span
-                          className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold ${
-                            isDelivered
-                              ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
-                              : 'bg-amber-50 text-amber-700 border border-amber-200 animate-pulse'
-                          }`}
-                        >
-                          {isDelivered ? 'LIVRÉE' : 'À LIVRER'}
-                        </span>
+                      <td className="py-3 px-3 font-black text-foreground">
+                        {formatPrice(cmd.montant || 0)}
                       </td>
 
-                      <td className="px-5 py-3.5 text-right">
-                        <Button
-                          size="sm"
-                          onClick={() => openDeliveryModal(c)}
-                          className={`text-xs font-bold rounded-lg h-8 px-3 gap-1.5 shadow-2xs ${
-                            isDelivered
-                              ? 'bg-slate-100 hover:bg-slate-200 text-slate-700'
-                              : 'bg-indigo-600 hover:bg-indigo-700 text-white'
-                          }`}
-                        >
-                          <KeyRound className="h-3.5 w-3.5" />
-                          {isDelivered ? 'Voir Identifiants' : 'Livrer'}
-                        </Button>
+                      <td className="py-3 px-3">
+                        {isPaid ? (
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-500 font-black text-[10px]">
+                            <CheckCircle2 className="w-3 h-3" /> Payé ({op})
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-rose-500/10 text-rose-500 font-black text-[10px]">
+                            <AlertTriangle className="w-3 h-3" /> Échec / En attente
+                          </span>
+                        )}
+                      </td>
+
+                      <td className="py-3 px-3">
+                        {isDelivered ? (
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-slate-500/10 text-slate-500 font-extrabold text-[10px]">
+                            Livré
+                          </span>
+                        ) : isPaid ? (
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-500 font-extrabold text-[10px] animate-pulse">
+                            À livrer
+                          </span>
+                        ) : (
+                          <span className="text-[10px] text-muted-foreground">-</span>
+                        )}
+                      </td>
+
+                      <td className="py-3 px-3 text-right">
+                        <div className="flex items-center justify-end gap-1.5">
+                          {/* Bouton Relance WhatsApp si paiement échoué */}
+                          {!isPaid && relanceLink && (
+                            <a
+                              href={relanceLink}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-xs font-black hover:bg-emerald-500/20 transition"
+                              title="Relancer le client sur WhatsApp"
+                            >
+                              <PhoneCall className="w-3.5 h-3.5" />
+                              Relancer
+                            </a>
+                          )}
+
+                          {/* Bouton Livraison Manuelle ou Privée */}
+                          {isPaid && !isDelivered && (
+                            <Button size="sm" onClick={() => openDeliveryModal(cmd)} className="text-xs font-black">
+                              <Truck className="h-3.5 w-3.5" /> Livrer
+                            </Button>
+                          )}
+
+                          {isDelivered && (
+                            <button
+                              type="button"
+                              onClick={() => openDeliveryModal(cmd)}
+                              className="p-1.5 text-muted-foreground hover:text-foreground rounded-lg hover:bg-muted"
+                              title="Voir ou modifier les identifiants livrés"
+                            >
+                              <KeyRound className="w-3.5 h-3.5" />
+                            </button>
+                          )}
+                        </div>
                       </td>
                     </tr>
                   )
@@ -415,165 +442,126 @@ export default function CommandesPartenairePage() {
             </table>
           </div>
         )}
+
+        {/* Pagination */}
+        {totalPages > 1 && (
+          <div className="flex items-center justify-between border-t border-border pt-4 text-xs font-bold text-muted-foreground">
+            <span>
+              Page {page} sur {totalPages} ({total} commandes)
+            </span>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={page <= 1}
+                onClick={() => setPage((p) => p - 1)}
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={page >= totalPages}
+                onClick={() => setPage((p) => p + 1)}
+              >
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
+        )}
       </Card>
 
-      {/* Pagination */}
-      {totalPages > 1 && (
-        <div className="flex items-center justify-between border-t border-slate-200 pt-4">
-          <p className="text-xs text-slate-500 font-medium">
-            Page {page} sur {totalPages} ({total} commandes)
-          </p>
-          <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              disabled={page <= 1}
-              onClick={() => setPage((p) => Math.max(1, p - 1))}
-              className="text-xs font-semibold rounded-lg"
-            >
-              <ChevronLeft className="h-4 w-4" /> Précédent
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              disabled={page >= totalPages}
-              onClick={() => setPage((p) => p + 1)}
-              className="text-xs font-semibold rounded-lg"
-            >
-              Suivant <ChevronRight className="h-4 w-4" />
-            </Button>
-          </div>
-        </div>
-      )}
-
-      {/* Modal de Livraison 1-Clic */}
+      {/* Modal de Livraison */}
       {selectedCommande && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-xs p-4">
-          <div className="w-full max-w-xl rounded-2xl border border-slate-200 bg-white p-6 shadow-xl space-y-4 relative max-h-[90vh] flex flex-col">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in">
+          <div className="relative w-full max-w-lg bg-card border border-border rounded-3xl shadow-2xl p-6 space-y-4 max-h-[90vh] overflow-y-auto">
             <button
               onClick={() => setSelectedCommande(null)}
-              className="absolute right-4 top-4 rounded-lg p-1 text-slate-400 hover:bg-slate-100"
+              className="absolute top-4 right-4 p-2 text-muted-foreground hover:text-foreground rounded-full hover:bg-muted"
             >
-              <X className="h-5 w-5" />
+              <X className="w-4 h-4" />
             </button>
 
-            <div className="border-b border-slate-100 pb-3">
-              <h3 className="font-bold text-slate-900 text-base">
-                Livraison de la Commande #{selectedCommande.reference || selectedCommande.id}
+            <div>
+              <span className="text-[10px] font-extrabold uppercase tracking-wider text-primary">Livraison de commande</span>
+              <h3 className="text-lg font-black text-foreground">
+                {selectedCommande.offrePartenaire?.titreOffre || selectedCommande.offrePartenaire?.nomService || 'Abonnement'}
               </h3>
-              <p className="text-xs text-slate-500">
-                Service : <strong>{selectedCommande.offrePartenaire?.titreOffre || selectedCommande.offrePartenaire?.nomService || 'Abonnement'}</strong> • Client : {selectedCommande.telephoneClient || selectedCommande.client?.telephone}
+              <p className="text-xs text-muted-foreground">
+                Client : <strong>{selectedCommande.client?.pseudo || selectedCommande.client?.prenoms || 'Client'}</strong> (WhatsApp : {selectedCommande.client?.numeroWhatsapp || selectedCommande.client?.telephone || selectedCommande.numeroClient})
               </p>
             </div>
 
-            <div className="flex-1 overflow-y-auto space-y-4 pr-1">
-              {/* Comptes Disponibles en Stock */}
-              {availableStock.length > 0 && (
-                <div className="p-3 rounded-xl bg-slate-50 border border-slate-200/80 space-y-2">
-                  <div className="flex items-center justify-between text-xs font-bold text-slate-700">
-                    <span className="flex items-center gap-1.5">
-                      <Boxes className="h-3.5 w-3.5 text-indigo-600" />
-                      Comptes en stock disponibles ({availableStock.length})
-                    </span>
-                    <span className="text-[10px] text-slate-500 font-normal">Cliquez pour insérer</span>
-                  </div>
+            {/* Si c'est une commande privée */}
+            {(selectedCommande.typeAbonnement === 'PRIVE' || selectedCommande.nomProfilSouhaite) && (
+              <div className="p-3.5 bg-amber-500/10 border border-amber-500/30 rounded-2xl space-y-1">
+                <p className="text-xs font-black text-amber-600 dark:text-amber-400 flex items-center gap-1">
+                  <Sparkles className="w-3.5 h-3.5" /> Profil Privé Demandé par le Client :
+                </p>
+                <p className="text-xs text-foreground font-bold">
+                  Nom du Profil : <strong>{selectedCommande.nomProfilSouhaite || 'Au choix'}</strong>
+                  {selectedCommande.codePinSouhaite && ` · Code PIN : ${selectedCommande.codePinSouhaite}`}
+                </p>
+              </div>
+            )}
 
-                  <div className="space-y-1.5 max-h-32 overflow-y-auto">
-                    {availableStock.map((stk) => (
-                      <div
-                        key={stk.id}
-                        onClick={() => handleSelectFromStock(stk)}
-                        className="p-2 rounded-lg bg-white border border-slate-200 hover:border-indigo-500 hover:bg-indigo-50/30 transition-all cursor-pointer flex items-center justify-between text-xs font-mono"
-                      >
-                        <span className="truncate font-semibold text-slate-800">{stk.login}</span>
-                        <span className="text-[10px] font-bold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded shrink-0">
-                          Utiliser ce compte
-                        </span>
-                      </div>
-                    ))}
-                  </div>
+            {/* Stock disponible pour insertion en 1 clic */}
+            {availableStock.length > 0 && (
+              <div className="space-y-2">
+                <label className="text-xs font-bold text-muted-foreground block">
+                  Insérer depuis le stock disponible ({availableStock.length}) :
+                </label>
+                <div className="flex flex-wrap gap-2 max-h-32 overflow-y-auto p-1">
+                  {availableStock.map((stk) => (
+                    <button
+                      key={stk.id}
+                      type="button"
+                      onClick={() => handleSelectFromStock(stk)}
+                      className="px-2.5 py-1 rounded-xl bg-muted/60 hover:bg-primary/10 hover:text-primary text-[11px] font-bold border border-border transition cursor-pointer"
+                    >
+                      {stk.nomProfil ? `${stk.nomProfil} (C#${stk.numeroCompte})` : stk.login}
+                    </button>
+                  ))}
                 </div>
-              )}
+              </div>
+            )}
 
-              {/* Formulaire des Identifiants */}
-              <form onSubmit={submitDelivery} id="delivery-form" className="space-y-3">
-                <div>
-                  <label className="text-xs font-semibold text-slate-700 mb-1 block">
-                    Identifiant / Email de connexion *
-                  </label>
-                  <Input
-                    required
-                    placeholder="Ex: client.netflix@gmail.com"
-                    value={delivery.login}
-                    onChange={(e) => setDelivery((s) => ({ ...s, login: e.target.value }))}
-                    className="text-xs font-mono"
-                  />
-                </div>
-
-                <div>
-                  <label className="text-xs font-semibold text-slate-700 mb-1 block">
-                    Mot de passe *
-                  </label>
-                  <Input
-                    required
-                    placeholder="Ex: MonMotDePasse123"
-                    value={delivery.password}
-                    onChange={(e) => setDelivery((s) => ({ ...s, password: e.target.value }))}
-                    className="text-xs font-mono"
-                  />
-                </div>
-
-                <div>
-                  <label className="text-xs font-semibold text-slate-700 mb-1 block">
-                    Instructions particulières (profil, code PIN, etc.)
-                  </label>
-                  <textarea
-                    rows={2}
-                    placeholder="Ex: Connectez-vous sur le Profil 2 avec le PIN 1234."
-                    value={delivery.instructions}
-                    onChange={(e) => setDelivery((s) => ({ ...s, instructions: e.target.value }))}
-                    className="w-full rounded-lg border border-slate-200 bg-white p-2.5 text-xs font-medium text-slate-800 outline-none leading-relaxed"
-                  />
-                </div>
-              </form>
-            </div>
-
-            {/* Actions & Raccourci WhatsApp */}
-            <div className="border-t border-slate-100 pt-3 flex flex-wrap items-center justify-between gap-2">
-              <div>
-                {generateWhatsAppLink(selectedCommande, delivery) && (
-                  <a
-                    href={generateWhatsAppLink(selectedCommande, delivery)}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-800 text-xs font-bold border border-emerald-200 transition-colors"
-                  >
-                    <MessageSquare className="h-3.5 w-3.5 text-emerald-600" />
-                    Envoyer sur WhatsApp
-                  </a>
-                )}
+            <form onSubmit={submitDelivery} className="space-y-3">
+              <div className="space-y-1">
+                <label className="text-xs font-bold text-foreground block">Login / Email du compte</label>
+                <Input
+                  required
+                  placeholder="ex: netflix.compte@gmail.com"
+                  value={delivery.login}
+                  onChange={(e) => setDelivery({ ...delivery, login: e.target.value })}
+                />
               </div>
 
-              <div className="flex items-center gap-2">
-                <Button
-                  type="button"
-                  variant="ghost"
-                  onClick={() => setSelectedCommande(null)}
-                  className="text-xs font-semibold rounded-lg"
-                >
-                  Fermer
-                </Button>
-                <Button
-                  type="submit"
-                  form="delivery-form"
-                  disabled={submitting}
-                  className="bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold rounded-lg px-4 h-9 gap-1.5 shadow-2xs"
-                >
-                  {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-3.5 w-3.5" />}
-                  {submitting ? 'Validation...' : 'Valider la Livraison'}
-                </Button>
+              <div className="space-y-1">
+                <label className="text-xs font-bold text-foreground block">Mot de passe</label>
+                <Input
+                  required
+                  placeholder="ex: Pass1234!"
+                  value={delivery.password}
+                  onChange={(e) => setDelivery({ ...delivery, password: e.target.value })}
+                />
               </div>
-            </div>
+
+              <div className="space-y-1">
+                <label className="text-xs font-bold text-foreground block">Instructions / Profil (optionnel)</label>
+                <textarea
+                  rows={2}
+                  placeholder="ex: Profil 2 (PIN 1234) - Ne pas changer le mot de passe."
+                  value={delivery.instructions}
+                  onChange={(e) => setDelivery({ ...delivery, instructions: e.target.value })}
+                  className="w-full p-2.5 rounded-xl border border-input bg-card text-xs font-medium outline-none"
+                />
+              </div>
+
+              <Button type="submit" disabled={submitting} className="w-full py-2.5 text-xs font-black">
+                {submitting ? 'Validation...' : 'Valider la Livraison & Notifier le Client'}
+              </Button>
+            </form>
           </div>
         </div>
       )}

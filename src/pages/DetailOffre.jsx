@@ -1,19 +1,24 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import { ArrowLeft, CheckCircle2, Loader, Smartphone, X } from 'lucide-react'
+import { ArrowLeft, CheckCircle2, Loader, Smartphone, X, Shield, User, Lock, Sparkles, Clock, AlertTriangle } from 'lucide-react'
 import toast from 'react-hot-toast'
-import { abonnementsAPI, codesPromoAPI, souscriptionsAPI } from '../lib/api'
+import { abonnementsAPI, codesPromoAPI, souscriptionsAPI, precommandesAPI } from '../lib/api'
 import { ServiceLogo } from './HomeNouvelle'
 import { OPERATOR_BADGES, normalizeOffer } from '@/Utils/Utils'
-
-const formatFCFA = (value) => `${new Intl.NumberFormat('fr-FR').format(Number(value) || 0)} FCFA`
+import { useCurrency } from '../context/CurrencyContext'
 
 export default function DetailOffre() {
   const { id } = useParams()
   const navigate = useNavigate()
+  const { formatPrice } = useCurrency()
+
   const [offre, setOffre] = useState(null)
   const [loading, setLoading] = useState(true)
   const [selectedForfaitId, setSelectedForfaitId] = useState(null)
+  const [typeAbonnement, setTypeAbonnement] = useState('PARTAGE') // 'PARTAGE' | 'PRIVE'
+  const [nomProfilSouhaite, setNomProfilSouhaite] = useState('')
+  const [codePinSouhaite, setCodePinSouhaite] = useState('')
+
   const [selectedOperator, setSelectedOperator] = useState('orange')
   const [email, setEmail] = useState('')
   const [numeroClient, setNumeroClient] = useState('')
@@ -25,26 +30,30 @@ export default function DetailOffre() {
   const [hasPromo, setHasPromo] = useState(false)
   const [clientData, setClientData] = useState(null)
 
+  // Precommande state
+  const [showPrecommandeModal, setShowPrecommandeModal] = useState(false)
+  const [precommandeNom, setPrecommandeNom] = useState('')
+  const [precommandeWhatsapp, setPrecommandeWhatsapp] = useState('')
+  const [precommandeSubmitting, setPrecommandeSubmitting] = useState(false)
+
   useEffect(() => {
     const fetchClientData = async () => {
-      const dataClient = localStorage.getItem('infoUser')
-      if (!dataClient) {
-        navigate('/')
-        return
-      }
-
-      try {
-        const data = JSON.parse(dataClient)
-        setClientData(data)
-        setEmail(data.email || '')
-      } catch (error) {
-        console.error('Erreur lors de la récupération du client:', error)
-        navigate('/')
+      const dataClient = localStorage.getItem('infoUser') || localStorage.getItem('client_user')
+      if (dataClient) {
+        try {
+          const data = JSON.parse(dataClient)
+          setClientData(data)
+          setEmail(data.email || '')
+          setNumeroClient(data.numeroWhatsapp || data.telephone || '')
+          setPrecommandeNom(data.pseudo || `${data.prenoms || ''} ${data.nom || ''}`.trim() || '')
+          setPrecommandeWhatsapp(data.numeroWhatsapp || data.telephone || '')
+        } catch (error) {
+          console.error('Erreur récupération client:', error)
+        }
       }
     }
-
     fetchClientData()
-  }, [navigate])
+  }, [])
 
   useEffect(() => {
     const load = async () => {
@@ -62,7 +71,6 @@ export default function DetailOffre() {
         setLoading(false)
       }
     }
-
     load()
   }, [id])
 
@@ -77,6 +85,8 @@ export default function DetailOffre() {
   const discount = Number(promo?.remiseXof || 0)
   const total = Math.max(0, basePrice - discount)
 
+  const isOutOfStock = (offre?.stock ?? offre?.quantiteDisponible ?? 0) <= 0
+
   const applyPromo = async () => {
     const code = promoCode.trim()
     if (!code || !offre?.id) {
@@ -88,23 +98,53 @@ export default function DetailOffre() {
       const { data } = await codesPromoAPI.valider({
         code,
         partenaireId: offre.partenaireId,
-        abonnementId: offre.id
+        abonnementId: offre.id,
       })
       const remiseValeur = Number(data?.remise || 0)
       const remiseXof = data?.typeRemise === 'POURCENTAGE' ? (basePrice * remiseValeur) / 100 : remiseValeur
       setPromo({ codePromo: data?.codePromo?.code || code, remiseXof, promotionId: data?.codePromo?.promotionId })
-      toast.success('Code promo appliqué')
+      toast.success('Code promo appliqué avec succès !')
     } catch (error) {
       setPromo(null)
       toast.error(error?.response?.data?.message || 'Code promo invalide')
     }
   }
 
+  const handlePrecommandeSubmit = async (e) => {
+    e.preventDefault()
+    if (!precommandeWhatsapp.trim()) {
+      toast.error('Le numéro WhatsApp est obligatoire pour être alerté')
+      return
+    }
+
+    setPrecommandeSubmitting(true)
+    try {
+      await precommandesAPI.create({
+        offreId: offre.id,
+        forfaitId: selectedForfait?.id,
+        clientId: clientData?.id,
+        nomClient: precommandeNom.trim() || 'Client',
+        numeroWhatsapp: precommandeWhatsapp.trim().replace(/\s/g, ''),
+        emailClient: email.trim() || undefined,
+        duree: selectedForfait?.duree || offre?.duree || 1,
+        typeAbonnement,
+        notes: nomProfilSouhaite ? `Profil demandé: ${nomProfilSouhaite}` : undefined,
+      })
+      toast.success('Précommande enregistrée ! Vous serez notifié dès réapprovisionnement 🎉')
+      setShowPrecommandeModal(false)
+    } catch (error) {
+      console.error(error)
+      toast.error('Erreur lors de la précommande')
+    } finally {
+      setPrecommandeSubmitting(false)
+    }
+  }
+
   const submitPayment = async (event) => {
     event.preventDefault()
     if (!offre || !selectedForfait) return
-    if (!email.trim() || !numeroClient.trim()) {
-      toast.error('Veuillez renseigner vos informations client')
+    if (!numeroClient.trim()) {
+      toast.error('Veuillez renseigner votre numéro de paiement Mobile Money')
       return
     }
     if (selectedOperator === 'orange' && !otp.trim()) {
@@ -115,48 +155,62 @@ export default function DetailOffre() {
     const operator = OPERATOR_BADGES.find((item) => item.id === selectedOperator)
     setSubmitting(true)
     try {
-      const { data } = await souscriptionsAPI.initierPaiement({
+      const response = await souscriptionsAPI.initierPaiement({
         abonnementId: offre.id,
         forfaitId: selectedForfait.id,
         montant: total,
-        email,
+        email: email.trim() || undefined,
         numeroClient: numeroClient.replace(/\s/g, ''),
         operateur: operator?.operateur || selectedOperator,
         otp: selectedOperator === 'orange' ? otp.trim() : undefined,
         codePromo: promo?.codePromo,
-        description: `${offre.nom} - ${selectedForfait.duree || offre.duree} mois`,
+        description: `${offre.nom} - ${selectedForfait.duree || offre.duree} mois (${typeAbonnement === 'PRIVE' ? 'Privé' : 'Partagé'})`,
         modePaiement: operator?.operateur || selectedOperator,
         pseudo: clientData?.username || clientData?.pseudo || '',
-        telephone: clientData?.telephone || clientData?.phone || clientData?.numero || ''
+        telephone: clientData?.telephone || clientData?.numeroWhatsapp || numeroClient.replace(/\s/g, ''),
       })
 
-      localStorage.setItem('pendingPayment', JSON.stringify({
-        reference: data?.reference,
-        montant: total,
-        provider: selectedOperator,
-        offreId: offre.id,
-        offreNom: offre.nom,
-        forfaitId: selectedForfait.id,
-        email,
-        numeroClient: numeroClient.replace(/\s/g, ''),
-        codePromo: promo?.codePromo
-      }))
+      const data = response.data
+
+      localStorage.setItem(
+        'pendingPayment',
+        JSON.stringify({
+          reference: data?.reference,
+          montant: total,
+          provider: selectedOperator,
+          offreId: offre.id,
+          offreNom: offre.nom,
+          forfaitId: selectedForfait.id,
+          email,
+          numeroClient: numeroClient.replace(/\s/g, ''),
+          codePromo: promo?.codePromo,
+        }),
+      )
+
+      // Extraction de l'URL de redirection Wave
+      const redirectUrl =
+        data?.redirectUrl ||
+        data?.billmapResponse?.wave_launch_url ||
+        data?.billmapResponse?.url ||
+        data?.billmapResponse?.redirectUrl ||
+        data?.billmapResponse?.data?.wave_launch_url ||
+        null
 
       setSuccess(true)
       setTimeout(() => {
-        if (selectedOperator === 'wave' && data?.redirectUrl) {
-          window.location.href = data.redirectUrl
+        if (selectedOperator === 'wave' && redirectUrl) {
+          window.location.href = redirectUrl
           return
         }
-        navigate('/confirmation', { 
-          state: { 
-            offre, 
-            montant: total, 
-            reference: data?.reference, 
-            paymentMethod: selectedOperator 
-          } 
+        navigate('/confirmation', {
+          state: {
+            offre,
+            montant: total,
+            reference: data?.reference,
+            paymentMethod: selectedOperator,
+          },
         })
-      }, 1200)
+      }, 1000)
     } catch (error) {
       console.error(error)
       toast.error(error?.response?.data?.message || 'Erreur lors du paiement')
@@ -176,10 +230,13 @@ export default function DetailOffre() {
   if (!offre) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-background p-4">
-        <div className="rounded-xl border border-border bg-card p-8 text-center">
-          <p className="font-semibold">Offre introuvable</p>
-          <button onClick={() => navigate('/')} className="mt-4 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground">
-            Retour
+        <div className="rounded-2xl border border-border bg-card p-8 text-center max-w-sm">
+          <p className="font-bold text-foreground">Offre introuvable</p>
+          <button
+            onClick={() => navigate('/')}
+            className="mt-4 rounded-xl bg-primary px-5 py-2.5 text-xs font-bold text-white shadow-md"
+          >
+            Retour au catalogue
           </button>
         </div>
       </div>
@@ -189,179 +246,251 @@ export default function DetailOffre() {
   return (
     <div className="min-h-screen bg-background px-4 py-8 text-foreground">
       <div className="mx-auto mb-4 max-w-xl">
-        <button onClick={() => navigate('/')} className="inline-flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-foreground">
+        <button
+          onClick={() => navigate('/')}
+          className="inline-flex items-center gap-2 text-xs font-bold text-muted-foreground hover:text-foreground transition"
+        >
           <ArrowLeft className="h-4 w-4" />
-          Retour au marketplace
+          Retour aux offres
         </button>
       </div>
 
-      <div className="mx-auto max-w-xl overflow-hidden rounded-2xl border border-border bg-card shadow-xl">
-        <div className="flex items-start justify-between gap-4 border-b border-border p-4">
+      <div className="mx-auto max-w-xl overflow-hidden rounded-3xl border border-border bg-card shadow-2xl">
+        {/* Header Carte Offre */}
+        <div className="flex items-start justify-between gap-4 border-b border-border p-5">
           <div>
-            <h1 className="text-lg font-semibold">Paiement Mobile Money</h1>
-            <p className="mt-1 text-sm text-muted-foreground">Validez votre achat en quelques secondes.</p>
+            <span className="text-[10px] font-extrabold uppercase tracking-wider text-primary">Souscription Express</span>
+            <h1 className="text-xl font-black text-foreground">{offre.nom}</h1>
+            <p className="mt-0.5 text-xs text-muted-foreground">Sélectionnez votre forfait et finalisez votre paiement sécurisé.</p>
           </div>
-          <button onClick={() => navigate('/')} className="rounded-lg p-1 text-muted-foreground hover:bg-muted">
+          <button onClick={() => navigate('/')} className="rounded-xl p-2 text-muted-foreground hover:bg-muted transition">
             <X className="h-4 w-4" />
           </button>
         </div>
 
         {success ? (
-          <div className="p-8 text-center">
-            <CheckCircle2 className="mx-auto h-12 w-12 text-primary" />
-            <h2 className="mt-4 text-xl font-semibold">Demande envoyée</h2>
-            <p className="mt-2 text-sm text-muted-foreground">Nous vérifions le paiement, puis vous serez redirigé.</p>
+          <div className="p-10 text-center space-y-4">
+            <div className="inline-flex p-4 rounded-3xl bg-emerald-500/10 text-emerald-500 animate-bounce">
+              <CheckCircle2 className="h-12 w-12" />
+            </div>
+            <h2 className="text-2xl font-black text-foreground">Paiement en cours...</h2>
+            <p className="text-xs text-muted-foreground max-w-xs mx-auto">
+              Validation de la transaction. Redirection en cours vers la confirmation...
+            </p>
           </div>
         ) : (
-          <form onSubmit={submitPayment} className="space-y-4 p-4">
-            <div className="flex items-center gap-3 rounded-xl border border-border bg-muted/30 p-3">
-              <ServiceLogo offer={offre} size="lg" />
+          <form onSubmit={submitPayment} className="space-y-5 p-5">
+            {/* Résumé Produit */}
+            <div className="flex items-center gap-3.5 rounded-2xl border border-border bg-muted/40 p-3.5">
+              <ServiceLogo name={offre.service || offre.nom} image={offre.image} size="md" className="rounded-2xl shrink-0" />
               <div className="min-w-0 flex-1">
-                <p className="truncate font-semibold">{offre.nom}</p>
-                <p className="text-sm text-muted-foreground">{selectedForfait?.duree || offre.duree} {selectedForfait?.periode || 'mois'} · {offre.partenaire}</p>
+                <p className="truncate font-black text-foreground text-sm">{offre.nom}</p>
+                <p className="text-xs text-muted-foreground font-semibold">
+                  {selectedForfait?.duree || offre.duree} {selectedForfait?.periode || 'mois'} · {offre.partenaire}
+                </p>
               </div>
-              <div className="text-right">
-                <p className="font-extrabold text-primary text-base">{formatFCFA(total)}</p>
+              <div className="text-right shrink-0">
+                <p className="font-black text-primary text-base">{formatPrice(total)}</p>
                 {(hasDirectPromo || promo) && (
-                  <p className="text-[11px] text-muted-foreground line-through font-semibold">
-                    {formatFCFA(originalPrice)}
-                  </p>
+                  <p className="text-[10px] text-muted-foreground line-through font-bold">{formatPrice(originalPrice)}</p>
                 )}
               </div>
             </div>
 
-            {/* Caractéristiques & Description de l'offre */}
-            <div className="rounded-xl border border-slate-200/80 bg-slate-50/70 p-3 text-xs space-y-1">
-              <span className="font-bold text-slate-900 block text-[11px] uppercase tracking-wider">
-                Détails de l&apos;Abonnement
-              </span>
-              <div className="text-slate-600 leading-relaxed whitespace-pre-line text-xs font-medium">
-                {offre.description || `${offre.nom} - Forfait ${selectedForfait?.duree || offre.duree} mois. Identifiants livrés automatiquement dès confirmation du paiement.`}
-              </div>
-            </div>
-
-            {offre.forfaits && offre.forfaits.length > 1 && (
-              <div>
-                <label className="mb-2 block text-sm font-medium">Forfait</label>
-                <select 
-                  value={selectedForfaitId || ''} 
-                  onChange={(event) => setSelectedForfaitId(event.target.value)} 
-                  className="h-10 w-full rounded-lg border border-input bg-card px-3 text-sm outline-none"
-                >
-                  {offre.forfaits.map((forfait) => (
-                    <option key={forfait.id} value={forfait.id}>
-                      {forfait.plan || `${forfait.duree} ${forfait.periode || 'mois'}`}
-                    </option>
-                  ))}
-                </select>
+            {/* Sélecteur de Forfait / Durée (Point 4 : Offre Unique Multi-Durées) */}
+            {offre.forfaits && offre.forfaits.length > 0 && (
+              <div className="space-y-2">
+                <label className="text-xs font-black text-foreground block uppercase tracking-wider">
+                  1. Choisissez la Durée du Forfait
+                </label>
+                <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
+                  {offre.forfaits.map((forfait) => {
+                    const isSelected = String(forfait.id) === String(selectedForfaitId)
+                    return (
+                      <button
+                        key={forfait.id}
+                        type="button"
+                        onClick={() => setSelectedForfaitId(forfait.id)}
+                        className={`flex flex-col items-center justify-center p-2.5 rounded-2xl border text-center transition cursor-pointer ${
+                          isSelected
+                            ? 'border-primary bg-primary/10 text-primary font-black ring-2 ring-primary/20 shadow-xs'
+                            : 'border-border bg-card text-muted-foreground font-bold hover:border-slate-400 hover:text-foreground'
+                        }`}
+                      >
+                        <Clock className="w-3.5 h-3.5 mb-1" />
+                        <span className="text-xs leading-none">{forfait.plan || `${forfait.duree} ${forfait.periode || 'Mois'}`}</span>
+                      </button>
+                    )
+                  })}
+                </div>
               </div>
             )}
 
-            <div>
-              <label className="mb-2 block text-sm font-semibold text-slate-900">
-                Choisissez votre opérateur
+            {/* Type d'Abonnement : Partagé vs Privé (Point 7) */}
+            <div className="space-y-2">
+              <label className="text-xs font-black text-foreground block uppercase tracking-wider">
+                2. Type d'Abonnement
               </label>
-              
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-2 gap-2.5">
+                <button
+                  type="button"
+                  onClick={() => setTypeAbonnement('PARTAGE')}
+                  className={`p-3 rounded-2xl border text-left transition cursor-pointer ${
+                    typeAbonnement === 'PARTAGE'
+                      ? 'border-primary bg-primary/10 text-primary ring-2 ring-primary/20 font-black'
+                      : 'border-border bg-card text-muted-foreground font-bold hover:bg-muted/40'
+                  }`}
+                >
+                  <p className="text-xs font-extrabold">Profil Partagé</p>
+                  <p className="text-[10px] text-muted-foreground font-medium mt-0.5">Livraison instantanée automatique</p>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setTypeAbonnement('PRIVE')}
+                  className={`p-3 rounded-2xl border text-left transition cursor-pointer ${
+                    typeAbonnement === 'PRIVE'
+                      ? 'border-primary bg-primary/10 text-primary ring-2 ring-primary/20 font-black'
+                      : 'border-border bg-card text-muted-foreground font-bold hover:bg-muted/40'
+                  }`}
+                >
+                  <p className="text-xs font-extrabold flex items-center gap-1">
+                    <Sparkles className="w-3 h-3 text-amber-500" /> Profil Privé Dédié
+                  </p>
+                  <p className="text-[10px] text-muted-foreground font-medium mt-0.5">Nom et PIN sur-mesure au choix</p>
+                </button>
+              </div>
+
+              {/* Champs de personnalisation pour profil privé */}
+              {typeAbonnement === 'PRIVE' && (
+                <div className="p-3.5 bg-amber-500/10 border border-amber-500/30 rounded-2xl space-y-3 animate-in fade-in">
+                  <p className="text-[11px] font-bold text-amber-600 dark:text-amber-400">
+                    👑 Personnalisation de votre Profil Privé :
+                  </p>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-bold text-foreground block">Nom du profil souhaité</label>
+                      <div className="relative">
+                        <User className="w-3 h-3 text-muted-foreground absolute left-2.5 top-1/2 -translate-y-1/2" />
+                        <input
+                          type="text"
+                          placeholder="ex: Alex VIP"
+                          value={nomProfilSouhaite}
+                          onChange={(e) => setNomProfilSouhaite(e.target.value)}
+                          className="w-full pl-8 pr-2 py-1.5 bg-card border border-border rounded-xl text-xs font-medium outline-none"
+                        />
+                      </div>
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-bold text-foreground block">Code PIN souhaité (4 chiffres)</label>
+                      <div className="relative">
+                        <Lock className="w-3 h-3 text-muted-foreground absolute left-2.5 top-1/2 -translate-y-1/2" />
+                        <input
+                          type="text"
+                          maxLength={4}
+                          placeholder="ex: 4920"
+                          value={codePinSouhaite}
+                          onChange={(e) => setCodePinSouhaite(e.target.value)}
+                          className="w-full pl-8 pr-2 py-1.5 bg-card border border-border rounded-xl text-xs font-medium outline-none"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Choix de l'opérateur de paiement */}
+            <div className="space-y-2">
+              <label className="text-xs font-black text-foreground block uppercase tracking-wider">
+                3. Moyen de Paiement Mobile Money
+              </label>
+
+              <div className="grid grid-cols-2 gap-2.5">
                 {OPERATOR_BADGES.map((operator) => {
                   const isSelected = selectedOperator === operator.id
-                  
                   return (
                     <button
                       key={operator.id}
                       type="button"
                       onClick={() => setSelectedOperator(operator.id)}
-                      className={`flex h-14 items-center gap-3 rounded-xl border p-3 text-left transition-all duration-200 outline-none ${
-                        isSelected 
-                          ? 'border-primary bg-primary/5 ring-2 ring-primary/10' 
-                          : 'border-border bg-card hover:bg-slate-50 hover:border-slate-300'
+                      className={`flex h-13 items-center gap-3 rounded-2xl border p-3 text-left transition cursor-pointer ${
+                        isSelected
+                          ? 'border-primary bg-primary/10 ring-2 ring-primary/20 shadow-xs'
+                          : 'border-border bg-card hover:bg-muted/40'
                       }`}
                     >
-                      <div className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-md border p-0.5 shadow-sm bg-white ${operator.className || ''}`}>
-                        <img 
-                          src={operator.logoUrl} 
-                          alt={operator.label} 
-                          className="h-full w-full object-contain rounded" 
-                        />
+                      <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border border-border p-0.5 bg-white">
+                        <img src={operator.logoUrl} alt={operator.label} className="h-full w-full object-contain rounded" />
                       </div>
-
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-bold text-slate-900 leading-tight">
-                          {operator.label}
-                        </p>
+                        <p className="text-xs font-black text-foreground truncate">{operator.label}</p>
                       </div>
-
-                      <span className={`h-3 w-3 rounded-full border transition-colors ${
-                        isSelected ? 'bg-primary border-primary' : 'bg-transparent border-slate-300'
-                      }`} />
+                      <span
+                        className={`h-3 w-3 rounded-full border ${
+                          isSelected ? 'bg-primary border-primary' : 'bg-transparent border-slate-300'
+                        }`}
+                      />
                     </button>
                   )
                 })}
               </div>
             </div>
 
-            <div>
-              <label className="mb-2 block text-sm font-medium">Email</label>
+            {/* Numéro de paiement */}
+            <div className="space-y-1.5">
+              <label className="text-xs font-black text-foreground block">
+                Numéro de Paiement ({selectedOperator.toUpperCase()})
+              </label>
               <div className="relative">
-                <input 
-                  value={email} 
-                  onChange={(event) => setEmail(event.target.value)} 
-                  placeholder="exemple@email.com" 
-                  className="h-10 w-full rounded-lg border border-input bg-card px-3 text-sm outline-none" 
-                />
-              </div>
-            </div>
-
-            <div>
-              <label className="mb-2 block text-sm font-medium">Numéro Mobile Money</label>
-              <div className="relative">
-                <Smartphone className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                <input 
-                  value={numeroClient} 
-                  onChange={(event) => setNumeroClient(event.target.value)} 
-                  placeholder="07 00 00 00 00" 
-                  className="h-10 w-full rounded-lg border border-input bg-card pl-9 pr-3 text-sm outline-none" 
+                <Smartphone className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                <input
+                  required
+                  value={numeroClient}
+                  onChange={(event) => setNumeroClient(event.target.value)}
+                  placeholder="07 00 00 00 00"
+                  className="h-11 w-full rounded-2xl border border-input bg-card pl-10 pr-3 text-xs font-bold outline-none focus:ring-2 focus:ring-primary"
                 />
               </div>
             </div>
 
             {selectedOperator === 'orange' && (
-              <div>
-                <label className="mb-2 block text-sm font-medium">Code OTP Orange</label>
-                <input 
-                  value={otp} 
-                  onChange={(event) => setOtp(event.target.value)} 
-                  placeholder="Code OTP reçu par SMS" 
-                  className="h-10 w-full rounded-lg border border-input bg-card px-3 text-sm outline-none" 
+              <div className="space-y-1.5">
+                <label className="text-xs font-black text-foreground block">Code OTP Orange Money (#144*82#)</label>
+                <input
+                  required
+                  value={otp}
+                  onChange={(event) => setOtp(event.target.value)}
+                  placeholder="Composez #144*82# pour obtenir votre code"
+                  className="h-11 w-full rounded-2xl border border-input bg-card px-4 text-xs font-bold outline-none focus:ring-2 focus:ring-primary"
                 />
               </div>
             )}
 
-            <div className="space-y-3">
-              <label className="flex items-center gap-2.5 cursor-pointer select-none">
+            {/* Code Promo */}
+            <div className="space-y-2">
+              <label className="flex items-center gap-2 cursor-pointer select-none">
                 <input
                   type="checkbox"
                   checked={hasPromo}
                   onChange={(e) => setHasPromo(e.target.checked)}
-                  className="w-4 h-4 rounded border-input text-primary focus:ring-primary/20 accent-primary"
+                  className="w-4 h-4 rounded border-input text-primary accent-primary"
                 />
-                <span className="text-xs font-semibold text-slate-700">
-                  J'ai un code promo
-                </span>
+                <span className="text-xs font-bold text-foreground">J'ai un code de promotion</span>
               </label>
 
               {hasPromo && (
-                <div className="flex gap-2 animate-in fade-in slide-in-from-top-1 duration-200">
+                <div className="flex gap-2 animate-in fade-in">
                   <input
                     value={promoCode}
                     onChange={(event) => setPromoCode(event.target.value)}
-                    placeholder="Entrez votre code (ex: STREAM20)"
-                    className="h-10 min-w-0 flex-1 rounded-xl border border-input bg-card px-3.5 text-sm outline-none transition focus:border-primary focus:ring-4 focus:ring-primary/10 font-medium"
+                    placeholder="ex: REDUC20"
+                    className="h-10 min-w-0 flex-1 rounded-xl border border-input bg-card px-3 text-xs font-bold outline-none uppercase"
                   />
                   <button
                     type="button"
                     onClick={applyPromo}
-                    className="h-10 rounded-xl border border-slate-200 bg-slate-50/50 px-4 text-sm font-bold text-slate-700 hover:bg-slate-100 transition-colors"
+                    className="h-10 rounded-xl bg-muted px-4 text-xs font-black text-foreground hover:bg-muted/80 transition"
                   >
                     Appliquer
                   </button>
@@ -369,16 +498,94 @@ export default function DetailOffre() {
               )}
             </div>
 
-            <button 
-              type="submit"
-              disabled={submitting} 
-              className="h-11 w-full rounded-lg bg-primary px-4 text-sm font-semibold text-primary-foreground transition hover:bg-primary/90 disabled:opacity-60"
-            >
-              {submitting ? 'Traitement...' : `Payer ${formatFCFA(total)}`}
-            </button>
+            {/* Bouton de Paiement ou Précommande */}
+            {isOutOfStock ? (
+              <div className="space-y-2 pt-2">
+                <div className="flex items-center gap-2 p-3 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-amber-600 dark:text-amber-400 text-xs font-bold">
+                  <AlertTriangle className="w-4 h-4 shrink-0" />
+                  <span>Stock actuellement épuisé sur cette durée.</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setShowPrecommandeModal(true)}
+                  className="h-12 w-full rounded-2xl bg-amber-500 text-slate-950 font-black text-xs shadow-lg hover:bg-amber-400 transition cursor-pointer flex items-center justify-center gap-2"
+                >
+                  <Sparkles className="w-4 h-4" />
+                  Précommander & Être alerté par WhatsApp
+                </button>
+              </div>
+            ) : (
+              <button
+                type="submit"
+                disabled={submitting}
+                className="h-12 w-full rounded-2xl bg-primary text-white font-black text-xs shadow-lg shadow-primary/25 hover:opacity-90 transition disabled:opacity-50 cursor-pointer flex items-center justify-center gap-2"
+              >
+                {submitting ? 'Traitement du paiement...' : `Payer ${formatPrice(total)}`}
+              </button>
+            )}
           </form>
         )}
       </div>
+
+      {/* Modal Précommande */}
+      {showPrecommandeModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in">
+          <div className="relative w-full max-w-md bg-card border border-border rounded-3xl shadow-2xl p-6 space-y-4">
+            <button
+              onClick={() => setShowPrecommandeModal(false)}
+              className="absolute top-4 right-4 p-2 text-muted-foreground hover:text-foreground rounded-full hover:bg-muted"
+            >
+              <X className="w-4 h-4" />
+            </button>
+
+            <div className="text-center space-y-1">
+              <div className="inline-flex p-3 rounded-2xl bg-amber-500/10 text-amber-500 mb-1">
+                <Sparkles className="w-6 h-6" />
+              </div>
+              <h3 className="text-lg font-black text-foreground">Précommande - {offre.nom}</h3>
+              <p className="text-xs text-muted-foreground">
+                Soyez servi en priorité dès que les nouveaux comptes sont disponibles !
+              </p>
+            </div>
+
+            <form onSubmit={handlePrecommandeSubmit} className="space-y-3">
+              <div className="space-y-1">
+                <label className="text-[11px] font-bold text-foreground block">Votre Nom / Pseudo</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="ex: Jean VIP"
+                  value={precommandeNom}
+                  onChange={(e) => setPrecommandeNom(e.target.value)}
+                  className="w-full px-3 py-2 bg-background border border-border rounded-xl text-xs font-medium outline-none"
+                />
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-[11px] font-bold text-foreground block">
+                  Numéro WhatsApp pour notification <span className="text-rose-500">*</span>
+                </label>
+                <input
+                  type="tel"
+                  required
+                  placeholder="ex: 0700000000"
+                  value={precommandeWhatsapp}
+                  onChange={(e) => setPrecommandeWhatsapp(e.target.value)}
+                  className="w-full px-3 py-2 bg-background border border-border rounded-xl text-xs font-medium outline-none"
+                />
+              </div>
+
+              <button
+                type="submit"
+                disabled={precommandeSubmitting}
+                className="w-full py-2.5 bg-amber-500 text-slate-950 font-black rounded-xl text-xs hover:bg-amber-400 transition mt-2 cursor-pointer disabled:opacity-50"
+              >
+                {precommandeSubmitting ? 'Enregistrement...' : 'Confirmer ma Précommande'}
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

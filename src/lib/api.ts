@@ -209,6 +209,8 @@ export const forfaitsAPI = {
     }),
   create: (data) => api.post('/forfaits/enregistrer', data),
   update: (id, data) => api.post(`/forfaits/modifier/${id}`, data),
+  delete: (id) => api.post(`/forfaits/supprimer/${id}`),
+  supprimer: (id) => api.post(`/forfaits/supprimer/${id}`),
 }
 
 // API Codes promo
@@ -238,6 +240,7 @@ export const promotionsAPI = {
 
 // API Paiements BillMap (Unifiée)
 export const billmapAPI = {
+  debit: (data) => api.post('/billmap/debit', data),
   debitMTN: (data) => api.post('/billmap/mtn', data),
   debitMoov: (data) => api.post('/billmap/moov', data),
   debitOrange: (data) => api.post('/billmap/orange', data),
@@ -326,12 +329,23 @@ export const clientsAPI = {
   getByEmail: (email) => api.post('/clients/get-by-email', { email }),
   getByPseudoAndNumero: (data) => api.post('/clients/find-by-pseudo-and-numero', data),
   create: (data) => api.post('/clients/enregistrer', data),
+  register: (data) => api.post('/clients/register', data),
+  login: (data) => api.post('/clients/login', data),
+  resetPassword: (data) => api.post('/clients/reset-password', data),
 }
 
 export const identifiantsStockAPI = {
   createForOffre: (offreId, data) => api.post(`/identifiants-stock/offre/${offreId}`, data),
+  createAccountWithProfiles: (offreId, data) => api.post(`/identifiants-stock/offre/${offreId}/compte-complet`, data),
   listByOffre: (offreId) => api.get(`/identifiants-stock/offre/${offreId}`),
   listByPartenaire: (partenaireId) => api.get(`/identifiants-stock/partenaire/${partenaireId}`),
+  delete: (id) => api.post(`/identifiants-stock/${id}/supprimer`),
+}
+
+export const precommandesAPI = {
+  create: (data) => api.post('/precommandes', data),
+  list: (params) => api.get('/precommandes', { params }),
+  updateStatut: (id, statut) => api.post(`/precommandes/${id}/statut`, { statut }),
 }
 
 // API Reversements (Payouts)
