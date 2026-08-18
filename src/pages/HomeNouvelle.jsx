@@ -464,6 +464,7 @@ export default function HomeNouvelle() {
 export function OfferCard({ offer, onBuy }) {
   const lowStock = Number(offer.stock) <= 5
   const hasDirectPromo = Boolean(offer.promotionDirecte)
+  const isMultiDur = Array.isArray(offer.distinctDurations) && offer.distinctDurations.length > 1
 
   return (
     <article className="group flex min-h-[230px] flex-col justify-between overflow-hidden rounded-2xl border border-border bg-card p-0 transition-all duration-200 hover:shadow-lg hover:border-primary/40 relative">
@@ -475,9 +476,25 @@ export function OfferCard({ offer, onBuy }) {
               {offer.nom}
             </h3>
             <div className="flex flex-wrap items-center gap-1.5 mt-1.5">
-              <span className="inline-flex items-center rounded-md bg-emerald-50 px-2 py-0.5 text-xs font-extrabold text-emerald-700 border border-emerald-200/60 w-fit">
-                {offer.duree} {offer.periode || 'mois'}
-              </span>
+              {isMultiDur ? (
+                <div className="flex flex-wrap items-center gap-1">
+                  {offer.distinctDurations.map((badge, bIdx) => (
+                    <span
+                      key={bIdx}
+                      className="inline-flex items-center rounded-md bg-emerald-50 px-1.5 py-0.5 text-[10px] font-black text-emerald-700 border border-emerald-200/60"
+                    >
+                      {badge}
+                    </span>
+                  ))}
+                  <span className="text-[10px] font-bold text-slate-500 ml-0.5">
+                    Multi-durées
+                  </span>
+                </div>
+              ) : (
+                <span className="inline-flex items-center rounded-md bg-emerald-50 px-2 py-0.5 text-xs font-extrabold text-emerald-700 border border-emerald-200/60 w-fit">
+                  {offer.duree} {offer.periode || 'mois'}
+                </span>
+              )}
 
               {hasDirectPromo && (
                 <span className="inline-flex items-center gap-1 rounded-md bg-rose-50 border border-rose-200 px-2 py-0.5 text-[11px] font-black text-rose-600 animate-pulse">
@@ -511,6 +528,9 @@ export function OfferCard({ offer, onBuy }) {
         <div>
           {hasDirectPromo ? (
             <div className="flex flex-col">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                {offer.isMultiTarifs ? 'Dès' : 'Prix Promo'}
+              </span>
               <span className="text-base font-black text-rose-600 tracking-tight">
                 {formatFCFA(offer.promotionDirecte.prixReduit)}
               </span>
@@ -519,12 +539,19 @@ export function OfferCard({ offer, onBuy }) {
               </span>
             </div>
           ) : (
-            <p className="text-base font-black text-slate-950 tracking-tight">
-              {formatFCFA(offer.prix)}
-            </p>
+            <div>
+              {offer.isMultiTarifs && (
+                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block leading-none mb-0.5">
+                  À partir de
+                </span>
+              )}
+              <p className="text-base font-black text-slate-950 tracking-tight">
+                {formatFCFA(offer.prix)}
+              </p>
+            </div>
           )}
           <p className="text-[10px] font-medium text-slate-400 mt-0.5">
-            {offer.stock} en stock
+            {offer.stock > 0 ? `${offer.stock} en stock` : 'Sur commande'}
           </p>
         </div>
         <button 

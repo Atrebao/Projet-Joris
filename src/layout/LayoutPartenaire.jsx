@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react'
 import { Outlet, useNavigate } from "react-router-dom";
 import { getPartenaire, getPartenaireId } from '../Utils/Utils'
-import { Boxes, LayoutDashboard, Package, Receipt, Store, Tag, Users, Percent, BarChart3, KeyRound, MessageSquare } from 'lucide-react'
+import { Boxes, LayoutDashboard, Package, Receipt, Store, Tag, Users, Percent, BarChart3, KeyRound, MessageSquare, ArrowRightLeft, Bell } from 'lucide-react'
 import { DashboardShell, SaasTopBar } from '../components/saas/SaasPrimitives'
 
 export default function LayoutPartenaire() {
@@ -18,6 +18,8 @@ export default function LayoutPartenaire() {
     { to: '/partenaire/commandes', label: 'Suivi des ventes', icon: Receipt },
     { to: '/partenaire/forfaits', label: 'Forfaits', icon: Tag },
     { to: '/partenaire/identifiants', label: 'Stocks & Identifiants', icon: Boxes },
+    { to: '/partenaire/affectations', label: 'Comptes & Profils Clients', icon: ArrowRightLeft },
+    { to: '/partenaire/rappels', label: "Rappels d'Expiration", icon: Bell },
     { to: '/partenaire/whatsapp', label: 'Bot WhatsApp', icon: MessageSquare },
     { to: '/partenaire/promotions', label: 'Promotions', icon: Percent },
     { to: '/partenaire/clients', label: 'Clients', icon: Users },

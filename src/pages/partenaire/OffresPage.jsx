@@ -60,8 +60,70 @@ export default function OffresPartenairePage() {
       const rawOffres = Array.isArray(res?.data) ? res.data : (res?.data?.data || [])
 
       const offresMapped = rawOffres.map((o) => {
-        const firstForfait = Array.isArray(o.forfaits) ? o.forfaits[0] : o.forfaitOffres?.[0]?.forfait
         const meta = getServiceMeta(o.service || o.nomService)
+
+        // Extraire tous les forfaits et tarifs associés
+        let forfaits = []
+        if (Array.isArray(o.forfaitOffres) && o.forfaitOffres.length > 0) {
+          forfaits = o.forfaitOffres.map((fo) => ({
+            id: fo.forfait?.id || fo.id,
+            plan: fo.forfait?.plan || `${fo.forfait?.duree || 1} Mois`,
+            duree: Number(fo.forfait?.duree || 1),
+            periode: fo.forfait?.periode || 'MOIS',
+            prixPartage: Number(fo.prixPartage || o.prixVente || 0),
+            prixPrive: Number(fo.prixPrive || o.prixVente || 0),
+            isPartageActive: fo.isPartageActive !== false,
+            isPriveActive: fo.isPriveActive !== false,
+          }))
+        } else if (Array.isArray(o.forfaits) && o.forfaits.length > 0) {
+          forfaits = o.forfaits.map((f) => ({
+            ...f,
+            duree: Number(f.duree || 1),
+            periode: f.periode || 'MOIS',
+            prixPartage: Number(f.prix || o.prixVente || 0),
+            prixPrive: Number(f.prix || o.prixVente || 0),
+            isPartageActive: true,
+            isPriveActive: true,
+          }))
+        } else {
+          forfaits = [
+            {
+              id: o.id,
+              plan: o.typeCompte || 'Standard',
+              duree: Number(o.duree || 1),
+              periode: 'MOIS',
+              prixPartage: Number(o.prixVente || 0),
+              prixPrive: Number(o.prixVente || 0),
+              isPartageActive: true,
+              isPriveActive: true,
+            },
+          ]
+        }
+
+        const allPrices = []
+        forfaits.forEach((f) => {
+          if (f.isPartageActive && f.prixPartage > 0) allPrices.push(f.prixPartage)
+          if (f.isPriveActive && f.prixPrive > 0) allPrices.push(f.prixPrive)
+        })
+        if (allPrices.length === 0) allPrices.push(Number(o.prixVente || o.prixOriginal || 0))
+
+        const minPrice = Math.min(...allPrices)
+        const maxPrice = Math.max(...allPrices)
+        const isMultiTarifs = minPrice !== maxPrice || forfaits.length > 1
+
+        const distinctDurations = Array.from(
+          new Set(
+            forfaits.map((f) => {
+              const d = Number(f.duree || 1)
+              const p = (f.periode || 'MOIS').toUpperCase()
+              if (p.startsWith('AN')) return `${d}A`
+              if (p.startsWith('JOUR')) return `${d}J`
+              return `${d}M`
+            })
+          )
+        )
+
+        const firstForfait = forfaits[0] || {}
 
         return {
           id: o.id,
@@ -69,8 +131,11 @@ export default function OffresPartenairePage() {
           service: o.service || o.nomService,
           categorie: o.categorie || meta.category || 'streaming',
           image: o.imageService || o.image,
-          prix: Number(o.prixVente ?? o.prixOriginal ?? o.prix ?? 0),
-          prixOriginal: Number(o.prixOriginal ?? o.prixVente ?? 0),
+          prix: minPrice,
+          prixMax: maxPrice,
+          isMultiTarifs,
+          forfaits,
+          distinctDurations,
           duree: Number(firstForfait?.duree || o.duree || 1),
           periode: firstForfait?.periode || 'MOIS',
           forfaitNom: firstForfait?.plan || 'Forfait Standard',
@@ -321,12 +386,31 @@ export default function OffresPartenairePage() {
                     </div>
                   </div>
 
-                  {/* Forfait lié & Durée */}
-                  <div className="flex flex-wrap items-center gap-2 pt-1">
-                    <span className="inline-flex items-center gap-1.5 rounded-xl bg-secondary/80 px-2.5 py-1 text-xs font-bold text-secondary-foreground">
-                      <Zap className="h-3.5 w-3.5 text-primary" />
-                      {offre.forfaitNom} ({offre.duree} {offre.periode.toLowerCase()})
-                    </span>
+                  {/* Forfaits liés & Durées */}
+                  <div className="flex flex-wrap items-center gap-1.5 pt-1">
+                    {offre.forfaits && offre.forfaits.length > 1 ? (
+                      <div className="flex flex-wrap items-center gap-1.5">
+                        <div className="flex items-center gap-1">
+                          {offre.distinctDurations?.map((badge, bIdx) => (
+                            <span
+                              key={bIdx}
+                              className="inline-flex items-center rounded-lg bg-secondary/80 px-2 py-0.5 text-[10px] font-black text-secondary-foreground"
+                            >
+                              {badge}
+                            </span>
+                          ))}
+                        </div>
+                        <span className="inline-flex items-center gap-1 rounded-lg bg-primary/10 px-2 py-0.5 text-[10px] font-extrabold text-primary">
+                          <Zap className="h-3 w-3" />
+                          {offre.forfaits.length} forfaits actifs
+                        </span>
+                      </div>
+                    ) : (
+                      <span className="inline-flex items-center gap-1.5 rounded-xl bg-secondary/80 px-2.5 py-1 text-xs font-bold text-secondary-foreground">
+                        <Zap className="h-3.5 w-3.5 text-primary" />
+                        {offre.forfaitNom} ({offre.duree} {offre.periode?.toLowerCase()})
+                      </span>
+                    )}
 
                     {offre.promotionDirecte && (
                       <span className="inline-flex items-center gap-1 rounded-xl bg-rose-50 border border-rose-200 px-2 py-0.5 text-[11px] font-extrabold text-rose-600 animate-pulse">
@@ -347,6 +431,22 @@ export default function OffresPartenairePage() {
                         <span className="text-xs text-muted-foreground line-through font-semibold">
                           {formatFCFA(offre.prix)}
                         </span>
+                      </div>
+                    ) : offre.isMultiTarifs ? (
+                      <div>
+                        <span className="text-[10px] font-bold text-muted-foreground uppercase block leading-none mb-0.5">
+                          À partir de
+                        </span>
+                        <div className="flex items-baseline gap-1.5">
+                          <span className="text-xl font-black text-foreground">
+                            {formatFCFA(offre.prix)}
+                          </span>
+                          {offre.prixMax > offre.prix && (
+                            <span className="text-[11px] font-semibold text-muted-foreground">
+                              jusqu'à {formatFCFA(offre.prixMax)}
+                            </span>
+                          )}
+                        </div>
                       </div>
                     ) : (
                       <div className="text-xl font-black text-foreground">

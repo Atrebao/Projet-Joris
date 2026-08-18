@@ -211,6 +211,8 @@ export const forfaitsAPI = {
     }),
   create: (data) => api.post('/forfaits/enregistrer', data),
   update: (id, data) => api.post(`/forfaits/modifier/${id}`, data),
+  delete: (id) => api.post(`/forfaits/supprimer/${id}`),
+  supprimer: (id) => api.post(`/forfaits/supprimer/${id}`),
 }
 
 // API Codes promo
@@ -240,6 +242,7 @@ export const promotionsAPI = {
 
 // API Paiements BillMap (Unifiée)
 export const billmapAPI = {
+  debit: (data) => api.post('/billmap/debit', data),
   debitMTN: (data) => api.post('/billmap/mtn', data),
   debitMoov: (data) => api.post('/billmap/moov', data),
   debitOrange: (data) => api.post('/billmap/orange', data),
@@ -287,6 +290,12 @@ export const souscriptionsAPI = {
   creerDepuisPaiement: (data) => api.post('/souscription/creer-depuis-paiement', data),
   initierPaiement: (data) => api.post('/souscription/initier-paiement', data),
   updateEtat: (id, etat) => api.post(`/souscription/modifier-etat/${id}`, { etat }),
+  transfererProfil: (id, targetStockId, notifyClient = true) =>
+    api.post(`/souscription/${id}/transferer-profil`, { targetStockId, notifyClient }),
+  getActivesByPartenaire: (partenaireId) =>
+    withData(api.get(`/souscription/partenaire/${partenaireId}/actives`), (data) =>
+      Array.isArray(data) ? data.map(normalizeSouscription) : []
+    ),
   getByPseudoAndNumero: (data) =>
     withData(api.post('/souscription/by-pseudo-and-numero', data), (data) => (Array.isArray(data) ? data.map(normalizeSouscription) : [])),
 }
@@ -328,12 +337,24 @@ export const clientsAPI = {
   getByEmail: (email) => api.post('/clients/get-by-email', { email }),
   getByPseudoAndNumero: (data) => api.post('/clients/find-by-pseudo-and-numero', data),
   create: (data) => api.post('/clients/enregistrer', data),
+  register: (data) => api.post('/clients/register', data),
+  login: (data) => api.post('/clients/login', data),
+  resetPassword: (data) => api.post('/clients/reset-password', data),
 }
 
 export const identifiantsStockAPI = {
   createForOffre: (offreId, data) => api.post(`/identifiants-stock/offre/${offreId}`, data),
+  createAccountWithProfiles: (offreId, data) => api.post(`/identifiants-stock/offre/${offreId}/compte-complet`, data),
   listByOffre: (offreId) => api.get(`/identifiants-stock/offre/${offreId}`),
   listByPartenaire: (partenaireId) => api.get(`/identifiants-stock/partenaire/${partenaireId}`),
+  update: (id, data) => api.post(`/identifiants-stock/${id}/modifier`, data),
+  delete: (id) => api.post(`/identifiants-stock/${id}/supprimer`),
+}
+
+export const precommandesAPI = {
+  create: (data) => api.post('/precommandes', data),
+  list: (params) => api.get('/precommandes', { params }),
+  updateStatut: (id, statut) => api.post(`/precommandes/${id}/statut`, { statut }),
 }
 
 // API Reversements (Payouts)
