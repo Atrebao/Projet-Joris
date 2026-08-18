@@ -75,13 +75,21 @@ export default function DetailOffre() {
   }, [id])
 
   const selectedForfait = useMemo(() => {
-    if (!offre) return null
+    if (!offre || !offre.forfaits) return null
     return offre.forfaits.find((forfait) => String(forfait.id) === String(selectedForfaitId)) || offre.forfaits[0]
   }, [offre, selectedForfaitId])
 
+  const calculatedUnitPrice = useMemo(() => {
+    if (!selectedForfait) return Number(offre?.prix || 0)
+    if (typeAbonnement === 'PRIVE') {
+      return Number(selectedForfait.prixPrive || selectedForfait.prixPartage || offre?.prix || 0)
+    }
+    return Number(selectedForfait.prixPartage || selectedForfait.prixPrive || offre?.prix || 0)
+  }, [selectedForfait, typeAbonnement, offre])
+
   const hasDirectPromo = Boolean(offre?.promotionDirecte)
-  const basePrice = hasDirectPromo ? Number(offre.promotionDirecte.prixReduit) : Number(offre?.prix || 0)
-  const originalPrice = Number(offre?.prixOriginal || offre?.prix || 0)
+  const basePrice = hasDirectPromo ? Number(offre.promotionDirecte.prixReduit) : calculatedUnitPrice
+  const originalPrice = calculatedUnitPrice
   const discount = Number(promo?.remiseXof || 0)
   const total = Math.max(0, basePrice - discount)
 
@@ -341,7 +349,12 @@ export default function DetailOffre() {
                       : 'border-border bg-card text-muted-foreground font-bold hover:bg-muted/40'
                   }`}
                 >
-                  <p className="text-xs font-extrabold">Profil Partagé</p>
+                  <div className="flex items-center justify-between">
+                    <p className="text-xs font-extrabold">Profil Partagé</p>
+                    <span className="text-[11px] font-black text-primary">
+                      {formatPrice(selectedForfait?.prixPartage || offre.prix)}
+                    </span>
+                  </div>
                   <p className="text-[10px] text-muted-foreground font-medium mt-0.5">Livraison instantanée automatique</p>
                 </button>
 
@@ -354,10 +367,15 @@ export default function DetailOffre() {
                       : 'border-border bg-card text-muted-foreground font-bold hover:bg-muted/40'
                   }`}
                 >
-                  <p className="text-xs font-extrabold flex items-center gap-1">
-                    <Sparkles className="w-3 h-3 text-amber-500" /> Profil Privé Dédié
-                  </p>
-                  <p className="text-[10px] text-muted-foreground font-medium mt-0.5">Nom et PIN sur-mesure au choix</p>
+                  <div className="flex items-center justify-between">
+                    <p className="text-xs font-extrabold flex items-center gap-1">
+                      <Sparkles className="w-3 h-3 text-amber-500" /> Profil Privé
+                    </p>
+                    <span className="text-[11px] font-black text-amber-600 dark:text-amber-400">
+                      {formatPrice(selectedForfait?.prixPrive || offre.prix)}
+                    </span>
+                  </div>
+                  <p className="text-[10px] text-muted-foreground font-medium mt-0.5">Profil & PIN sur-mesure</p>
                 </button>
               </div>
 

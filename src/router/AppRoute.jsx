@@ -47,6 +47,8 @@ import ForfaitsPage from "../pages/partenaire/ForfaitsPage";
 import IdentifiantsStockPage from "../pages/partenaire/IdentifiantsStockPage";
 import WhatsappPartenairePage from "../pages/partenaire/WhatsappPartenairePage";
 import OffresPartenairePage from "../pages/partenaire/OffresPage";
+import AffectationsComptesPage from "../pages/partenaire/AffectationsComptesPage";
+import RappelsExpirationPage from "../pages/partenaire/RappelsExpirationPage";
 import EnConstruction from "../pages/EnConstruction";
 import ForgotPasswordPartenaire from "@/pages/ForgotPasswordPartenaire";
 import ModifierPasswordPartenaire from "@/pages/partenaire/ModifierPasswordPartenaire";
@@ -195,6 +197,14 @@ export const AppRoute = createHashRouter([
       {
         path: "identifiants",
         element: <IdentifiantsStockPage />,
+      },
+      {
+        path: "affectations",
+        element: <AffectationsComptesPage />,
+      },
+      {
+        path: "rappels",
+        element: <RappelsExpirationPage />,
       },
       {
         path: "offres/editer/:id",

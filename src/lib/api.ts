@@ -288,6 +288,12 @@ export const souscriptionsAPI = {
   creerDepuisPaiement: (data) => api.post('/souscription/creer-depuis-paiement', data),
   initierPaiement: (data) => api.post('/souscription/initier-paiement', data),
   updateEtat: (id, etat) => api.post(`/souscription/modifier-etat/${id}`, { etat }),
+  transfererProfil: (id, targetStockId, notifyClient = true) =>
+    api.post(`/souscription/${id}/transferer-profil`, { targetStockId, notifyClient }),
+  getActivesByPartenaire: (partenaireId) =>
+    withData(api.get(`/souscription/partenaire/${partenaireId}/actives`), (data) =>
+      Array.isArray(data) ? data.map(normalizeSouscription) : []
+    ),
   getByPseudoAndNumero: (data) =>
     withData(api.post('/souscription/by-pseudo-and-numero', data), (data) => (Array.isArray(data) ? data.map(normalizeSouscription) : [])),
 }
@@ -339,6 +345,7 @@ export const identifiantsStockAPI = {
   createAccountWithProfiles: (offreId, data) => api.post(`/identifiants-stock/offre/${offreId}/compte-complet`, data),
   listByOffre: (offreId) => api.get(`/identifiants-stock/offre/${offreId}`),
   listByPartenaire: (partenaireId) => api.get(`/identifiants-stock/partenaire/${partenaireId}`),
+  update: (id, data) => api.post(`/identifiants-stock/${id}/modifier`, data),
   delete: (id) => api.post(`/identifiants-stock/${id}/supprimer`),
 }
 

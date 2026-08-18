@@ -227,14 +227,73 @@ export const etatSouscriptionsListe = [
 ];
 
 export const normalizeOffer = (data = {}) => {
-  const forfaits = Array.isArray(data.forfaits) && data.forfaits.length > 0
-    ? data.forfaits
-    : data.forfaitOffres?.length > 0
-      ? data.forfaitOffres.map((fo) => fo?.forfait).filter(Boolean)
-      : [{ id: data.id, plan: data.typeCompte || 'Standard', duree: data.duree || 1, periode: 'MOIS' }];
+  let forfaits = []
+  if (Array.isArray(data.forfaitOffres) && data.forfaitOffres.length > 0) {
+    forfaits = data.forfaitOffres.map((fo) => ({
+      ...(fo.forfait || {}),
+      id: fo.forfait?.id || fo.id,
+      plan: fo.forfait?.plan || `${fo.forfait?.duree || 1} Mois`,
+      duree: Number(fo.forfait?.duree || 1),
+      periode: fo.forfait?.periode || 'MOIS',
+      prixPartage: Number(fo.prixPartage || data.prixVente || 0),
+      prixPrive: Number(fo.prixPrive || data.prixVente || 0),
+      isPartageActive: fo.isPartageActive !== false,
+      isPriveActive: fo.isPriveActive !== false,
+    }))
+  } else if (Array.isArray(data.forfaits) && data.forfaits.length > 0) {
+    forfaits = data.forfaits.map((f) => ({
+      ...f,
+      duree: Number(f.duree || 1),
+      periode: f.periode || 'MOIS',
+      prixPartage: Number(f.prix || data.prixVente || 0),
+      prixPrive: Number(f.prix || data.prixVente || 0),
+      isPartageActive: true,
+      isPriveActive: true,
+    }))
+  } else {
+    forfaits = [
+      {
+        id: data.id,
+        plan: data.typeCompte || 'Standard',
+        duree: Number(data.duree || 1),
+        periode: 'MOIS',
+        prixPartage: Number(data.prixVente || 0),
+        prixPrive: Number(data.prixVente || 0),
+        isPartageActive: true,
+        isPriveActive: true,
+      },
+    ]
+  }
 
-  const firstForfait = forfaits[0] || {};
-  const meta = getServiceMeta(data.service || data.nomService || data.nom);
+  // Calculer tous les prix actifs parmi tous les forfaits et types d'accès
+  const allActivePrices = []
+  forfaits.forEach((f) => {
+    if (f.isPartageActive && Number(f.prixPartage) > 0) allActivePrices.push(Number(f.prixPartage))
+    if (f.isPriveActive && Number(f.prixPrive) > 0) allActivePrices.push(Number(f.prixPrive))
+  })
+  if (allActivePrices.length === 0) {
+    allActivePrices.push(Number(data.prixVente || data.prixOriginal || data.prix || 0))
+  }
+
+  const minPrice = Math.min(...allActivePrices)
+  const maxPrice = Math.max(...allActivePrices)
+  const isMultiTarifs = minPrice !== maxPrice || forfaits.length > 1
+
+  // Formatage des badges de durées discrets (ex: 1M, 3M, 1A)
+  const distinctDurations = Array.from(
+    new Set(
+      forfaits.map((f) => {
+        const d = Number(f.duree || 1)
+        const p = (f.periode || 'MOIS').toUpperCase()
+        if (p.startsWith('AN')) return `${d}A`
+        if (p.startsWith('JOUR')) return `${d}J`
+        return `${d}M`
+      })
+    )
+  )
+
+  const firstForfait = forfaits[0] || {}
+  const meta = getServiceMeta(data.service || data.nomService || data.nom)
 
   return {
     id: data.id,
@@ -243,8 +302,11 @@ export const normalizeOffer = (data = {}) => {
     categorie: data.categorie || meta.category || 'streaming',
     description: data.description || '',
     image: data.imageService || data.image || '',
-    prix: Number(data.prixVente ?? data.prixOriginal ?? data.prix ?? 0),
-    prixOriginal: Number(data.prixOriginal ?? data.prixVente ?? data.prix ?? 0),
+    prix: minPrice,
+    prixMax: maxPrice,
+    prixOriginal: Number(data.prixOriginal ?? data.prixVente ?? minPrice),
+    isMultiTarifs,
+    distinctDurations,
     promotionDirecte: data.promotionDirecte || null,
     duree: Number(firstForfait.duree || data.duree || 1),
     periode: firstForfait.periode || 'MOIS',
@@ -252,9 +314,14 @@ export const normalizeOffer = (data = {}) => {
     partenaire: data.partenaire?.nomBoutique || data.partenaire?.nom || 'DigiStore CI',
     partenaireId: data.partenaire?.id,
     forfaitNom: firstForfait.plan || 'Standard',
-    forfaits: forfaits.map((f) => ({
-      ...f,
-      periode: f.periode || 'MOIS',
-    })),
-  };
-};
+    forfaits,
+  }
+}
+
+export const formatWhatsAppPhone = (phone = '') => {
+  let cleaned = String(phone).replace(/\D/g, '')
+  if (cleaned.startsWith('00')) cleaned = cleaned.slice(2)
+  if (cleaned.startsWith('0') && cleaned.length === 10) cleaned = `225${cleaned.slice(1)}`
+  return cleaned
+}
+

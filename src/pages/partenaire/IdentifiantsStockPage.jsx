@@ -22,6 +22,14 @@ import {
   Clock,
   User,
   Lock,
+  Smartphone,
+  Users,
+  PlusCircle,
+  MinusCircle,
+  Edit3,
+  X,
+  Save,
+  RotateCcw,
 } from 'lucide-react'
 import { getPartenaireId } from '../../Utils/Utils'
 import { offresAPI, identifiantsStockAPI } from '../../lib/api'
@@ -61,22 +69,24 @@ export default function IdentifiantsStockPage() {
   const [searchQuery, setSearchQuery] = useState('')
   const [filterStatus, setFilterStatus] = useState('ALL') // 'ALL' | 'AVAILABLE' | 'USED'
 
+  // Modal d'édition de profil
+  const [editingItem, setEditingItem] = useState(null)
+
   // Modes d'ajout : 'account' (Comptes & Profils) | 'single' (Unitaire) | 'bulk' (Masse)
   const [addMode, setAddMode] = useState('account')
 
-  // Formulaire Compte & Profils Multi-Durées (Point 6)
+  // Formulaire Compte & Profils Multi-Durées Dynamique
   const [accountForm, setAccountForm] = useState({
     login: '',
     password: '',
     numeroCompte: 1,
-    nbProfils: 5,
     instructionsGenerales: '',
     profils: [
-      { nomProfil: 'Profil 1', dureeForfaitMois: 1, capaciteMax: 1, codePin: '', typeAbonnement: 'PARTAGE' },
-      { nomProfil: 'Profil 2', dureeForfaitMois: 1, capaciteMax: 1, codePin: '', typeAbonnement: 'PARTAGE' },
-      { nomProfil: 'Profil 3', dureeForfaitMois: 3, capaciteMax: 1, codePin: '', typeAbonnement: 'PARTAGE' },
-      { nomProfil: 'Profil 4', dureeForfaitMois: 3, capaciteMax: 1, codePin: '', typeAbonnement: 'PARTAGE' },
-      { nomProfil: 'Profil 5', dureeForfaitMois: 1, capaciteMax: 1, codePin: '', typeAbonnement: 'PRIVE' },
+      { nomProfil: 'Profil 1', dureeForfaitMois: 1, capaciteMax: 1, nbAppareilsMax: 1, codePin: '', typeAbonnement: 'PARTAGE' },
+      { nomProfil: 'Profil 2', dureeForfaitMois: 1, capaciteMax: 1, nbAppareilsMax: 1, codePin: '', typeAbonnement: 'PARTAGE' },
+      { nomProfil: 'Profil 3', dureeForfaitMois: 3, capaciteMax: 1, nbAppareilsMax: 1, codePin: '', typeAbonnement: 'PARTAGE' },
+      { nomProfil: 'Profil 4', dureeForfaitMois: 3, capaciteMax: 1, nbAppareilsMax: 1, codePin: '', typeAbonnement: 'PARTAGE' },
+      { nomProfil: 'Profil 5', dureeForfaitMois: 1, capaciteMax: 1, nbAppareilsMax: 2, codePin: '', typeAbonnement: 'PRIVE' },
     ],
   })
 
@@ -160,6 +170,7 @@ export default function IdentifiantsStockPage() {
         nomProfil: `Profil ${i + 1}`,
         dureeForfaitMois: assignedDuration,
         capaciteMax: 1,
+        nbAppareilsMax: 1,
         codePin: '',
         typeAbonnement: 'PARTAGE',
       })
@@ -167,7 +178,6 @@ export default function IdentifiantsStockPage() {
 
     setAccountForm((prev) => ({
       ...prev,
-      nbProfils: defaultCount,
       profils: initialProfils,
     }))
   }
@@ -219,27 +229,31 @@ export default function IdentifiantsStockPage() {
     }
   }
 
-  // Ajuster le nombre de profils sans mention statique
-  const handleNbProfilsChange = (n) => {
-    const count = Math.max(1, Math.min(10, Number(n) || 1))
-    const current = [...accountForm.profils]
-    const updated = []
+  // Ajouter un profil dynamiquement
+  const handleAddProfil = () => {
+    const currentLength = accountForm.profils.length
     const firstDuration = offerForfaits[0]?.duree || 1
-
-    for (let i = 0; i < count; i++) {
-      if (current[i]) {
-        updated.push(current[i])
-      } else {
-        updated.push({
-          nomProfil: `Profil ${i + 1}`,
-          dureeForfaitMois: firstDuration,
-          capaciteMax: 1,
-          codePin: '',
-          typeAbonnement: 'PARTAGE',
-        })
-      }
+    const newProfil = {
+      nomProfil: `Profil ${currentLength + 1}`,
+      dureeForfaitMois: firstDuration,
+      capaciteMax: 1,
+      nbAppareilsMax: 1,
+      codePin: '',
+      typeAbonnement: 'PARTAGE',
     }
-    setAccountForm((prev) => ({ ...prev, nbProfils: count, profils: updated }))
+    setAccountForm((prev) => ({ ...prev, profils: [...prev.profils, newProfil] }))
+  }
+
+  // Supprimer un profil dynamiquement
+  const handleRemoveProfil = (index) => {
+    if (accountForm.profils.length <= 1) {
+      toast.error('Un compte doit comporter au moins 1 profil.')
+      return
+    }
+    setAccountForm((prev) => ({
+      ...prev,
+      profils: prev.profils.filter((_, i) => i !== index),
+    }))
   }
 
   const handleProfilFieldChange = (index, field, value) => {
@@ -261,6 +275,10 @@ export default function IdentifiantsStockPage() {
       toast.error('Veuillez renseigner le login et mot de passe du compte maître')
       return
     }
+    if (accountForm.profils.length === 0) {
+      toast.error('Veuillez configurer au moins un profil pour ce compte')
+      return
+    }
 
     setSubmitting(true)
     try {
@@ -271,7 +289,7 @@ export default function IdentifiantsStockPage() {
         instructionsGenerales: accountForm.instructionsGenerales.trim(),
         profils: accountForm.profils,
       })
-      toast.success(`Compte maître & ${accountForm.profils.length} profils ajoutés au stock ! 🎉`)
+      toast.success(`Compte maître #${accountForm.numeroCompte} & ses ${accountForm.profils.length} profils ajoutés avec succès ! 🎉`)
       setAccountForm((prev) => ({
         ...prev,
         login: '',
@@ -338,11 +356,42 @@ export default function IdentifiantsStockPage() {
     setSubmitting(false)
   }
 
+  // Modification d'un profil individuel
+  const handleUpdateStock = async (e) => {
+    e.preventDefault()
+    if (!editingItem) return
+    setSubmitting(true)
+    try {
+      await identifiantsStockAPI.update(editingItem.id, {
+        login: editingItem.login,
+        password: editingItem.password,
+        numeroCompte: Number(editingItem.numeroCompte) || 1,
+        nomProfil: editingItem.nomProfil,
+        codePin: editingItem.codePin,
+        dureeForfaitMois: Number(editingItem.dureeForfaitMois) || 1,
+        capaciteMax: Number(editingItem.capaciteMax) || 1,
+        nbAppareilsMax: Number(editingItem.nbAppareilsMax) || 1,
+        typeAbonnement: editingItem.typeAbonnement,
+        instructions: editingItem.instructions,
+        placesOccupees: Number(editingItem.placesOccupees) || 0,
+        isUsed: Boolean(editingItem.isUsed),
+      })
+      toast.success('Profil mis à jour avec succès ! 🎉')
+      setEditingItem(null)
+      await loadStock(offreId)
+    } catch (error) {
+      console.error(error)
+      toast.error(error?.response?.data?.message || "Erreur lors de la modification du profil")
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
   return (
     <div className="space-y-6 max-w-7xl mx-auto">
       <PageHeader
         title="Gestion des Stocks & Multi-Comptes"
-        description="Configurez vos comptes maîtres streaming (Netflix, Prime...), attribuez les profils par durée et organisez la rotation automatique."
+        description="Configurez vos comptes maîtres streaming, définissez librement les noms de profils, le nombre de personnes par profil partagé et le nombre d'appareils par profil privé."
         action={
           <Button
             variant="outline"
@@ -397,13 +446,13 @@ export default function IdentifiantsStockPage() {
 
       {/* Formulaire d'Ajout de Stock */}
       <Card className="p-6 border border-border bg-card shadow-xs">
-        <div className="flex items-center justify-between border-b border-border pb-4 mb-5">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-border pb-4 mb-5 gap-3">
           <div>
             <h3 className="text-base font-black text-foreground">
-              Ajouter du Stock pour <span className="text-primary">{selectedOffre?.nom || selectedOffre?.nomService || 'cette offre'}</span>
+              Ajouter un Compte pour <span className="text-primary">{selectedOffre?.nom || selectedOffre?.nomService || 'cette offre'}</span>
             </h3>
             <p className="text-xs text-muted-foreground">
-              Renseignez un compte maître complet ou des identifiants unitaires.
+              Renseignez les accès du compte maître et personnalisez chaque profil (nom, durée, personnes, appareils).
             </p>
           </div>
 
@@ -412,7 +461,7 @@ export default function IdentifiantsStockPage() {
             <button
               type="button"
               onClick={() => setAddMode('account')}
-              className={`px-3 py-1.5 text-xs font-extrabold rounded-lg transition ${
+              className={`px-3 py-1.5 text-xs font-extrabold rounded-lg transition cursor-pointer ${
                 addMode === 'account' ? 'bg-primary text-white shadow-xs' : 'text-muted-foreground hover:text-foreground'
               }`}
             >
@@ -421,7 +470,7 @@ export default function IdentifiantsStockPage() {
             <button
               type="button"
               onClick={() => setAddMode('single')}
-              className={`px-3 py-1.5 text-xs font-extrabold rounded-lg transition ${
+              className={`px-3 py-1.5 text-xs font-extrabold rounded-lg transition cursor-pointer ${
                 addMode === 'single' ? 'bg-primary text-white shadow-xs' : 'text-muted-foreground hover:text-foreground'
               }`}
             >
@@ -430,7 +479,7 @@ export default function IdentifiantsStockPage() {
             <button
               type="button"
               onClick={() => setAddMode('bulk')}
-              className={`px-3 py-1.5 text-xs font-extrabold rounded-lg transition ${
+              className={`px-3 py-1.5 text-xs font-extrabold rounded-lg transition cursor-pointer ${
                 addMode === 'bulk' ? 'bg-primary text-white shadow-xs' : 'text-muted-foreground hover:text-foreground'
               }`}
             >
@@ -445,10 +494,11 @@ export default function IdentifiantsStockPage() {
             <div className="p-3.5 bg-primary/5 border border-primary/20 rounded-2xl flex items-center gap-3">
               <Sparkles className="w-5 h-5 text-primary shrink-0" />
               <p className="text-xs text-foreground font-medium">
-                <strong>Attribution automatique intelligente :</strong> Lors d'une commande pour {selectedOffre?.nom || 'ce service'}, le système sélectionnera automatiquement un profil disponible du <strong>Compte #{accountForm.numeroCompte}</strong> correspondant à la durée choisie par le client. Quand ce compte sera plein, il passera automatiquement au compte suivant.
+                <strong>Attribution automatique intelligente :</strong> Lors d'une commande pour {selectedOffre?.nom || 'ce service'}, le système sélectionnera automatiquement un profil disponible du <strong>Compte #{accountForm.numeroCompte}</strong> correspondant à la durée et au type choisi par le client. Quand ce compte sera complet, il passera automatiquement au compte suivant.
               </p>
             </div>
 
+            {/* Infos du Compte Maître */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="space-y-1">
                 <label className="text-xs font-extrabold text-foreground block">Email / Login du Compte Maître</label>
@@ -471,90 +521,140 @@ export default function IdentifiantsStockPage() {
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-2">
-                <div className="space-y-1">
-                  <label className="text-xs font-extrabold text-foreground block">N° de Compte</label>
-                  <Input
-                    type="number"
-                    min="1"
-                    value={accountForm.numeroCompte}
-                    onChange={(e) => setAccountForm({ ...accountForm, numeroCompte: e.target.value })}
-                  />
-                </div>
-                <div className="space-y-1">
-                  <label className="text-xs font-extrabold text-foreground block">Nombre de Profils</label>
-                  <select
-                    value={accountForm.nbProfils}
-                    onChange={(e) => handleNbProfilsChange(e.target.value)}
-                    className="w-full h-10 rounded-xl border border-input bg-card px-2.5 text-xs font-bold text-foreground outline-none"
-                  >
-                    {[1, 2, 3, 4, 5, 6, 7, 8, 10].map((num) => (
-                      <option key={num} value={num}>
-                        {num} Profil{num > 1 ? 's' : ''}
-                      </option>
-                    ))}
-                  </select>
-                </div>
+              <div className="space-y-1">
+                <label className="text-xs font-extrabold text-foreground block">N° de Compte</label>
+                <Input
+                  type="number"
+                  min="1"
+                  value={accountForm.numeroCompte}
+                  onChange={(e) => setAccountForm({ ...accountForm, numeroCompte: e.target.value })}
+                />
               </div>
             </div>
 
             {/* Configuration individuelle des profils */}
             <div className="space-y-3 pt-2">
               <div className="flex items-center justify-between">
-                <h4 className="text-xs font-black uppercase tracking-wider text-muted-foreground">
-                  Configuration des {accountForm.profils.length} Profils de ce Compte :
-                </h4>
-                <span className="text-[11px] text-muted-foreground font-semibold">
-                  Attribuez la durée d'abonnement pour chaque profil
-                </span>
+                <div>
+                  <h4 className="text-xs font-black uppercase tracking-wider text-muted-foreground">
+                    Profils configurés sur ce Compte ({accountForm.profils.length}) :
+                  </h4>
+                  <p className="text-[11px] text-muted-foreground">
+                    Personnalisez le nom, la durée, le type et le nombre de personnes ou d'appareils autorisés.
+                  </p>
+                </div>
+
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={handleAddProfil}
+                  className="text-xs font-bold gap-1.5 border-primary text-primary hover:bg-primary/10"
+                >
+                  <PlusCircle className="w-3.5 h-3.5" /> Ajouter un Profil
+                </Button>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                {accountForm.profils.map((p, idx) => (
-                  <div key={idx} className="p-3.5 bg-muted/40 border border-border rounded-2xl space-y-2.5">
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs font-black text-foreground flex items-center gap-1.5">
-                        <User className="w-3.5 h-3.5 text-primary" /> {p.nomProfil}
-                      </span>
-                      <select
-                        value={p.typeAbonnement}
-                        onChange={(e) => handleProfilFieldChange(idx, 'typeAbonnement', e.target.value)}
-                        className="text-[10px] font-extrabold rounded-lg bg-card border border-border px-2 py-0.5"
-                      >
-                        <option value="PARTAGE">Partagé</option>
-                        <option value="PRIVE">Privé (Dédié)</option>
-                      </select>
-                    </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3.5">
+                {accountForm.profils.map((p, idx) => {
+                  const isPrive = p.typeAbonnement === 'PRIVE'
 
-                    <div className="grid grid-cols-2 gap-2">
-                      <div>
-                        <label className="text-[10px] font-bold text-muted-foreground block">Durée Forfait</label>
+                  return (
+                    <div key={idx} className="p-4 bg-muted/40 border border-border rounded-2xl space-y-3 relative group">
+                      {/* En-tête profil : Nom modifiable + Type */}
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="flex items-center gap-1.5 flex-1 min-w-0">
+                          <User className="w-3.5 h-3.5 text-primary shrink-0" />
+                          <input
+                            type="text"
+                            required
+                            placeholder="Nom du profil (ex: Kids, VIP...)"
+                            value={p.nomProfil}
+                            onChange={(e) => handleProfilFieldChange(idx, 'nomProfil', e.target.value)}
+                            className="bg-card border border-border rounded-lg px-2 py-1 text-xs font-black text-foreground w-full outline-none focus:ring-1 focus:ring-primary"
+                          />
+                        </div>
+
+                        {accountForm.profils.length > 1 && (
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveProfil(idx)}
+                            className="text-muted-foreground hover:text-rose-500 p-1 rounded-md transition"
+                            title="Supprimer ce profil"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        )}
+                      </div>
+
+                      {/* Type d'Abonnement */}
+                      <div className="space-y-1">
+                        <label className="text-[10px] font-extrabold uppercase tracking-wider text-muted-foreground block">
+                          Type d'Accès
+                        </label>
                         <select
-                          value={p.dureeForfaitMois}
-                          onChange={(e) => handleProfilFieldChange(idx, 'dureeForfaitMois', Number(e.target.value))}
-                          className="w-full h-8 rounded-lg border border-input bg-card px-2 text-xs font-bold text-foreground"
+                          value={p.typeAbonnement}
+                          onChange={(e) => handleProfilFieldChange(idx, 'typeAbonnement', e.target.value)}
+                          className="w-full h-8 rounded-lg bg-card border border-input px-2 text-xs font-bold text-foreground outline-none"
                         >
-                          {offerForfaits.map((of, fIdx) => (
-                            <option key={fIdx} value={of.duree}>
-                              {of.plan}
-                            </option>
-                          ))}
+                          <option value="PARTAGE">👥 Profil Partagé</option>
+                          <option value="PRIVE">👑 Profil Privé (Dédié)</option>
                         </select>
                       </div>
 
-                      <div>
-                        <label className="text-[10px] font-bold text-muted-foreground block">Code PIN (opt.)</label>
-                        <Input
-                          placeholder="ex: 1234"
-                          maxLength={4}
-                          value={p.codePin}
-                          onChange={(e) => handleProfilFieldChange(idx, 'codePin', e.target.value)}
-                          className="h-8 text-xs font-bold"
-                        />
+                      {/* Capacité (Personnes ou Appareils) & Code PIN */}
+                      <div className="grid grid-cols-2 gap-2">
+                        <div>
+                          {isPrive ? (
+                            <div>
+                              <label className="text-[10px] font-bold text-amber-600 dark:text-amber-400 block flex items-center gap-1">
+                                <Smartphone className="w-3 h-3" /> Appareils / Écrans
+                              </label>
+                              <select
+                                value={p.nbAppareilsMax || 1}
+                                onChange={(e) => handleProfilFieldChange(idx, 'nbAppareilsMax', Number(e.target.value))}
+                                className="w-full h-8 rounded-lg border border-amber-500/40 bg-amber-500/5 px-2 text-xs font-black text-amber-700 dark:text-amber-300 outline-none"
+                              >
+                                <option value={1}>1 Écran / Appareil</option>
+                                <option value={2}>2 Écrans simultanés</option>
+                                <option value={3}>3 Écrans simultanés</option>
+                                <option value={4}>4 Écrans simultanés</option>
+                              </select>
+                            </div>
+                          ) : (
+                            <div>
+                              <label className="text-[10px] font-bold text-primary block flex items-center gap-1">
+                                <Users className="w-3 h-3" /> Personnes max
+                              </label>
+                              <select
+                                value={p.capaciteMax || 1}
+                                onChange={(e) => handleProfilFieldChange(idx, 'capaciteMax', Number(e.target.value))}
+                                className="w-full h-8 rounded-lg border border-primary/40 bg-primary/5 px-2 text-xs font-black text-primary outline-none"
+                              >
+                                <option value={1}>1 Personne</option>
+                                <option value={2}>2 Personnes</option>
+                                <option value={3}>3 Personnes</option>
+                                <option value={4}>4 Personnes</option>
+                                <option value={5}>5 Personnes</option>
+                              </select>
+                            </div>
+                          )}
+                        </div>
+
+                        <div>
+                          <label className="text-[10px] font-bold text-muted-foreground block">Code PIN (optionnel)</label>
+                          <Input
+                            placeholder="ex: 1234"
+                            maxLength={6}
+                            value={p.codePin}
+                            onChange={(e) => handleProfilFieldChange(idx, 'codePin', e.target.value)}
+                            className="h-8 text-xs font-bold"
+                          />
+                        </div>
                       </div>
                     </div>
-                  </div>
-                ))}
+                  )
+                })}
               </div>
             </div>
 
@@ -651,16 +751,17 @@ export default function IdentifiantsStockPage() {
               <thead>
                 <tr className="border-b border-border text-muted-foreground font-black uppercase text-[10px]">
                   <th className="py-3 px-3">Compte</th>
-                  <th className="py-3 px-3">Profil & PIN</th>
+                  <th className="py-3 px-3">Nom Profil & PIN</th>
+                  <th className="py-3 px-3">Type & Capacité</th>
                   <th className="py-3 px-3">Durée Forfait</th>
-                  <th className="py-3 px-3">Capacité</th>
-                  <th className="py-3 px-3">Identifiants</th>
-                  <th className="py-3 px-3">Statut</th>
+                  <th className="py-3 px-3">Identifiants Maître</th>
+                  <th className="py-3 px-3">Occupation / Statut</th>
                   <th className="py-3 px-3 text-right">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
                 {filteredStocks.map((item) => {
+                  const isPrive = item.typeAbonnement === 'PRIVE'
                   const isAvailable = !item.isUsed && (item.placesOccupees || 0) < (item.capaciteMax || 1)
                   const isPassVisible = visiblePasswords[item.id]
 
@@ -671,40 +772,74 @@ export default function IdentifiantsStockPage() {
                           Compte #{item.numeroCompte || 1}
                         </span>
                       </td>
+
                       <td className="py-3 px-3">
                         <div className="font-bold text-foreground">
                           {item.nomProfil || 'Compte Simple'}
-                          {item.codePin && <span className="ml-1.5 text-muted-foreground font-mono text-[11px]">PIN: {item.codePin}</span>}
+                          {item.codePin && (
+                            <span className="ml-1.5 text-muted-foreground font-mono text-[11px]">
+                              PIN: {item.codePin}
+                            </span>
+                          )}
                         </div>
-                        <span className="text-[10px] text-muted-foreground">{item.typeAbonnement === 'PRIVE' ? '👑 Privé' : '👥 Partagé'}</span>
                       </td>
+
+                      <td className="py-3 px-3">
+                        {isPrive ? (
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400 font-extrabold text-[10px]">
+                            <Sparkles className="w-3 h-3" /> Privé ({item.nbAppareilsMax || 1} appareil{(item.nbAppareilsMax || 1) > 1 ? 's' : ''})
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-600 dark:text-blue-400 font-extrabold text-[10px]">
+                            <Users className="w-3 h-3" /> Partagé ({item.capaciteMax || 1} pers.)
+                          </span>
+                        )}
+                      </td>
+
                       <td className="py-3 px-3">
                         <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-secondary text-secondary-foreground font-bold">
                           <Clock className="w-3 h-3" /> {item.dureeForfaitMois || 1} Mois
                         </span>
                       </td>
-                      <td className="py-3 px-3 font-semibold text-muted-foreground">
-                        {item.placesOccupees || 0} / {item.capaciteMax || 1} place
-                      </td>
+
                       <td className="py-3 px-3 font-mono text-[11px]">
                         <div>{item.login}</div>
                         <div className="text-muted-foreground">
                           {isPassVisible ? item.password : '••••••••'}
                         </div>
                       </td>
+
                       <td className="py-3 px-3">
-                        {isAvailable ? (
-                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-500 font-extrabold text-[10px]">
-                            <CheckCircle2 className="w-3 h-3" /> Disponible
-                          </span>
-                        ) : (
-                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-slate-500/10 text-slate-500 font-extrabold text-[10px]">
-                            <XCircle className="w-3 h-3" /> Occupé / Livré
-                          </span>
-                        )}
+                        <div className="space-y-0.5">
+                          {isAvailable ? (
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-500 font-extrabold text-[10px]">
+                              <CheckCircle2 className="w-3 h-3" /> Disponible
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-slate-500/10 text-slate-500 font-extrabold text-[10px]">
+                              <XCircle className="w-3 h-3" /> Complet / Occupé
+                            </span>
+                          )}
+                          {!isPrive && (
+                            <p className="text-[10px] text-muted-foreground font-medium">
+                              {item.placesOccupees || 0}/{item.capaciteMax || 1} place occupée
+                            </p>
+                          )}
+                        </div>
                       </td>
+
                       <td className="py-3 px-3 text-right">
                         <div className="flex items-center justify-end gap-1.5">
+                          {/* Bouton Modifier le profil */}
+                          <button
+                            type="button"
+                            onClick={() => setEditingItem({ ...item })}
+                            className="p-1.5 text-primary hover:text-primary-focus rounded-lg hover:bg-primary/10 transition"
+                            title="Modifier ce profil / compte"
+                          >
+                            <Edit3 className="w-3.5 h-3.5" />
+                          </button>
+
                           <button
                             type="button"
                             onClick={() => togglePasswordVisibility(item.id)}
@@ -739,6 +874,212 @@ export default function IdentifiantsStockPage() {
           </div>
         )}
       </Card>
+
+      {/* Modal de Modification d'un Profil / Compte */}
+      {editingItem && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in">
+          <div className="relative w-full max-w-lg bg-card border border-border rounded-3xl shadow-2xl p-6 space-y-4 max-h-[90vh] overflow-y-auto">
+            <button
+              onClick={() => setEditingItem(null)}
+              className="absolute top-4 right-4 p-2 text-muted-foreground hover:text-foreground rounded-full hover:bg-muted"
+            >
+              <X className="w-4 h-4" />
+            </button>
+
+            <div className="border-b border-border pb-3">
+              <span className="text-[10px] font-extrabold uppercase tracking-wider text-primary block">
+                Édition de Profil / Compte
+              </span>
+              <h3 className="text-lg font-black text-foreground">
+                Modifier {editingItem.nomProfil || `Compte #${editingItem.numeroCompte}`}
+              </h3>
+            </div>
+
+            <form onSubmit={handleUpdateStock} className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-foreground block">Email / Login</label>
+                  <Input
+                    required
+                    value={editingItem.login || ''}
+                    onChange={(e) => setEditingItem({ ...editingItem, login: e.target.value })}
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-foreground block">Mot de passe</label>
+                  <Input
+                    required
+                    type="text"
+                    value={editingItem.password || ''}
+                    onChange={(e) => setEditingItem({ ...editingItem, password: e.target.value })}
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-foreground block">N° de Compte</label>
+                  <Input
+                    type="number"
+                    min="1"
+                    value={editingItem.numeroCompte || 1}
+                    onChange={(e) => setEditingItem({ ...editingItem, numeroCompte: e.target.value })}
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-foreground block">Nom du Profil</label>
+                  <Input
+                    required
+                    placeholder="ex: VIP, Kids..."
+                    value={editingItem.nomProfil || ''}
+                    onChange={(e) => setEditingItem({ ...editingItem, nomProfil: e.target.value })}
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-foreground block">Code PIN</label>
+                  <Input
+                    placeholder="ex: 1234"
+                    maxLength={6}
+                    value={editingItem.codePin || ''}
+                    onChange={(e) => setEditingItem({ ...editingItem, codePin: e.target.value })}
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-foreground block">Type d'Accès</label>
+                  <select
+                    value={editingItem.typeAbonnement || 'PARTAGE'}
+                    onChange={(e) => setEditingItem({ ...editingItem, typeAbonnement: e.target.value })}
+                    className="w-full h-10 rounded-xl border border-input bg-card px-2.5 text-xs font-bold text-foreground outline-none"
+                  >
+                    <option value="PARTAGE">👥 Profil Partagé</option>
+                    <option value="PRIVE">👑 Profil Privé</option>
+                  </select>
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-foreground block">Durée Forfait</label>
+                  <select
+                    value={editingItem.dureeForfaitMois || 1}
+                    onChange={(e) => setEditingItem({ ...editingItem, dureeForfaitMois: Number(e.target.value) })}
+                    className="w-full h-10 rounded-xl border border-input bg-card px-2.5 text-xs font-bold text-foreground outline-none"
+                  >
+                    {offerForfaits.map((of, fIdx) => (
+                      <option key={fIdx} value={of.duree}>
+                        {of.plan}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="space-y-1">
+                  {editingItem.typeAbonnement === 'PRIVE' ? (
+                    <div>
+                      <label className="text-xs font-bold text-amber-600 dark:text-amber-400 block">
+                        Nb d'Appareils
+                      </label>
+                      <select
+                        value={editingItem.nbAppareilsMax || 1}
+                        onChange={(e) => setEditingItem({ ...editingItem, nbAppareilsMax: Number(e.target.value) })}
+                        className="w-full h-10 rounded-xl border border-amber-500/40 bg-amber-500/5 px-2.5 text-xs font-black text-amber-700 dark:text-amber-300 outline-none"
+                      >
+                        <option value={1}>1 Écran / Appareil</option>
+                        <option value={2}>2 Écrans</option>
+                        <option value={3}>3 Écrans</option>
+                        <option value={4}>4 Écrans</option>
+                      </select>
+                    </div>
+                  ) : (
+                    <div>
+                      <label className="text-xs font-bold text-primary block">
+                        Nb de Personnes
+                      </label>
+                      <select
+                        value={editingItem.capaciteMax || 1}
+                        onChange={(e) => setEditingItem({ ...editingItem, capaciteMax: Number(e.target.value) })}
+                        className="w-full h-10 rounded-xl border border-primary/40 bg-primary/5 px-2.5 text-xs font-black text-primary outline-none"
+                      >
+                        <option value={1}>1 Personne</option>
+                        <option value={2}>2 Personnes</option>
+                        <option value={3}>3 Personnes</option>
+                        <option value={4}>4 Personnes</option>
+                        <option value={5}>5 Personnes</option>
+                      </select>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Gestion des Places Occupées / Disponibilité */}
+              <div className="p-3.5 bg-muted/40 rounded-2xl border border-border space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold text-foreground">Gestion de l'Occupation :</span>
+                  <button
+                    type="button"
+                    onClick={() => setEditingItem({ ...editingItem, placesOccupees: 0, isUsed: false })}
+                    className="text-[11px] font-bold text-primary hover:underline flex items-center gap-1"
+                  >
+                    <RotateCcw className="w-3 h-3" /> Réinitialiser à 0 place occupée
+                  </button>
+                </div>
+                <div className="grid grid-cols-2 gap-2 text-xs">
+                  <div>
+                    <label className="text-[10px] text-muted-foreground block">Places actuellement occupées</label>
+                    <Input
+                      type="number"
+                      min="0"
+                      value={editingItem.placesOccupees || 0}
+                      onChange={(e) => setEditingItem({ ...editingItem, placesOccupees: Number(e.target.value) })}
+                      className="h-8 text-xs font-bold"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-[10px] text-muted-foreground block">Statut Forcé</label>
+                    <select
+                      value={editingItem.isUsed ? 'USED' : 'AVAILABLE'}
+                      onChange={(e) => setEditingItem({ ...editingItem, isUsed: e.target.value === 'USED' })}
+                      className="w-full h-8 rounded-lg border border-input bg-card px-2 text-xs font-bold text-foreground"
+                    >
+                      <option value="AVAILABLE">Disponible</option>
+                      <option value="USED">Complet / Occupé</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-xs font-bold text-foreground block">Instructions particulières (optionnel)</label>
+                <textarea
+                  rows={2}
+                  placeholder="Notes de connexion spécifiques..."
+                  value={editingItem.instructions || ''}
+                  onChange={(e) => setEditingItem({ ...editingItem, instructions: e.target.value })}
+                  className="w-full p-2.5 rounded-xl border border-input bg-card text-xs outline-none"
+                />
+              </div>
+
+              <div className="flex gap-2 pt-2">
+                <Button
+                  type="button"
+                  variant="secondary"
+                  onClick={() => setEditingItem(null)}
+                  className="w-1/3 text-xs"
+                >
+                  Annuler
+                </Button>
+                <Button type="submit" disabled={submitting} className="w-2/3 text-xs font-black">
+                  {submitting ? 'Enregistrement...' : 'Enregistrer les Modifications'}
+                </Button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

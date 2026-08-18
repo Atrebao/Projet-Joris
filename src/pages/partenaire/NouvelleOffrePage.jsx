@@ -2,6 +2,7 @@ import { useEffect, useState, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   ArrowLeft,
+  Boxes,
   CheckCircle2,
   Loader2,
   Plus,
@@ -16,11 +17,32 @@ import {
   Layers,
   HelpCircle,
   Tv,
+  Check,
+  Users,
+  Smartphone,
+  EyeOff,
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { CATEGORIES, SERVICES_MARKETPLACE, getPartenaireId, getServiceMeta } from '../../Utils/Utils'
 import { forfaitsAPI, offresAPI, partenairesAPI } from '../../lib/api'
 import { Button, Card, Input, PageHeader, Select, formatFCFA } from '../../components/saas/SaasPrimitives'
+
+// Suggestions de placeholders cohérents selon la durée
+const getDurationPlaceholders = (duree = 1, periode = 'MOIS') => {
+  const p = (periode || 'MOIS').toUpperCase()
+  const d = Number(duree || 1)
+
+  if (p.startsWith('AN') || d >= 12) {
+    return { partage: '14000', prive: '40000' }
+  }
+  if (d === 6) {
+    return { partage: '7500', prive: '22000' }
+  }
+  if (d === 3) {
+    return { partage: '4000', prive: '12000' }
+  }
+  return { partage: '1500', prive: '4500' }
+}
 
 export default function NouvelleOffrePage() {
   const navigate = useNavigate()
@@ -31,17 +53,16 @@ export default function NouvelleOffrePage() {
 
   // Commission partenaire
   const [partenaireData, setPartenaireData] = useState(null)
-  const [modeTarification, setModeTarification] = useState('INCLURE_COMMISSION') // 'INCLURE_COMMISSION' | 'AJOUTER_COMMISSION'
 
   const [formData, setFormData] = useState({
     categorie: 'streaming',
     service: 'netflix',
     titreOffre: 'Netflix Premium Ultra HD 4K',
-    forfaitId: '',
-    prix: '',
     description: '',
-    stock: '10',
   })
+
+  // Grille Tarifaire Multi-Durées & Multi-Accès (Fiche Unique)
+  const [grilleTarifs, setGrilleTarifs] = useState({})
 
   useEffect(() => {
     if (!partenaireId) navigate('/backoffice/login')
@@ -59,9 +80,26 @@ export default function NouvelleOffrePage() {
         if (forfaitsRes.status === 'fulfilled') {
           const items = Array.isArray(forfaitsRes.value.data) ? forfaitsRes.value.data : []
           setForfaitsDisponibles(items)
-          if (!formData.forfaitId && items[0]?.id) {
-            setFormData((state) => ({ ...state, forfaitId: String(items[0].id) }))
-          }
+
+          // Initialiser la grille tarifaire (champs de prix vides avec placeholders)
+          const initialGrille = {}
+          items.forEach((f, idx) => {
+            const placeholders = getDurationPlaceholders(f.duree, f.periode)
+            initialGrille[f.id] = {
+              selected: true,
+              forfaitId: f.id,
+              plan: f.plan,
+              duree: f.duree,
+              periode: f.periode,
+              prixPartage: '',
+              isPartageActive: true,
+              prixPrive: '',
+              isPriveActive: true,
+              placeholderPartage: placeholders.partage,
+              placeholderPrive: placeholders.prive,
+            }
+          })
+          setGrilleTarifs(initialGrille)
         }
 
         if (partRes.status === 'fulfilled') {
@@ -78,38 +116,8 @@ export default function NouvelleOffrePage() {
   }, [partenaireId])
 
   const selectedServiceMeta = getServiceMeta(formData.service)
-  const tauxCommission = partenaireData?.commissionActive !== false ? Number(partenaireData?.tauxCommission || 10) : 0
+  const tauxCommission = partenaireData?.commissionActive !== false ? Number(partenaireData?.tauxCommission || 0) : 0
   const isCommissionActive = partenaireData?.commissionActive !== false && tauxCommission > 0
-
-  // Calcul du prix et de la commission en direct (uniquement si commission active)
-  const pricingSimulation = useMemo(() => {
-    const inputAmount = Number(formData.prix) || 0
-    if (inputAmount <= 0) {
-      return { prixClient: 0, commissionMontant: 0, gainNet: 0 }
-    }
-
-    if (!isCommissionActive) {
-      return { prixClient: inputAmount, commissionMontant: 0, gainNet: inputAmount }
-    }
-
-    if (modeTarification === 'AJOUTER_COMMISSION') {
-      const prixClient = Math.round(inputAmount * (1 + tauxCommission / 100))
-      const commissionMontant = prixClient - inputAmount
-      return {
-        prixClient,
-        commissionMontant,
-        gainNet: inputAmount,
-      }
-    } else {
-      const commissionMontant = Math.round((inputAmount * tauxCommission) / 100)
-      const gainNet = Math.max(0, inputAmount - commissionMontant)
-      return {
-        prixClient: inputAmount,
-        commissionMontant,
-        gainNet,
-      }
-    }
-  }, [formData.prix, modeTarification, isCommissionActive, tauxCommission])
 
   const handleServiceChange = (e) => {
     const serviceVal = e.target.value
@@ -126,37 +134,57 @@ export default function NouvelleOffrePage() {
     setFormData((state) => ({ ...state, [e.target.name]: e.target.value }))
   }
 
-  const handleAddTemplateBullet = (text) => {
-    setFormData((prev) => ({
+  const handleGrilleChange = (forfaitId, field, value) => {
+    setGrilleTarifs((prev) => ({
       ...prev,
-      description: prev.description ? `${prev.description.trim()}\n• ${text}` : `• ${text}`,
+      [forfaitId]: {
+        ...prev[forfaitId],
+        [field]: value,
+      },
     }))
+  }
+
+  const calculateNetGain = (prix) => {
+    const p = Number(prix) || 0
+    if (p <= 0 || !isCommissionActive) return p
+    return Math.round(p * (1 - tauxCommission / 100))
   }
 
   const handleSubmit = async (e) => {
     e.preventDefault()
     if (!partenaireId) return
 
-    if (!formData.forfaitId) {
-      toast.error('Veuillez sélectionner un forfait pour définir la durée.')
-      return
-    }
-
-    const inputNum = Number(formData.prix)
-    if (!Number.isFinite(inputNum) || inputNum <= 0) {
-      toast.error("Veuillez renseigner un prix valide en FCFA pour l'offre.")
-      return
-    }
-
     if (!formData.titreOffre.trim()) {
       toast.error("Veuillez renseigner le titre de l'offre.")
       return
     }
 
+    // Récupérer les déclinaisons de tarifs activées
+    const activeGrille = Object.values(grilleTarifs)
+      .filter((g) => g.selected && (g.isPartageActive || g.isPriveActive))
+      .map((g) => {
+        const pPartage = g.isPartageActive ? Number(g.prixPartage || 0) : 0
+        const pPrive = g.isPriveActive ? Number(g.prixPrive || 0) : 0
+        return {
+          forfaitId: Number(g.forfaitId),
+          prixPartage: pPartage,
+          prixPrive: pPrive,
+          isPartageActive: Boolean(g.isPartageActive && pPartage > 0),
+          isPriveActive: Boolean(g.isPriveActive && pPrive > 0),
+        }
+      })
+      .filter((g) => g.isPartageActive || g.isPriveActive)
+
+    if (activeGrille.length === 0) {
+      toast.error('Veuillez activer au moins un forfait et renseigner un prix de vente supérieur à 0 FCFA.')
+      return
+    }
+
     setLoading(true)
     try {
-      const forfait = forfaitsDisponibles.find((f) => String(f.id) === String(formData.forfaitId))
       const serviceMeta = getServiceMeta(formData.service)
+      const firstActive = activeGrille[0]
+      const defaultPrice = firstActive.prixPartage || firstActive.prixPrive || 1500
 
       await offresAPI.create({
         partenaireId: Number(partenaireId),
@@ -164,20 +192,18 @@ export default function NouvelleOffrePage() {
         service: formData.service,
         nomService: serviceMeta.label || formData.service,
         titreOffre: formData.titreOffre.trim(),
-        description: formData.description?.trim() || `${serviceMeta.label} - ${forfait?.nom || forfait?.plan || 'Standard'}`,
+        description: formData.description?.trim() || `${serviceMeta.label} - Abonnement Premium`,
         imageService: '',
-        prixBase: inputNum,
-        modeTarification: isCommissionActive ? modeTarification : 'INCLURE_COMMISSION',
-        prixOriginal: isCommissionActive ? (pricingSimulation.prixClient || inputNum) : inputNum,
-        prixVente: isCommissionActive ? (pricingSimulation.prixClient || inputNum) : inputNum,
-        margePartenaire: isCommissionActive ? (pricingSimulation.gainNet || inputNum) : inputNum,
-        duree: Number(forfait?.duree || 1),
+        prixBase: defaultPrice,
+        prixOriginal: defaultPrice,
+        prixVente: defaultPrice,
+        margePartenaire: defaultPrice,
+        duree: 1,
         typeCompte: formData.titreOffre.trim(),
-        quantiteDisponible: parseInt(formData.stock, 10) || 0,
-        forfaitId: Number(formData.forfaitId),
+        grilleTarifs: activeGrille,
       })
 
-      toast.success('Offre créée et mise en ligne avec succès !')
+      toast.success('Offre multi-durées créée et mise en ligne avec succès ! 🎉')
       navigate('/partenaire/offres')
     } catch (error) {
       console.error(error)
@@ -188,10 +214,10 @@ export default function NouvelleOffrePage() {
   }
 
   return (
-    <div className="space-y-6 max-w-4xl mx-auto">
+    <div className="space-y-6 max-w-5xl mx-auto">
       <PageHeader
-        title="Créer une Nouvelle Offre"
-        description="Configurez votre abonnement, ajustez la tarification et publiez-le sur la marketplace."
+        title="Créer une Nouvelle Offre (Fiche Unique)"
+        description="Configurez votre offre en une seule fiche produit avec l'ensemble de vos forfaits (1 mois, 3 mois, 1 an...) et tarifs Partagé / Privé."
         action={
           <Button variant="outline" onClick={() => navigate('/partenaire/offres')} className="gap-2 text-xs font-semibold rounded-lg">
             <ArrowLeft className="h-4 w-4" /> Retour aux offres
@@ -200,17 +226,16 @@ export default function NouvelleOffrePage() {
       />
 
       <form onSubmit={handleSubmit} className="space-y-6">
-        {/* Informations Générales & Choix du Service Marketplace */}
-        <Card className="p-6 border border-slate-200 bg-white shadow-2xs space-y-4">
-          <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-            <h2 className="text-sm font-bold uppercase tracking-wider text-slate-900">
-              1. Plateforme & Service de Streaming
+        {/* Informations Générales & Choix du Service */}
+        <Card className="p-6 border border-border bg-card shadow-xs space-y-4">
+          <div className="flex items-center justify-between border-b border-border pb-3">
+            <h2 className="text-sm font-bold uppercase tracking-wider text-foreground">
+              1. Plateforme & Service
             </h2>
-            <span className="text-[11px] text-slate-500">Logo et marque officiels automatiques</span>
+            <span className="text-[11px] text-muted-foreground">Logo et marque officiels automatiques</span>
           </div>
 
-          {/* Aperçu du badge de marque officiel (Style SaaS Marketplace) */}
-          <div className="p-4 rounded-xl bg-slate-50 border border-slate-200/80 flex items-center gap-4">
+          <div className="p-4 rounded-xl bg-muted/40 border border-border flex items-center gap-4">
             <div
               className="h-12 w-12 rounded-xl flex items-center justify-center font-black text-white text-base shadow-xs shrink-0"
               style={{ backgroundColor: selectedServiceMeta.color || '#0ea5e9' }}
@@ -219,30 +244,28 @@ export default function NouvelleOffrePage() {
             </div>
             <div className="min-w-0 flex-1">
               <div className="flex items-center gap-2">
-                <h3 className="font-bold text-slate-900 text-sm">{selectedServiceMeta.label}</h3>
-                <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-slate-200 text-slate-700">
-                  {selectedServiceMeta.category}
+                <span className="font-extrabold text-sm text-foreground">{selectedServiceMeta.label}</span>
+                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-primary/10 text-primary uppercase">
+                  {formData.categorie}
                 </span>
               </div>
-              <p className="text-xs text-slate-500 mt-0.5">
-                Le logo de la marque sera automatiquement appliqué sur la marketplace avec une netteté optimale.
+              <p className="text-xs text-muted-foreground mt-0.5 truncate">
+                Fiche produit marketplace unique pour tous vos forfaits de ce service.
               </p>
             </div>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="text-xs font-semibold text-slate-700 mb-1.5 block">
-                Plateforme / Service *
-              </label>
+              <label className="text-xs font-semibold text-foreground mb-1.5 block">Service de Streaming *</label>
               <select
                 name="service"
                 value={formData.service}
                 onChange={handleServiceChange}
-                className="w-full h-10 rounded-lg border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-800 outline-none shadow-2xs"
+                className="w-full h-10 rounded-xl border border-input bg-card px-3 text-xs font-bold text-foreground outline-none"
               >
                 {SERVICES_MARKETPLACE.map((s) => (
-                  <option key={s.value} value={s.value}>
+                  <option key={s.id} value={s.id}>
                     {s.label} ({s.category})
                   </option>
                 ))}
@@ -250,292 +273,221 @@ export default function NouvelleOffrePage() {
             </div>
 
             <div>
-              <label className="text-xs font-semibold text-slate-700 mb-1.5 block">
-                Catégorie *
-              </label>
-              <select
-                name="categorie"
-                value={formData.categorie}
-                onChange={handleChange}
-                className="w-full h-10 rounded-lg border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-800 outline-none shadow-2xs"
-              >
-                {CATEGORIES.filter((c) => c.value !== '').map((c) => (
-                  <option key={c.value} value={c.value}>
-                    {c.label}
-                  </option>
-                ))}
-              </select>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="text-xs font-semibold text-slate-700 mb-1.5 block">
-                Titre de l&apos;offre *
-              </label>
+              <label className="text-xs font-semibold text-foreground mb-1.5 block">Titre Commercial de l&apos;Offre *</label>
               <Input
                 name="titreOffre"
                 required
-                placeholder="Ex: Netflix Premium Ultra HD 4K (1 Écran)"
+                placeholder="Ex: Netflix Premium Ultra HD 4K"
                 value={formData.titreOffre}
                 onChange={handleChange}
-                className="text-xs"
+                className="text-xs font-bold"
               />
-            </div>
-
-            <div>
-              <label className="text-xs font-semibold text-slate-700 mb-1.5 block">
-                Forfait & Durée associé *
-              </label>
-              {loadingForfaits ? (
-                <div className="h-10 flex items-center text-xs text-slate-400">Chargement des forfaits...</div>
-              ) : forfaitsDisponibles.length === 0 ? (
-                <div className="text-xs text-rose-600 bg-rose-50 p-2.5 rounded-lg border border-rose-200">
-                  Aucun forfait créé. Veuillez d&apos;abord ajouter un forfait dans le menu « Mes Forfaits ».
-                </div>
-              ) : (
-                <select
-                  name="forfaitId"
-                  value={formData.forfaitId}
-                  onChange={handleChange}
-                  className="w-full h-10 rounded-lg border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-800 outline-none shadow-2xs"
-                >
-                  {forfaitsDisponibles.map((f) => (
-                    <option key={f.id} value={f.id}>
-                      {f.nom || f.plan} ({f.duree} {f.periode ? f.periode.toLowerCase() : 'mois'})
-                    </option>
-                  ))}
-                </select>
-              )}
-            </div>
-          </div>
-        </Card>
-
-        {/* Tarification & Calculateur de Commission (Uniquement si commission active) */}
-        <Card className="p-6 border border-slate-200 bg-white shadow-2xs space-y-4">
-          <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-            <h2 className="text-sm font-bold uppercase tracking-wider text-slate-900">
-              {isCommissionActive ? '2. Tarification & Commission Plateforme' : '2. Tarification de l\'offre'}
-            </h2>
-            {isCommissionActive && (
-              <span className="text-xs font-semibold text-indigo-700 bg-indigo-50 border border-indigo-100 px-2.5 py-0.5 rounded-full">
-                Taux Commission : {tauxCommission}%
-              </span>
-            )}
-          </div>
-
-          {/* Sélecteur de Mode de Tarification (Uniquement si commission active) */}
-          {isCommissionActive && (
-            <div className="space-y-3">
-              <label className="text-xs font-semibold text-slate-700 block">
-                Comment souhaitez-vous appliquer la commission plateforme ?
-              </label>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <button
-                  type="button"
-                  onClick={() => setModeTarification('INCLURE_COMMISSION')}
-                  className={`p-3.5 rounded-xl border text-left transition-all cursor-pointer ${modeTarification === 'INCLURE_COMMISSION'
-                      ? 'border-indigo-600 bg-indigo-50/50 shadow-2xs'
-                      : 'border-slate-200 bg-slate-50 hover:bg-slate-100'
-                    }`}
-                >
-                  <div className="flex items-center justify-between mb-1">
-                    <span className="font-bold text-xs text-slate-900">
-                      Inclure la commission dans mon prix
-                    </span>
-                    <input
-                      type="radio"
-                      checked={modeTarification === 'INCLURE_COMMISSION'}
-                      onChange={() => setModeTarification('INCLURE_COMMISSION')}
-                      className="accent-indigo-600"
-                    />
-                  </div>
-                  <p className="text-[11px] text-slate-500 leading-snug">
-                    Le prix que vous saisissez est le <strong>prix final payé par le client</strong>. La commission de {tauxCommission}% sera déduite de ce montant.
-                  </p>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => setModeTarification('AJOUTER_COMMISSION')}
-                  className={`p-3.5 rounded-xl border text-left transition-all cursor-pointer ${modeTarification === 'AJOUTER_COMMISSION'
-                      ? 'border-indigo-600 bg-indigo-50/50 shadow-2xs'
-                      : 'border-slate-200 bg-slate-50 hover:bg-slate-100'
-                    }`}
-                >
-                  <div className="flex items-center justify-between mb-1">
-                    <span className="font-bold text-xs text-slate-900">
-                      Ajouter la commission au prix client
-                    </span>
-                    <input
-                      type="radio"
-                      checked={modeTarification === 'AJOUTER_COMMISSION'}
-                      onChange={() => setModeTarification('AJOUTER_COMMISSION')}
-                      className="accent-indigo-600"
-                    />
-                  </div>
-                  <p className="text-[11px] text-slate-500 leading-snug">
-                    Le prix que vous saisissez est <strong>votre revenu net souhaité</strong>. La commission est ajoutée et supportée par le client.
-                  </p>
-                </button>
-              </div>
-            </div>
-          )}
-
-          {/* Champ de Saisie Prix & Stock */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
-            <div>
-              <label className="text-xs font-semibold text-slate-700 mb-1.5 block">
-                {isCommissionActive && modeTarification === 'AJOUTER_COMMISSION'
-                  ? 'Votre Revenu Net souhaité par vente (FCFA) *'
-                  : 'Prix de vente de l\'offre (FCFA) *'}
-              </label>
-              <Input
-                name="prix"
-                type="number"
-                min="5"
-                required
-                placeholder="Ex: 5000"
-                value={formData.prix}
-                onChange={handleChange}
-                className="text-base font-bold font-mono text-slate-900"
-              />
-            </div>
-
-            <div>
-              <label className="text-xs font-semibold text-slate-700 mb-1.5 block">
-                Stock initial d&apos;identifiants (optionnel)
-              </label>
-              <Input
-                name="stock"
-                type="number"
-                min="0"
-                placeholder="Ex: 10"
-                value={formData.stock}
-                onChange={handleChange}
-                className="text-xs"
-              />
-            </div>
-          </div>
-
-          {/* Simulateur Financier Transparent (Uniquement si commission active) */}
-          {isCommissionActive && Number(formData.prix) > 0 && (
-            <div className="p-4 rounded-xl bg-slate-900 text-slate-100 space-y-2.5 text-xs mt-2 border border-slate-800">
-              <div className="flex items-center justify-between font-bold text-slate-300 border-b border-slate-800 pb-2">
-                <span className="flex items-center gap-1.5">
-                  <Sparkles className="h-3.5 w-3.5 text-indigo-400" />
-                  Simulation Financière en Temps Réel
-                </span>
-                <span className="text-[11px] text-slate-400">Par souscription vendue</span>
-              </div>
-
-              <div className="grid grid-cols-3 gap-2 pt-1 text-center">
-                <div className="p-2.5 rounded-lg bg-slate-800/80 border border-slate-700">
-                  <span className="text-[10px] text-slate-400 uppercase font-semibold block">
-                    Prix Payé par le Client
-                  </span>
-                  <span className="text-sm font-black text-white font-mono mt-0.5 block">
-                    {formatFCFA(pricingSimulation.prixClient)}
-                  </span>
-                </div>
-
-                <div className="p-2.5 rounded-lg bg-slate-800/80 border border-slate-700">
-                  <span className="text-[10px] text-slate-400 uppercase font-semibold block">
-                    Commission Plateforme ({tauxCommission}%)
-                  </span>
-                  <span className="text-sm font-black text-indigo-400 font-mono mt-0.5 block">
-                    - {formatFCFA(pricingSimulation.commissionMontant)}
-                  </span>
-                </div>
-
-                <div className="p-2.5 rounded-lg bg-emerald-950/60 border border-emerald-600/40">
-                  <span className="text-[10px] text-emerald-400 uppercase font-semibold block">
-                    Votre Gain Net
-                  </span>
-                  <span className="text-sm font-black text-emerald-300 font-mono mt-0.5 block">
-                    {formatFCFA(pricingSimulation.gainNet)}
-                  </span>
-                </div>
-              </div>
-            </div>
-          )}
-        </Card>
-
-        {/* Description & Avantages de l'offre */}
-        <Card className="p-6 border border-slate-200 bg-white shadow-2xs space-y-4">
-          <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-            <h2 className="text-sm font-bold uppercase tracking-wider text-slate-900">
-              3. Description & Caractéristiques de l&apos;offre
-            </h2>
-            <span className="text-[11px] text-slate-500">Mise en forme soignée pour le client</span>
-          </div>
-
-          <div className="space-y-1.5">
-            <span className="text-xs text-slate-600 font-semibold block">
-              Ajouter rapidement des caractéristiques types :
-            </span>
-            <div className="flex flex-wrap gap-1.5">
-              {[
-                '1 Écran Privé avec code PIN',
-                'Qualité Ultra HD 4K',
-                'Compte renouvelable chaque mois',
-                'Livraison instantanée',
-                'Garantie totale sur toute la durée',
-                'Compatible TV, Téléphone, PC',
-              ].map((template) => (
-                <button
-                  key={template}
-                  type="button"
-                  onClick={() => handleAddTemplateBullet(template)}
-                  className="px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-[11px] font-semibold transition-colors cursor-pointer"
-                >
-                  + {template}
-                </button>
-              ))}
             </div>
           </div>
 
           <div>
+            <label className="text-xs font-semibold text-foreground mb-1.5 block">Description & Avantages (Optionnel)</label>
             <textarea
               name="description"
-              rows={4}
-              placeholder="Décrivez les fonctionnalités de votre offre :&#10;• 1 Écran Privé&#10;• Ultra HD 4K&#10;• Garantie 30 jours"
+              rows={3}
+              placeholder="Ex: Qualité Ultra HD 4K, audio spatial, compatible tous appareils..."
               value={formData.description}
               onChange={handleChange}
-              className="w-full rounded-lg border border-slate-200 bg-white p-3 text-xs font-medium text-slate-800 outline-none leading-relaxed"
+              className="w-full p-3 rounded-xl border border-input bg-card text-xs outline-none"
             />
           </div>
-
-          {/* Aperçu du rendu de la description */}
-          {formData.description && (
-            <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200/80 space-y-1 text-xs">
-              <span className="text-[10px] uppercase font-bold text-slate-500 block">
-                Aperçu de l&apos;affichage client :
-              </span>
-              <div className="whitespace-pre-line text-slate-800 text-xs leading-relaxed font-medium">
-                {formData.description}
-              </div>
-            </div>
-          )}
         </Card>
 
-        {/* Bouton de Soumission */}
-        <div className="flex justify-end gap-3 pt-2">
-          <Button
-            type="button"
-            variant="ghost"
-            onClick={() => navigate('/partenaire/offres')}
-            className="text-xs font-semibold rounded-lg"
-          >
+        {/* Section 2 : TARIFICATION MULTI-DURÉES & MULTI-ACCÈS (Fiche Unique) */}
+        <Card className="p-6 border border-border bg-card shadow-xs space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-border pb-3 gap-2">
+            <div>
+              <h2 className="text-sm font-bold uppercase tracking-wider text-foreground flex items-center gap-2">
+                <DollarSign className="h-4 w-4 text-primary" />
+                2. Grille Tarifaire Multi-Durées (Fiche Unique)
+              </h2>
+              <p className="text-xs text-muted-foreground">
+                Activez les forfaits proposés pour cette offre et définissez les prix pour les profils <strong>Partagés</strong> et <strong>Privés</strong>.
+              </p>
+            </div>
+            {isCommissionActive && (
+              <span className="px-2.5 py-1 rounded-lg bg-primary/10 text-primary text-xs font-black">
+                Commission Plateforme : {tauxCommission}%
+              </span>
+            )}
+          </div>
+
+          {loadingForfaits ? (
+            <div className="p-8 text-center text-xs text-muted-foreground">Chargement des forfaits...</div>
+          ) : forfaitsDisponibles.length === 0 ? (
+            <div className="p-6 text-center text-xs text-muted-foreground border border-dashed rounded-xl">
+              Aucun forfait disponible. Créez d'abord des forfaits dans l'onglet Catalogue &gt; Forfaits.
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-xs border-collapse">
+                <thead>
+                  <tr className="border-b border-border text-muted-foreground font-black uppercase text-[10px]">
+                    <th className="py-3 px-3">Forfait / Durée</th>
+                    <th className="py-3 px-3">👥 Prix Profil Partagé (FCFA)</th>
+                    <th className="py-3 px-3">👑 Prix Profil Privé (FCFA)</th>
+                    <th className="py-3 px-3 text-right">Statut Forfait</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-border">
+                  {forfaitsDisponibles.map((f) => {
+                    const placeholders = getDurationPlaceholders(f.duree, f.periode)
+                    const g = grilleTarifs[f.id] || {
+                      selected: true,
+                      prixPartage: '',
+                      prixPrive: '',
+                      isPartageActive: true,
+                      isPriveActive: true,
+                      placeholderPartage: placeholders.partage,
+                      placeholderPrive: placeholders.prive,
+                    }
+                    const isSelected = g.selected
+                    const hasAtLeastOneActive = isSelected && (g.isPartageActive || g.isPriveActive)
+
+                    return (
+                      <tr
+                        key={f.id}
+                        className={`transition-all duration-200 ${
+                          isSelected
+                            ? 'bg-card'
+                            : 'bg-muted/20 opacity-40'
+                        }`}
+                      >
+                        {/* Forfait / Durée */}
+                        <td className="py-3.5 px-3">
+                          <label className="flex items-center gap-2.5 cursor-pointer">
+                            <input
+                              type="checkbox"
+                              checked={isSelected}
+                              onChange={(e) => handleGrilleChange(f.id, 'selected', e.target.checked)}
+                              className="rounded border-input text-primary focus:ring-primary h-4 w-4 cursor-pointer"
+                            />
+                            <div>
+                              <span className={`font-extrabold block ${isSelected ? 'text-foreground' : 'text-muted-foreground'}`}>
+                                {f.plan}
+                              </span>
+                              <span className="text-[10px] text-muted-foreground">
+                                {f.duree} {f.periode || 'MOIS'}
+                              </span>
+                            </div>
+                          </label>
+                        </td>
+
+                        {/* Profil Partagé */}
+                        <td className="py-3.5 px-3">
+                          <div className="space-y-1">
+                            <div className="flex items-center gap-2">
+                              <input
+                                type="checkbox"
+                                disabled={!isSelected}
+                                checked={isSelected && g.isPartageActive}
+                                onChange={(e) => handleGrilleChange(f.id, 'isPartageActive', e.target.checked)}
+                                className="rounded text-primary focus:ring-primary h-3.5 w-3.5 cursor-pointer disabled:cursor-not-allowed"
+                                title="Activer / Désactiver la vente en profil partagé"
+                              />
+                              <Input
+                                type="number"
+                                min="0"
+                                disabled={!isSelected || !g.isPartageActive}
+                                placeholder={`Ex: ${g.placeholderPartage || placeholders.partage}`}
+                                value={g.prixPartage}
+                                onChange={(e) => handleGrilleChange(f.id, 'prixPartage', e.target.value)}
+                                className={`h-8 text-xs font-bold font-mono w-32 transition ${
+                                  !isSelected || !g.isPartageActive ? 'bg-muted/40 text-muted-foreground cursor-not-allowed' : ''
+                                }`}
+                              />
+                            </div>
+                            {isCommissionActive && isSelected && g.isPartageActive && Number(g.prixPartage) > 0 && (
+                              <p className="text-[10px] text-emerald-600 dark:text-emerald-400 font-semibold pl-5">
+                                Gain net : {formatFCFA(calculateNetGain(g.prixPartage))} (-{tauxCommission}%)
+                              </p>
+                            )}
+                          </div>
+                        </td>
+
+                        {/* Profil Privé */}
+                        <td className="py-3.5 px-3">
+                          <div className="space-y-1">
+                            <div className="flex items-center gap-2">
+                              <input
+                                type="checkbox"
+                                disabled={!isSelected}
+                                checked={isSelected && g.isPriveActive}
+                                onChange={(e) => handleGrilleChange(f.id, 'isPriveActive', e.target.checked)}
+                                className="rounded text-primary focus:ring-primary h-3.5 w-3.5 cursor-pointer disabled:cursor-not-allowed"
+                                title="Activer / Désactiver la vente en profil privé"
+                              />
+                              <Input
+                                type="number"
+                                min="0"
+                                disabled={!isSelected || !g.isPriveActive}
+                                placeholder={`Ex: ${g.placeholderPrive || placeholders.prive}`}
+                                value={g.prixPrive}
+                                onChange={(e) => handleGrilleChange(f.id, 'prixPrive', e.target.value)}
+                                className={`h-8 text-xs font-bold font-mono w-32 transition ${
+                                  !isSelected || !g.isPriveActive ? 'bg-muted/40 text-muted-foreground cursor-not-allowed' : ''
+                                }`}
+                              />
+                            </div>
+                            {isCommissionActive && isSelected && g.isPriveActive && Number(g.prixPrive) > 0 && (
+                              <p className="text-[10px] text-emerald-600 dark:text-emerald-400 font-semibold pl-5">
+                                Gain net : {formatFCFA(calculateNetGain(g.prixPrive))} (-{tauxCommission}%)
+                              </p>
+                            )}
+                          </div>
+                        </td>
+
+                        {/* Statut */}
+                        <td className="py-3.5 px-3 text-right">
+                          {isSelected ? (
+                            hasAtLeastOneActive ? (
+                              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-extrabold text-[10px]">
+                                <Check className="w-3 h-3" /> Proposé
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400 font-bold text-[10px]">
+                                Incomplet
+                              </span>
+                            )
+                          ) : (
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-muted text-muted-foreground font-semibold text-[10px]">
+                              <EyeOff className="w-3 h-3" /> Masqué
+                            </span>
+                          )}
+                        </td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
+
+          {/* Bannière Stock Automatique */}
+          <div className="p-3.5 rounded-2xl bg-muted/40 border border-border flex items-center gap-3 mt-3">
+            <Boxes className="h-5 w-5 text-primary shrink-0" />
+            <div>
+              <span className="text-xs font-bold text-foreground block">Stockage & Livraison Automatique</span>
+              <p className="text-[11px] text-muted-foreground">
+                Le stock est automatiquement alimenté dès que vous ajoutez des comptes maîtres dans <strong>Stock & Identifiants</strong>.
+              </p>
+            </div>
+          </div>
+        </Card>
+
+        {/* Boutons d'Action */}
+        <div className="flex items-center justify-end gap-3">
+          <Button type="button" variant="outline" onClick={() => navigate('/partenaire/offres')} disabled={loading}>
             Annuler
           </Button>
-          <Button
-            type="submit"
-            disabled={loading}
-            className="bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold rounded-lg px-6 h-10 gap-2 shadow-2xs"
-          >
+          <Button type="submit" disabled={loading} className="gap-2 font-bold">
             {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
-            {loading ? 'Création en cours...' : 'Publier mon offre'}
+            {loading ? 'Publication...' : "Publier l'Offre Unique sur la Marketplace"}
           </Button>
         </div>
       </form>
