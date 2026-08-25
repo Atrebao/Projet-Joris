@@ -433,20 +433,38 @@ export default function OffresPartenairePage() {
                         </span>
                       </div>
                     ) : offre.isMultiTarifs ? (
-                      <div>
-                        <span className="text-[10px] font-bold text-muted-foreground uppercase block leading-none mb-0.5">
-                          À partir de
-                        </span>
-                        <div className="flex items-baseline gap-1.5">
-                          <span className="text-xl font-black text-foreground">
-                            {formatFCFA(offre.prix)}
+                      <div className="space-y-1.5">
+                        <div>
+                          <span className="text-[10px] font-bold text-muted-foreground uppercase block leading-none mb-0.5">
+                            À partir de
                           </span>
-                          {offre.prixMax > offre.prix && (
-                            <span className="text-[11px] font-semibold text-muted-foreground">
-                              jusqu'à {formatFCFA(offre.prixMax)}
+                          <div className="flex items-baseline gap-1.5">
+                            <span className="text-xl font-black text-foreground">
+                              {formatFCFA(offre.prix)}
                             </span>
-                          )}
+                            {offre.prixMax > offre.prix && (
+                              <span className="text-[11px] font-semibold text-muted-foreground">
+                                jusqu'à {formatFCFA(offre.prixMax)}
+                              </span>
+                            )}
+                          </div>
                         </div>
+
+                        {/* Décomposition détaillée des prix par forfait */}
+                        {Array.isArray(offre.forfaits) && offre.forfaits.length > 0 && (
+                          <div className="flex flex-wrap gap-1 pt-1">
+                            {offre.forfaits.map((f, fIdx) => (
+                              <div
+                                key={fIdx}
+                                className="px-2 py-0.5 rounded-md bg-muted/60 border border-border/60 text-[10px] font-mono font-bold flex items-center gap-1"
+                              >
+                                <span className="font-extrabold text-foreground">{f.plan || `${f.duree}M`} :</span>
+                                {f.prixPartage > 0 && <span className="text-primary">{formatFCFA(f.prixPartage)}</span>}
+                                {f.prixPrive > 0 && <span className="text-amber-600 dark:text-amber-400">/ {formatFCFA(f.prixPrive)}</span>}
+                              </div>
+                            ))}
+                          </div>
+                        )}
                       </div>
                     ) : (
                       <div className="text-xl font-black text-foreground">

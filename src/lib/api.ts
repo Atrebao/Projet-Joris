@@ -347,6 +347,7 @@ export const identifiantsStockAPI = {
   createAccountWithProfiles: (offreId, data) => api.post(`/identifiants-stock/offre/${offreId}/compte-complet`, data),
   listByOffre: (offreId) => api.get(`/identifiants-stock/offre/${offreId}`),
   listByPartenaire: (partenaireId) => api.get(`/identifiants-stock/partenaire/${partenaireId}`),
+  listProfilsDisponibles: (offreId) => api.get(`/identifiants-stock/public/offre/${offreId}/profils`),
   update: (id, data) => api.post(`/identifiants-stock/${id}/modifier`, data),
   delete: (id) => api.post(`/identifiants-stock/${id}/supprimer`),
 }
@@ -415,6 +416,8 @@ export const whatsappAPI = {
     }
     return api.post(`/whatsapp/partenaire/${arg1}/test`, { to: arg2, message: arg3 })
   },
+  getTemplate: (partenaireId) => api.get(`/whatsapp/partenaire/${partenaireId}/template`),
+  saveTemplate: (partenaireId, template) => api.post(`/whatsapp/partenaire/${partenaireId}/template`, { template }),
 }
 
 export default api

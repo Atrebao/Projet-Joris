@@ -176,6 +176,9 @@ export default function DetailOffre() {
         modePaiement: operator?.operateur || selectedOperator,
         pseudo: clientData?.username || clientData?.pseudo || '',
         telephone: clientData?.telephone || clientData?.numeroWhatsapp || numeroClient.replace(/\s/g, ''),
+        typeAbonnement,
+        nomProfilSouhaite: nomProfilSouhaite.trim() || undefined,
+        codePinSouhaite: codePinSouhaite.trim() || undefined,
       })
 
       const data = response.data
@@ -379,7 +382,7 @@ export default function DetailOffre() {
                 </button>
               </div>
 
-              {/* Champs de personnalisation pour profil privé */}
+              {/* Champs de personnalisation pour profil privé (optionnel) */}
               {typeAbonnement === 'PRIVE' && (
                 <div className="p-3.5 bg-amber-500/10 border border-amber-500/30 rounded-2xl space-y-3 animate-in fade-in">
                   <p className="text-[11px] font-bold text-amber-600 dark:text-amber-400">

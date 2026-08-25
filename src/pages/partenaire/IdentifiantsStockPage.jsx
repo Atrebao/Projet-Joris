@@ -159,16 +159,11 @@ export default function IdentifiantsStockPage() {
   const initAccountFormForOffer = (offre) => {
     if (!offre) return
     const defaultCount = getDefaultProfilesCountForService(offre.nomService || offre.nom || '')
-    const forfaitsList = (offre.forfaits && offre.forfaits.length > 0)
-      ? offre.forfaits.map((f) => Number(f.duree || 1))
-      : [1, 3]
 
     const initialProfils = []
     for (let i = 0; i < defaultCount; i++) {
-      const assignedDuration = forfaitsList[i % forfaitsList.length] || 1
       initialProfils.push({
         nomProfil: `Profil ${i + 1}`,
-        dureeForfaitMois: assignedDuration,
         capaciteMax: 1,
         nbAppareilsMax: 1,
         codePin: '',
@@ -561,7 +556,7 @@ export default function IdentifiantsStockPage() {
 
                   return (
                     <div key={idx} className="p-4 bg-muted/40 border border-border rounded-2xl space-y-3 relative group">
-                      {/* En-tête profil : Nom modifiable + Type */}
+                      {/* En-tête profil : Nom modifiable */}
                       <div className="flex items-center justify-between gap-2">
                         <div className="flex items-center gap-1.5 flex-1 min-w-0">
                           <User className="w-3.5 h-3.5 text-primary shrink-0" />
@@ -574,7 +569,6 @@ export default function IdentifiantsStockPage() {
                             className="bg-card border border-border rounded-lg px-2 py-1 text-xs font-black text-foreground w-full outline-none focus:ring-1 focus:ring-primary"
                           />
                         </div>
-
                         {accountForm.profils.length > 1 && (
                           <button
                             type="button"
@@ -587,7 +581,27 @@ export default function IdentifiantsStockPage() {
                         )}
                       </div>
 
-                      {/* Type d'Abonnement */}
+                      {/* Forfait associé (depuis la liste des forfaits de l'offre) */}
+                      {offerForfaits?.length > 0 && (
+                        <div className="space-y-1">
+                          <label className="text-[10px] font-extrabold uppercase tracking-wider text-muted-foreground block">
+                            📦 Forfait associé
+                          </label>
+                          <select
+                            value={p.dureeForfaitMois || offerForfaits[0]?.duree || 1}
+                            onChange={(e) => handleProfilFieldChange(idx, 'dureeForfaitMois', Number(e.target.value))}
+                            className="w-full h-8 rounded-lg bg-card border border-input px-2 text-xs font-bold text-foreground outline-none focus:ring-1 focus:ring-primary"
+                          >
+                            {offerForfaits.map((f, fIdx) => (
+                              <option key={fIdx} value={f.duree}>
+                                {f.plan || `${f.duree} ${f.periode || 'Mois'}`}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                      )}
+
+                      {/* Type d'Accès */}
                       <div className="space-y-1">
                         <label className="text-[10px] font-extrabold uppercase tracking-wider text-muted-foreground block">
                           Type d'Accès
@@ -602,45 +616,39 @@ export default function IdentifiantsStockPage() {
                         </select>
                       </div>
 
-                      {/* Capacité (Personnes ou Appareils) & Code PIN */}
+                      {/* Capacité saisie manuelle & Code PIN */}
                       <div className="grid grid-cols-2 gap-2">
                         <div>
                           {isPrive ? (
                             <div>
                               <label className="text-[10px] font-bold text-amber-600 dark:text-amber-400 block flex items-center gap-1">
-                                <Smartphone className="w-3 h-3" /> Appareils / Écrans
+                                <Smartphone className="w-3 h-3" /> Appareils max
                               </label>
-                              <select
+                              <input
+                                type="number"
+                                min="1"
+                                max="20"
                                 value={p.nbAppareilsMax || 1}
-                                onChange={(e) => handleProfilFieldChange(idx, 'nbAppareilsMax', Number(e.target.value))}
-                                className="w-full h-8 rounded-lg border border-amber-500/40 bg-amber-500/5 px-2 text-xs font-black text-amber-700 dark:text-amber-300 outline-none"
-                              >
-                                <option value={1}>1 Écran / Appareil</option>
-                                <option value={2}>2 Écrans simultanés</option>
-                                <option value={3}>3 Écrans simultanés</option>
-                                <option value={4}>4 Écrans simultanés</option>
-                              </select>
+                                onChange={(e) => handleProfilFieldChange(idx, 'nbAppareilsMax', Math.max(1, Number(e.target.value)))}
+                                className="w-full h-8 rounded-lg border border-amber-500/40 bg-amber-500/5 px-2 text-xs font-black text-amber-700 dark:text-amber-300 outline-none focus:ring-1 focus:ring-amber-400"
+                              />
                             </div>
                           ) : (
                             <div>
                               <label className="text-[10px] font-bold text-primary block flex items-center gap-1">
-                                <Users className="w-3 h-3" /> Personnes max
+                                <Users className="w-3 h-3" /> Nb personnes
                               </label>
-                              <select
+                              <input
+                                type="number"
+                                min="1"
+                                max="50"
                                 value={p.capaciteMax || 1}
-                                onChange={(e) => handleProfilFieldChange(idx, 'capaciteMax', Number(e.target.value))}
-                                className="w-full h-8 rounded-lg border border-primary/40 bg-primary/5 px-2 text-xs font-black text-primary outline-none"
-                              >
-                                <option value={1}>1 Personne</option>
-                                <option value={2}>2 Personnes</option>
-                                <option value={3}>3 Personnes</option>
-                                <option value={4}>4 Personnes</option>
-                                <option value={5}>5 Personnes</option>
-                              </select>
+                                onChange={(e) => handleProfilFieldChange(idx, 'capaciteMax', Math.max(1, Number(e.target.value)))}
+                                className="w-full h-8 rounded-lg border border-primary/40 bg-primary/5 px-2 text-xs font-black text-primary outline-none focus:ring-1 focus:ring-primary"
+                              />
                             </div>
                           )}
                         </div>
-
                         <div>
                           <label className="text-[10px] font-bold text-muted-foreground block">Code PIN (optionnel)</label>
                           <Input
@@ -981,35 +989,30 @@ export default function IdentifiantsStockPage() {
                   {editingItem.typeAbonnement === 'PRIVE' ? (
                     <div>
                       <label className="text-xs font-bold text-amber-600 dark:text-amber-400 block">
-                        Nb d'Appareils
+                        Appareils max
                       </label>
-                      <select
+                      <input
+                        type="number"
+                        min="1"
+                        max="20"
                         value={editingItem.nbAppareilsMax || 1}
-                        onChange={(e) => setEditingItem({ ...editingItem, nbAppareilsMax: Number(e.target.value) })}
-                        className="w-full h-10 rounded-xl border border-amber-500/40 bg-amber-500/5 px-2.5 text-xs font-black text-amber-700 dark:text-amber-300 outline-none"
-                      >
-                        <option value={1}>1 Écran / Appareil</option>
-                        <option value={2}>2 Écrans</option>
-                        <option value={3}>3 Écrans</option>
-                        <option value={4}>4 Écrans</option>
-                      </select>
+                        onChange={(e) => setEditingItem({ ...editingItem, nbAppareilsMax: Math.max(1, Number(e.target.value)) })}
+                        className="w-full h-10 rounded-xl border border-amber-500/40 bg-amber-500/5 px-2.5 text-xs font-black text-amber-700 dark:text-amber-300 outline-none focus:ring-1 focus:ring-amber-400"
+                      />
                     </div>
                   ) : (
                     <div>
                       <label className="text-xs font-bold text-primary block">
                         Nb de Personnes
                       </label>
-                      <select
+                      <input
+                        type="number"
+                        min="1"
+                        max="50"
                         value={editingItem.capaciteMax || 1}
-                        onChange={(e) => setEditingItem({ ...editingItem, capaciteMax: Number(e.target.value) })}
-                        className="w-full h-10 rounded-xl border border-primary/40 bg-primary/5 px-2.5 text-xs font-black text-primary outline-none"
-                      >
-                        <option value={1}>1 Personne</option>
-                        <option value={2}>2 Personnes</option>
-                        <option value={3}>3 Personnes</option>
-                        <option value={4}>4 Personnes</option>
-                        <option value={5}>5 Personnes</option>
-                      </select>
+                        onChange={(e) => setEditingItem({ ...editingItem, capaciteMax: Math.max(1, Number(e.target.value)) })}
+                        className="w-full h-10 rounded-xl border border-primary/40 bg-primary/5 px-2.5 text-xs font-black text-primary outline-none focus:ring-1 focus:ring-primary"
+                      />
                     </div>
                   )}
                 </div>
