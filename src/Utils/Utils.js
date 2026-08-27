@@ -11,6 +11,13 @@ export const resetStorage = () => {
   localStorage.removeItem("partenaire");
 };
 
+export const resetClientStorage = () => {
+  localStorage.removeItem("client_token");
+  localStorage.removeItem("client_user");
+  localStorage.removeItem("infoUser");
+  localStorage.removeItem("customerEmail");
+};
+
 export const saveUserProfil = (data) => {
   if (data?.accessToken) {
     localStorage.setItem("token", data.accessToken);
@@ -21,23 +28,60 @@ export const saveUserProfil = (data) => {
   if (data?.partenaire) {
     localStorage.setItem("partenaire", JSON.stringify(data.partenaire));
   }
+  // Ne pas écraser les sessions clients avec infoUser
+  localStorage.removeItem("client_user");
+  localStorage.removeItem("client_token");
   return localStorage.setItem("infoUser", JSON.stringify(data));
+};
+
+/**
+ * Retourne l'objet Client connecté (ou null s'il s'agit d'un partenaire, admin ou visiteur non connecté)
+ */
+export const getClientUser = () => {
+  try {
+    const raw = localStorage.getItem('client_user');
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    if (
+      parsed &&
+      (parsed.pseudo || parsed.numeroWhatsapp || parsed.telephone || parsed.id) &&
+      !parsed.nomBoutique &&
+      parsed.role !== 'PARTENAIRE' &&
+      parsed.role !== 'ADMIN' &&
+      parsed.role !== 'SUPER_ADMIN'
+    ) {
+      return parsed;
+    }
+    return null;
+  } catch {
+    return null;
+  }
+};
+
+export const getClientToken = () => {
+  return localStorage.getItem('client_token') || null;
+};
+
+export const isClientLoggedIn = () => {
+  return !!getClientUser();
 };
 
 /** Retourne l'ID du partenaire connecté (null si admin/client) */
 export const getPartenaireId = () => {
+  const partenaire = JSON.parse(localStorage.getItem("partenaire") || "null");
+  if (partenaire?.id) return partenaire.id;
   const info = getUserProfil();
   if (info?.partenaire?.id) return info.partenaire.id;
-  const partenaire = JSON.parse(localStorage.getItem("partenaire") || "null");
-  return partenaire?.id ?? null;
+  return null;
 };
 
 /** Retourne l'objet partenaire connecté (null si admin/client) */
 export const getPartenaire = () => {
+  const partenaire = JSON.parse(localStorage.getItem("partenaire") || "null");
+  if (partenaire) return partenaire;
   const info = getUserProfil();
   if (info?.partenaire) return info.partenaire;
-  const partenaire = JSON.parse(localStorage.getItem("partenaire") || "null");
-  return partenaire ?? null;
+  return null;
 };
 
 /** Vérifie si l'utilisateur connecté est un partenaire */
@@ -45,9 +89,11 @@ export const isPartenaire = () => !!getPartenaireId();
 
 /** Vérifie si l'utilisateur connecté est un admin */
 export const isAdmin = () => {
+  const user = JSON.parse(localStorage.getItem("user") || "null");
+  if (user?.role === "ADMIN" || user?.role === "SUPER_ADMIN") return true;
   const info = getUserProfil();
-  const user = info?.user || JSON.parse(localStorage.getItem("user") || "null");
-  return user?.role === "ADMIN" || user?.role === "SUPER_ADMIN";
+  const infoUser = info?.user;
+  return infoUser?.role === "ADMIN" || infoUser?.role === "SUPER_ADMIN";
 };
 
 export const saveToken = (token) => {
@@ -69,19 +115,27 @@ export const getPaiement = () => {
 };
 
 export const getUserProfil = () => {
-  return JSON.parse(localStorage.getItem("infoUser"));
+  const user = localStorage.getItem("user");
+  const part = localStorage.getItem("partenaire");
+  if (part) {
+    try { return { partenaire: JSON.parse(part) }; } catch { /* ignore */ }
+  }
+  if (user) {
+    try { return { user: JSON.parse(user) }; } catch { /* ignore */ }
+  }
+  try {
+    return JSON.parse(localStorage.getItem("infoUser") || "null");
+  } catch {
+    return null;
+  }
 };
 
 export const getClient = () => {
-  const info = getUserProfil();
-  if(info?.user) return info.user;
-  const user = JSON.parse(localStorage.getItem("user") || "null");
-  return user ?? null;
+  return getClientUser();
 };
 
 export const userToken = () => {
-  const user = getUserProfil();
-  return user ? user.accessToken : null;
+  return localStorage.getItem("token") || null;
 };
 
 export const months = [

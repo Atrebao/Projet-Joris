@@ -4,6 +4,7 @@ import { Home, User, FileText, Menu, X, Globe, LogOut, Check } from 'lucide-reac
 import Footer from '../Footer'
 import { useCurrency, CURRENCIES } from '../../context/CurrencyContext'
 import ClientAuthModal from '../ClientAuthModal'
+import { getClientUser, resetClientStorage, getPartenaire } from '@/Utils/Utils'
 
 function cn(...classes) {
   return classes.filter(Boolean).join(' ')
@@ -23,32 +24,26 @@ export default function ClientShell({ children }) {
 
   const { currency, setCurrency } = useCurrency()
 
-  const [clientUser, setClientUser] = useState(() => {
-    try {
-      const stored = localStorage.getItem('client_user')
-      return stored ? JSON.parse(stored) : null
-    } catch {
-      return null
-    }
-  })
+  const [clientUser, setClientUser] = useState(() => getClientUser())
+  const [partnerLoggedIn, setPartnerLoggedIn] = useState(() => !!getPartenaire())
 
   useEffect(() => {
-    const handleStorage = () => {
-      try {
-        const stored = localStorage.getItem('client_user')
-        setClientUser(stored ? JSON.parse(stored) : null)
-      } catch {
-        setClientUser(null)
-      }
+    const handleAuthChange = () => {
+      setClientUser(getClientUser())
+      setPartnerLoggedIn(!!getPartenaire())
     }
-    window.addEventListener('storage', handleStorage)
-    return () => window.removeEventListener('storage', handleStorage)
+    window.addEventListener('storage', handleAuthChange)
+    window.addEventListener('client-auth-change', handleAuthChange)
+    return () => {
+      window.removeEventListener('storage', handleAuthChange)
+      window.removeEventListener('client-auth-change', handleAuthChange)
+    }
   }, [])
 
   const handleLogout = () => {
-    localStorage.removeItem('client_token')
-    localStorage.removeItem('client_user')
+    resetClientStorage()
     setClientUser(null)
+    window.dispatchEvent(new Event('client-auth-change'))
   }
 
   return (

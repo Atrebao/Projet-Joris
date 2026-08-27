@@ -1,8 +1,10 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Check, Copy, Eye, EyeOff, KeyRound, Loader, Mail, Wallet, User, Phone, X } from 'lucide-react'
+import { Check, Copy, Eye, EyeOff, KeyRound, Loader, Wallet } from 'lucide-react'
 import toast from 'react-hot-toast'
-import { souscriptionsAPI, clientsAPI } from '../lib/api'
+import { souscriptionsAPI } from '../lib/api'
+import ClientAuthModal from '../components/ClientAuthModal'
+import { getClientUser, resetClientStorage } from '@/Utils/Utils'
 
 const formatFCFA = (value) => `${new Intl.NumberFormat('fr-FR').format(Number(value) || 0)} FCFA`
 
@@ -13,50 +15,32 @@ export default function MesAbonnements() {
   const [showGate, setShowGate] = useState(false)
   const [visiblePasswords, setVisiblePasswords] = useState({})
   const [copied, setCopied] = useState('')
-  const [infoUser, setInfoUser] = useState(null)
-  
-  // États pour le Modal d'Authentification
+  const [infoUser, setInfoUser] = useState(() => getClientUser())
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false)
-  const [authMode, setAuthMode] = useState('login')
-  const [isSubmitting, setIsSubmitting] = useState(false)
-  
-  // Formulaires
-  const [loginForm, setLoginForm] = useState({ username: '', telephone: '' })
-  const [registerForm, setRegisterForm] = useState({ 
-    nom: '', 
-    prenoms: '', 
-    username: '', 
-    email: '', 
-    telephone: '' 
-  })
 
   useEffect(() => {
-    const user = localStorage.getItem('infoUser')
-    if (!user) {
+    const client = getClientUser()
+    if (!client) {
       setShowGate(true)
       setLoading(false)
       return
     }
     
-    try {
-      const parsedUser = JSON.parse(user)
-      setInfoUser(parsedUser)
-      fetchAbonnements(parsedUser.username, parsedUser.telephone)
-    } catch (error) {
-      console.error(error)
-      setShowGate(true)
-      setLoading(false)
-    }
+    setInfoUser(client)
+    fetchAbonnements(client.pseudo, client.numeroWhatsapp || client.telephone)
   }, [])
 
   const fetchAbonnements = async (pseudo, telephone) => {
     setLoading(true)
     try {
-      const { data } = await souscriptionsAPI.getByPseudoAndNumero({ pseudo, numero: telephone })
+      const { data } = await souscriptionsAPI.getByPseudoAndNumero({ 
+        pseudo: pseudo || '', 
+        numero: telephone || '' 
+      })
       setAbonnements((data || []).map((sub) => ({
         id: sub.id,
         reference: sub.reference || '-',
-        title: sub.abonnement?.nom || 'Abonnement',
+        title: sub.abonnement?.nom || sub.offrePartenaire?.nomService || 'Abonnement',
         duration: `${sub.duree || sub.abonnement?.duree || 1} ${sub.periode || 'mois'}`,
         amount: sub.montant || 0,
         date: sub.dateCreation ? new Date(sub.dateCreation).toLocaleDateString('fr-FR') : '-',
@@ -78,88 +62,6 @@ export default function MesAbonnements() {
   const active = abonnements.filter((item) => item.status === 'active')
   const totalSpent = useMemo(() => abonnements.reduce((sum, item) => sum + Number(item.amount || 0), 0), [abonnements])
 
-  // Soumission Connexion
-  const handleLoginSubmit = async (e) => {
-    e.preventDefault()
-    if (!loginForm.username || !loginForm.telephone) {
-      return toast.error('Veuillez remplir tous les champs')
-    }
-
-    setIsSubmitting(true)
-    try {
-      const data = await clientsAPI.getByPseudoAndNumero({
-        pseudo: loginForm.username,
-        numero: loginForm.telephone
-      })
-      
-      const userData = {
-        id: data.id,
-        username: data.pseudo || loginForm.username,
-        telephone: data.telephone || loginForm.telephone,
-        email: data.email,
-        nom: data.nom,
-        prenoms: data.prenoms,
-        token: data.token
-      }
-      
-      localStorage.setItem('infoUser', JSON.stringify(userData))
-      setInfoUser(userData)
-      
-      toast.success('Connexion réussie !')
-      setIsAuthModalOpen(false)
-      setLoginForm({ username: '', telephone: '' })
-      fetchAbonnements(data.pseudo || loginForm.username, data.telephone || loginForm.telephone)
-    } catch (error) {
-      console.error(error)
-      toast.error(error.response?.data?.message || 'Identifiants incorrects')
-    } finally {
-      setIsSubmitting(false)
-    }
-  }
-
-  // Soumission Inscription
-  const handleRegisterSubmit = async (e) => {
-    e.preventDefault()
-    const { nom, prenoms, username, email, telephone } = registerForm
-    if (!nom || !prenoms || !username || !email || !telephone) {
-      return toast.error('Veuillez remplir tous les champs')
-    }
-
-    setIsSubmitting(true)
-    try {
-      const data = await clientsAPI.create({
-        nom,
-        prenoms,
-        pseudo: username,
-        email,
-        telephone
-      })
-
-      const userData = {
-        id: data.id,
-        username: data.pseudo || username,
-        email,
-        telephone,
-        nom,
-        prenoms,
-        token: data.token
-      }
-
-      localStorage.setItem('infoUser', JSON.stringify(userData))
-      setInfoUser(userData)
-
-      toast.success('Compte créé avec succès !')
-      setIsAuthModalOpen(false)
-      setRegisterForm({ nom: '', prenoms: '', username: '', email: '', telephone: '' })
-      fetchAbonnements(registerForm.username, registerForm.telephone)
-    } catch (error) {
-      console.error(error)
-      toast.error(error.response?.data?.message || 'Erreur lors de la création du compte')
-    } finally {
-      setIsSubmitting(false)
-    }
-  }
-
   const copyValue = async (value, label) => {
     if (!value) return
     await navigator.clipboard.writeText(value)
@@ -168,7 +70,7 @@ export default function MesAbonnements() {
     setTimeout(() => setCopied(''), 1200)
   }
 
-  // Si l'utilisateur n'est pas connecté, afficher le modal
+  // Si l'utilisateur n'est pas connecté, afficher le portail d'invitation à se connecter
   if (showGate && !isAuthModalOpen) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-background p-4">
@@ -185,7 +87,7 @@ export default function MesAbonnements() {
           
           <button
             onClick={() => setIsAuthModalOpen(true)}
-            className="h-11 w-full rounded-lg bg-primary px-4 text-sm font-semibold text-primary-foreground hover:bg-primary/90 transition"
+            className="h-11 w-full rounded-lg bg-primary px-4 text-sm font-semibold text-primary-foreground hover:bg-primary/90 transition cursor-pointer"
           >
             Se connecter
           </button>
@@ -193,11 +95,22 @@ export default function MesAbonnements() {
           <button
             type="button"
             onClick={() => navigate('/')}
-            className="mt-2 h-10 w-full rounded-lg border border-border text-sm font-medium hover:bg-muted transition"
+            className="mt-2 h-10 w-full rounded-lg border border-border text-sm font-medium hover:bg-muted transition cursor-pointer"
           >
             Retour au marketplace
           </button>
         </div>
+
+        {/* Modal d'Authentification */}
+        <ClientAuthModal
+          isOpen={isAuthModalOpen}
+          onClose={() => setIsAuthModalOpen(false)}
+          onSuccess={(client) => {
+            setInfoUser(client)
+            setShowGate(false)
+            fetchAbonnements(client.pseudo, client.numeroWhatsapp || client.telephone)
+          }}
+        />
       </div>
     )
   }
@@ -219,19 +132,19 @@ export default function MesAbonnements() {
             <p className="text-muted-foreground">Gérez vos abonnements et retrouvez vos identifiants.</p>
             {infoUser && (
               <p className="text-sm text-muted-foreground mt-1">
-                Bonjour {infoUser.prenoms || infoUser.nom || infoUser.username}
+                Bonjour <span className="font-bold text-foreground">{infoUser.prenoms || infoUser.nom || infoUser.pseudo || infoUser.username}</span> 👋
               </p>
             )}
           </div>
           <button
             onClick={() => {
-              localStorage.removeItem('infoUser')
-              localStorage.removeItem('customerEmail')
+              resetClientStorage()
               setInfoUser(null)
               setShowGate(true)
-              toast.success('Déconnecté')
+              window.dispatchEvent(new Event('client-auth-change'))
+              toast.success('Déconnecté avec succès')
             }}
-            className="rounded-lg border border-border px-4 py-2 text-sm font-medium hover:bg-muted transition"
+            className="rounded-lg border border-border px-4 py-2 text-sm font-medium hover:bg-muted transition cursor-pointer"
           >
             Se déconnecter
           </button>
@@ -248,7 +161,7 @@ export default function MesAbonnements() {
           {abonnements.length === 0 ? (
             <div className="rounded-xl border border-dashed border-border py-16 text-center">
               <p className="font-medium">Aucun abonnement trouvé.</p>
-              <button onClick={() => navigate('/')} className="mt-4 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground">
+              <button onClick={() => navigate('/')} className="mt-4 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground cursor-pointer">
                 Voir le marketplace
               </button>
             </div>
@@ -258,7 +171,7 @@ export default function MesAbonnements() {
                 <article key={sub.id} className="rounded-xl border border-border bg-card p-5">
                   <div className="flex items-start gap-3">
                     <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-primary text-sm font-bold text-primary-foreground">
-                      {sub.title.slice(0, 1).toUpperCase()}
+                      {(sub.title || 'A').slice(0, 1).toUpperCase()}
                     </span>
                     <div className="min-w-0 flex-1">
                       <h3 className="truncate font-semibold">{sub.title}</h3>
@@ -292,189 +205,16 @@ export default function MesAbonnements() {
         </section>
       </div>
 
-      {/* MODAL D'AUTHENTIFICATION */}
-      {isAuthModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-          <div className="w-full max-w-md rounded-2xl border border-border bg-card p-6 shadow-xl relative">
-            
-            <button 
-              onClick={() => setIsAuthModalOpen(false)}
-              className="absolute right-4 top-4 rounded-md p-1.5 text-muted-foreground hover:bg-muted transition-colors"
-            >
-              <X className="h-5 w-5" />
-            </button>
-
-            <div className="text-center mb-6">
-              <h2 className="text-2xl font-bold tracking-tight text-slate-900">
-                {authMode === 'login' ? 'Connexion requise' : 'Créer un compte'}
-              </h2>
-              <p className="text-xs text-muted-foreground mt-1">
-                {authMode === 'login' 
-                  ? 'Connectez-vous pour accéder à vos abonnements.' 
-                  : 'Créez un compte pour suivre vos abonnements.'}
-              </p>
-            </div>
-
-            {authMode === 'login' ? (
-              <form onSubmit={handleLoginSubmit} className="space-y-4">
-                <div className="space-y-1.5">
-                  <label className="text-xs font-semibold text-slate-700">Identifiant / Username</label>
-                  <div className="flex items-center gap-2 rounded-xl border border-border bg-slate-50 p-2.5 focus-within:border-primary focus-within:bg-card transition-all">
-                    <User className="h-4 w-4 text-muted-foreground" />
-                    <input 
-                      type="text" 
-                      required
-                      placeholder="Ex: akasuki_user"
-                      value={loginForm.username}
-                      onChange={(e) => setLoginForm({...loginForm, username: e.target.value})}
-                      className="w-full bg-transparent text-sm outline-none"
-                    />
-                  </div>
-                </div>
-
-                <div className="space-y-1.5">
-                  <label className="text-xs font-semibold text-slate-700">Numéro de téléphone</label>
-                  <div className="flex items-center gap-2 rounded-xl border border-border bg-slate-50 p-2.5 focus-within:border-primary focus-within:bg-card transition-all">
-                    <Phone className="h-4 w-4 text-muted-foreground" />
-                    <input 
-                      type="tel" 
-                      required
-                      placeholder="Ex: 0700000000"
-                      value={loginForm.telephone}
-                      onChange={(e) => setLoginForm({...loginForm, telephone: e.target.value})}
-                      className="w-full bg-transparent text-sm outline-none"
-                    />
-                  </div>
-                </div>
-
-                <button 
-                  type="submit" 
-                  disabled={isSubmitting}
-                  className="w-full h-11 mt-2 rounded-xl bg-primary text-sm font-semibold text-primary-foreground shadow-sm transition hover:bg-primary/90 flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
-                >
-                  {isSubmitting ? (
-                    <>
-                      <Loader className="h-4 w-4 animate-spin" />
-                      Connexion en cours...
-                    </>
-                  ) : (
-                    'Se connecter'
-                  )}
-                </button>
-
-                <p className="text-center text-xs text-muted-foreground mt-4">
-                  Nouveau sur Richesses ?{' '}
-                  <button type="button" onClick={() => setAuthMode('register')} className="text-primary font-bold hover:underline">
-                    Créer un compte
-                  </button>
-                </p>
-              </form>
-            ) : (
-              <form onSubmit={handleRegisterSubmit} className="space-y-3.5">
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="space-y-1.5">
-                    <label className="text-xs font-semibold text-slate-700">Nom</label>
-                    <div className="flex items-center gap-2 rounded-xl border border-border bg-slate-50 p-2.5 focus-within:border-primary focus-within:bg-card transition-all">
-                      <User className="h-4 w-4 text-muted-foreground" />
-                      <input 
-                        type="text" 
-                        required
-                        placeholder="Dupont"
-                        value={registerForm.nom}
-                        onChange={(e) => setRegisterForm({...registerForm, nom: e.target.value})}
-                        className="w-full bg-transparent text-sm outline-none"
-                      />
-                    </div>
-                  </div>
-                  <div className="space-y-1.5">
-                    <label className="text-xs font-semibold text-slate-700">Prénoms</label>
-                    <div className="flex items-center gap-2 rounded-xl border border-border bg-slate-50 p-2.5 focus-within:border-primary focus-within:bg-card transition-all">
-                      <User className="h-4 w-4 text-muted-foreground" />
-                      <input 
-                        type="text" 
-                        required
-                        placeholder="Jean"
-                        value={registerForm.prenoms}
-                        onChange={(e) => setRegisterForm({...registerForm, prenoms: e.target.value})}
-                        className="w-full bg-transparent text-sm outline-none"
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="space-y-1.5">
-                    <label className="text-xs font-semibold text-slate-700">Pseudo / Username</label>
-                    <div className="flex items-center gap-2 rounded-xl border border-border bg-slate-50 p-2.5 focus-within:border-primary focus-within:bg-card transition-all">
-                      <User className="h-4 w-4 text-muted-foreground" />
-                      <input 
-                        type="text" 
-                        required
-                        placeholder="jean_dupont"
-                        value={registerForm.username}
-                        onChange={(e) => setRegisterForm({...registerForm, username: e.target.value})}
-                        className="w-full bg-transparent text-sm outline-none"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="space-y-1.5">
-                    <label className="text-xs font-semibold text-slate-700">Email</label>
-                    <div className="flex items-center gap-2 rounded-xl border border-border bg-slate-50 p-2.5 focus-within:border-primary focus-within:bg-card transition-all">
-                      <Mail className="h-4 w-4 text-muted-foreground" />
-                      <input 
-                        type="email" 
-                        required
-                        placeholder="jean.dupont@email.com"
-                        value={registerForm.email}
-                        onChange={(e) => setRegisterForm({...registerForm, email: e.target.value})}
-                        className="w-full bg-transparent text-sm outline-none"
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                <div className="space-y-1.5">
-                  <label className="text-xs font-semibold text-slate-700">Numéro de téléphone</label>
-                  <div className="flex items-center gap-2 rounded-xl border border-border bg-slate-50 p-2.5 focus-within:border-primary focus-within:bg-card transition-all">
-                    <Phone className="h-4 w-4 text-muted-foreground" />
-                    <input 
-                      type="tel" 
-                      required
-                      placeholder="0700000000"
-                      value={registerForm.telephone}
-                      onChange={(e) => setRegisterForm({...registerForm, telephone: e.target.value})}
-                      className="w-full bg-transparent text-sm outline-none"
-                    />
-                  </div>
-                </div>
-
-                <button 
-                  type="submit" 
-                  disabled={isSubmitting}
-                  className="w-full h-11 mt-2 rounded-xl bg-primary text-sm font-semibold text-primary-foreground shadow-sm transition hover:bg-primary/90 flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
-                >
-                  {isSubmitting ? (
-                    <>
-                      <Loader className="h-4 w-4 animate-spin" />
-                      Inscription en cours...
-                    </>
-                  ) : (
-                    "S'inscrire"
-                  )}
-                </button>
-
-                <p className="text-center text-xs text-muted-foreground mt-4">
-                  Déjà un compte ?{' '}
-                  <button type="button" onClick={() => setAuthMode('login')} className="text-primary font-bold hover:underline">
-                    Se connecter
-                  </button>
-                </p>
-              </form>
-            )}
-          </div>
-        </div>
-      )}
+      {/* Modal d'Authentification Client Unifié */}
+      <ClientAuthModal
+        isOpen={isAuthModalOpen}
+        onClose={() => setIsAuthModalOpen(false)}
+        onSuccess={(client) => {
+          setInfoUser(client)
+          setShowGate(false)
+          fetchAbonnements(client.pseudo, client.numeroWhatsapp || client.telephone)
+        }}
+      />
     </div>
   )
 }

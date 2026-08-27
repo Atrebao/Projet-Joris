@@ -4,8 +4,9 @@ import { ArrowLeft, CheckCircle2, Loader, Smartphone, X, Shield, User, Lock, Spa
 import toast from 'react-hot-toast'
 import { abonnementsAPI, codesPromoAPI, souscriptionsAPI, precommandesAPI } from '../lib/api'
 import { ServiceLogo } from './HomeNouvelle'
-import { OPERATOR_BADGES, normalizeOffer } from '@/Utils/Utils'
+import { OPERATOR_BADGES, normalizeOffer, getClientUser, getPartenaire, isPartenaire } from '@/Utils/Utils'
 import { useCurrency } from '../context/CurrencyContext'
+import ClientAuthModal from '../components/ClientAuthModal'
 
 export default function DetailOffre() {
   const { id } = useParams()
@@ -28,7 +29,8 @@ export default function DetailOffre() {
   const [submitting, setSubmitting] = useState(false)
   const [success, setSuccess] = useState(false)
   const [hasPromo, setHasPromo] = useState(false)
-  const [clientData, setClientData] = useState(null)
+  const [clientData, setClientData] = useState(() => getClientUser())
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false)
 
   // Precommande state
   const [showPrecommandeModal, setShowPrecommandeModal] = useState(false)
@@ -37,22 +39,25 @@ export default function DetailOffre() {
   const [precommandeSubmitting, setPrecommandeSubmitting] = useState(false)
 
   useEffect(() => {
-    const fetchClientData = async () => {
-      const dataClient = localStorage.getItem('infoUser') || localStorage.getItem('client_user')
-      if (dataClient) {
-        try {
-          const data = JSON.parse(dataClient)
-          setClientData(data)
-          setEmail(data.email || '')
-          setNumeroClient(data.numeroWhatsapp || data.telephone || '')
-          setPrecommandeNom(data.pseudo || `${data.prenoms || ''} ${data.nom || ''}`.trim() || '')
-          setPrecommandeWhatsapp(data.numeroWhatsapp || data.telephone || '')
-        } catch (error) {
-          console.error('Erreur récupération client:', error)
-        }
+    const syncClient = () => {
+      const client = getClientUser()
+      if (client) {
+        setClientData(client)
+        setEmail(client.email || '')
+        setNumeroClient(client.numeroWhatsapp || client.telephone || '')
+        setPrecommandeNom(client.pseudo || `${client.prenoms || ''} ${client.nom || ''}`.trim() || '')
+        setPrecommandeWhatsapp(client.numeroWhatsapp || client.telephone || '')
+      } else {
+        setClientData(null)
       }
     }
-    fetchClientData()
+    syncClient()
+    window.addEventListener('storage', syncClient)
+    window.addEventListener('client-auth-change', syncClient)
+    return () => {
+      window.removeEventListener('storage', syncClient)
+      window.removeEventListener('client-auth-change', syncClient)
+    }
   }, [])
 
   useEffect(() => {
@@ -151,6 +156,14 @@ export default function DetailOffre() {
   const submitPayment = async (event) => {
     event.preventDefault()
     if (!offre || !selectedForfait) return
+
+    const currentClient = getClientUser()
+    if (!currentClient) {
+      toast.error('Veuillez vous connecter ou créer un compte Client pour valider votre commande.')
+      setIsAuthModalOpen(true)
+      return
+    }
+
     if (!numeroClient.trim()) {
       toast.error('Veuillez renseigner votre numéro de paiement Mobile Money')
       return
@@ -167,15 +180,15 @@ export default function DetailOffre() {
         abonnementId: offre.id,
         forfaitId: selectedForfait.id,
         montant: total,
-        email: email.trim() || undefined,
+        email: email?.trim() ? email.trim() : undefined,
         numeroClient: numeroClient.replace(/\s/g, ''),
         operateur: operator?.operateur || selectedOperator,
         otp: selectedOperator === 'orange' ? otp.trim() : undefined,
         codePromo: promo?.codePromo,
         description: `${offre.nom} - ${selectedForfait.duree || offre.duree} mois (${typeAbonnement === 'PRIVE' ? 'Privé' : 'Partagé'})`,
         modePaiement: operator?.operateur || selectedOperator,
-        pseudo: clientData?.username || clientData?.pseudo || '',
-        telephone: clientData?.telephone || clientData?.numeroWhatsapp || numeroClient.replace(/\s/g, ''),
+        pseudo: currentClient?.pseudo || currentClient?.username || undefined,
+        telephone: currentClient?.telephone || currentClient?.numeroWhatsapp || numeroClient.replace(/\s/g, ''),
         typeAbonnement,
         nomProfilSouhaite: nomProfilSouhaite.trim() || undefined,
         codePinSouhaite: codePinSouhaite.trim() || undefined,
@@ -291,6 +304,28 @@ export default function DetailOffre() {
           </div>
         ) : (
           <form onSubmit={submitPayment} className="space-y-5 p-5">
+            {/* Avertissement si connecté en tant que Partenaire sans compte Client */}
+            {isPartenaire() && !clientData && (
+              <div className="flex items-center justify-between gap-3 p-3.5 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-amber-900 dark:text-amber-300 text-xs">
+                <div>
+                  <p className="font-bold flex items-center gap-1.5">
+                    <Shield className="w-3.5 h-3.5 text-amber-500" />
+                    Session Partenaire active ({getPartenaire()?.nomBoutique || 'Boutique'})
+                  </p>
+                  <p className="text-[11px] opacity-90 mt-0.5">
+                    Pour finaliser votre commande sur le marketplace, vous devez vous connecter avec un compte Client.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setIsAuthModalOpen(true)}
+                  className="px-3 py-1.5 rounded-xl bg-amber-500 text-slate-950 font-black text-xs shrink-0 cursor-pointer hover:bg-amber-400 transition"
+                >
+                  Connexion Client
+                </button>
+              </div>
+            )}
+
             {/* Résumé Produit */}
             <div className="flex items-center gap-3.5 rounded-2xl border border-border bg-muted/40 p-3.5">
               <ServiceLogo name={offre.service || offre.nom} image={offre.image} size="md" className="rounded-2xl shrink-0" />
@@ -607,6 +642,18 @@ export default function DetailOffre() {
           </div>
         </div>
       )}
+
+      {/* Modal Authentification Client Unifié */}
+      <ClientAuthModal
+        isOpen={isAuthModalOpen}
+        onClose={() => setIsAuthModalOpen(false)}
+        onSuccess={(client) => {
+          setClientData(client)
+          setEmail(client.email || '')
+          setNumeroClient(client.numeroWhatsapp || client.telephone || '')
+          toast.success('Connecté en tant que Client ! Vous pouvez finaliser votre commande.')
+        }}
+      />
     </div>
   )
 }
