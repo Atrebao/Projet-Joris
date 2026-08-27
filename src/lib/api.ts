@@ -12,9 +12,19 @@ export const api = axios.create({
 })
 
 api.interceptors.request.use((config) => {
-  const token = localStorage.getItem('token')
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`
+  const clientToken = localStorage.getItem('client_token')
+  const backofficeToken = localStorage.getItem('token')
+
+  // Si c'est une route client et qu'on a un client_token, l'utiliser en priorité
+  const isClientRoute =
+    config.url?.startsWith('/clients/') ||
+    config.url?.startsWith('/souscriptions/client') ||
+    config.url?.startsWith('/souscriptions/mes-abonnements')
+
+  const tokenToUse = (isClientRoute && clientToken) ? clientToken : (backofficeToken || clientToken)
+
+  if (tokenToUse) {
+    config.headers.Authorization = `Bearer ${tokenToUse}`
   }
   return config
 })
@@ -23,13 +33,29 @@ api.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
-      localStorage.removeItem('token')
-      localStorage.removeItem('user')
-      localStorage.removeItem('partenaire')
-      localStorage.removeItem('infoUser')
       const isHashRouter = window.location.href.includes('#')
-      const loginPath = isHashRouter ? '/#/backoffice/login' : '/backoffice/login'
-      if (!window.location.pathname.includes('login')) window.location.href = loginPath
+      const currentPath = isHashRouter
+        ? window.location.hash.replace('#', '')
+        : window.location.pathname
+
+      const isBackoffice = currentPath.startsWith('/backoffice') || currentPath.startsWith('/partenaire')
+
+      if (isBackoffice) {
+        localStorage.removeItem('token')
+        localStorage.removeItem('user')
+        localStorage.removeItem('partenaire')
+        localStorage.removeItem('infoUser')
+        const loginPath = isHashRouter ? '/#/backoffice/login' : '/backoffice/login'
+        if (!currentPath.includes('login')) {
+          window.location.href = loginPath
+        }
+      } else {
+        // Déconnexion client douce
+        localStorage.removeItem('client_token')
+        localStorage.removeItem('client_user')
+        localStorage.removeItem('infoUser')
+        window.dispatchEvent(new Event('client-auth-change'))
+      }
     }
     return Promise.reject(error)
   }

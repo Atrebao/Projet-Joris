@@ -1,12 +1,12 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { 
-  Loader, Search, ShieldCheck, Sparkles, Store, Zap, 
-  User, Phone, Mail, X 
+  Loader, Search, ShieldCheck, Sparkles, Store, Zap 
 } from 'lucide-react'
-import { abonnementsAPI, clientsAPI } from '../lib/api'
+import { abonnementsAPI } from '../lib/api'
 import toast from 'react-hot-toast'
-import { CATEGORIES, OPERATOR_BADGES, getServiceMeta, normalizeOffer } from '@/Utils/Utils'
+import { CATEGORIES, OPERATOR_BADGES, getServiceMeta, normalizeOffer, getClientUser } from '@/Utils/Utils'
+import ClientAuthModal from '../components/ClientAuthModal'
 
 const formatFCFA = (value) => `${new Intl.NumberFormat('fr-FR').format(Number(value) || 0)} FCFA`
 
@@ -17,21 +17,9 @@ export default function HomeNouvelle() {
   const [query, setQuery] = useState('')
   const [category, setCategory] = useState('')
   
-  // États pour la gestion du Modal d'Authentification
+  // Modal d'Authentification Client Unifié
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false)
-  const [authMode, setAuthMode] = useState('login')
   const [selectedOfferId, setSelectedOfferId] = useState(null)
-  const [isSubmitting, setIsSubmitting] = useState(false)
-  
-  // Formulaires
-  const [loginForm, setLoginForm] = useState({ username: '', telephone: '' })
-  const [registerForm, setRegisterForm] = useState({ 
-    nom: '', 
-    prenoms: '', 
-    username: '', 
-    email: '', 
-    telephone: '' 
-  })
 
   useEffect(() => {
     const load = async () => {
@@ -62,93 +50,13 @@ export default function HomeNouvelle() {
 
   // Vérification au clic sur Acheter
   const handleBuyClick = (offerId) => {
-    const infoUser = localStorage.getItem('infoUser')
+    const client = getClientUser()
     
-    if (infoUser) {
+    if (client) {
       navigate(`/offre/${offerId}`)
     } else {
       setSelectedOfferId(offerId)
-      setAuthMode('login')
       setIsAuthModalOpen(true)
-    }
-  }
-
-  // Soumission Connexion
-  const handleLoginSubmit = async (e) => {
-    e.preventDefault()
-    if (!loginForm.username || !loginForm.telephone) {
-      return toast.error('Veuillez remplir tous les champs')
-    }
-
-    setIsSubmitting(true)
-    try {
-      const response = await clientsAPI.getByPseudoAndNumero({
-        pseudo: loginForm.username,
-        numero: loginForm.telephone
-      })
-
-      const userData = response.data 
-
-      const infoUser = {
-        id: userData.id,
-        username: userData.pseudo || loginForm.username,
-        telephone: userData.telephone || loginForm.telephone,
-        email: userData.email,
-        nom: userData.nom,
-        prenoms: userData.prenoms,
-        token: userData.token 
-      }
-
-      localStorage.setItem('infoUser', JSON.stringify(infoUser))
-      toast.success('Connexion réussie !')
-      setIsAuthModalOpen(false)
-      setLoginForm({ username: '', telephone: '' })
-      if (selectedOfferId) navigate(`/offre/${selectedOfferId}`)
-    } catch (error) {
-      console.error(error)
-      toast.error(error.response?.data?.message || 'Identifiants incorrects')
-    } finally {
-      setIsSubmitting(false)
-    }
-  }
-
-  // Soumission Inscription
-  const handleRegisterSubmit = async (e) => {
-    e.preventDefault()
-    const { nom, prenoms, username, email, telephone } = registerForm
-    if (!nom || !prenoms || !username || !email || !telephone) {
-      return toast.error('Veuillez remplir tous les champs')
-    }
-
-    setIsSubmitting(true)
-    try {
-      const data = await clientsAPI.create({
-        nom,
-        prenoms,
-        pseudo: username,
-        email,
-        telephone
-      })
-
-      localStorage.setItem('infoUser', JSON.stringify({
-        id: data.id,
-        username: data.pseudo || username,
-        email,
-        telephone,
-        nom,
-        prenoms,
-        token: data.token
-      }))
-
-      toast.success('Compte créé avec succès !')
-      setIsAuthModalOpen(false)
-      setRegisterForm({ nom: '', prenoms: '', username: '', email: '', telephone: '' })
-      if (selectedOfferId) navigate(`/offre/${selectedOfferId}`)
-    } catch (error) {
-      console.error(error)
-      toast.error(error.response?.data?.message || 'Erreur lors de la création du compte')
-    } finally {
-      setIsSubmitting(false)
     }
   }
 
@@ -271,190 +179,14 @@ export default function HomeNouvelle() {
         </div>
       </section>
 
-      {/* MODAL D'AUTHENTIFICATION */}
-      {isAuthModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-          <div className="w-full max-w-md rounded-2xl border border-border bg-card p-6 shadow-xl relative">
-            
-            <button 
-              onClick={() => setIsAuthModalOpen(false)}
-              className="absolute right-4 top-4 rounded-md p-1.5 text-muted-foreground hover:bg-muted transition-colors"
-            >
-              <X className="h-5 w-5" />
-            </button>
-
-            <div className="text-center mb-6">
-              <h2 className="text-2xl font-bold tracking-tight text-slate-900">
-                {authMode === 'login' ? 'Connexion requise' : 'Créer un compte'}
-              </h2>
-              <p className="text-xs text-muted-foreground mt-1">
-                {authMode === 'login' 
-                  ? 'Connectez-vous pour finaliser votre commande instantanément.' 
-                  : 'Enregistrez vos coordonnées pour recevoir votre abonnement.'}
-              </p>
-            </div>
-
-            {authMode === 'login' ? (
-              <form onSubmit={handleLoginSubmit} className="space-y-4">
-                <div className="space-y-1.5">
-                  <label className="text-xs font-semibold text-slate-700">Identifiant / Username</label>
-                  <div className="flex items-center gap-2 rounded-xl border border-border bg-slate-50 p-2.5 focus-within:border-primary focus-within:bg-card transition-all">
-                    <User className="h-4 w-4 text-muted-foreground" />
-                    <input 
-                      type="text" 
-                      required
-                      placeholder="Ex: akasuki_user"
-                      value={loginForm.username}
-                      onChange={(e) => setLoginForm({...loginForm, username: e.target.value})}
-                      className="w-full bg-transparent text-sm outline-none"
-                    />
-                  </div>
-                </div>
-
-                <div className="space-y-1.5">
-                  <label className="text-xs font-semibold text-slate-700">Numéro de téléphone</label>
-                  <div className="flex items-center gap-2 rounded-xl border border-border bg-slate-50 p-2.5 focus-within:border-primary focus-within:bg-card transition-all">
-                    <Phone className="h-4 w-4 text-muted-foreground" />
-                    <input 
-                      type="tel" 
-                      required
-                      placeholder="Ex: 0700000000"
-                      value={loginForm.telephone}
-                      onChange={(e) => setLoginForm({...loginForm, telephone: e.target.value})}
-                      className="w-full bg-transparent text-sm outline-none"
-                    />
-                  </div>
-                </div>
-
-                <button 
-                  type="submit" 
-                  disabled={isSubmitting}
-                  className="w-full h-11 mt-2 rounded-xl bg-primary text-sm font-semibold text-primary-foreground shadow-sm transition hover:bg-primary/90 flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
-                >
-                  {isSubmitting ? (
-                    <>
-                      <Loader className="h-4 w-4 animate-spin" />
-                      Connexion en cours...
-                    </>
-                  ) : (
-                    'Se connecter et Acheter'
-                  )}
-                </button>
-
-                <p className="text-center text-xs text-muted-foreground mt-4">
-                  Nouveau sur Richesses ?{' '}
-                  <button type="button" onClick={() => setAuthMode('register')} className="text-primary font-bold hover:underline">
-                    Créer un compte
-                  </button>
-                </p>
-              </form>
-            ) : (
-              /* Mode Inscription */
-              <form onSubmit={handleRegisterSubmit} className="space-y-3.5">
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="space-y-1.5">
-                    <label className="text-xs font-semibold text-slate-700">Nom</label>
-                    <div className="flex items-center gap-2 rounded-xl border border-border bg-slate-50 p-2.5 focus-within:border-primary focus-within:bg-card transition-all">
-                      <User className="h-4 w-4 text-muted-foreground" />
-                      <input 
-                        type="text" 
-                        required
-                        placeholder="Dupont"
-                        value={registerForm.nom}
-                        onChange={(e) => setRegisterForm({...registerForm, nom: e.target.value})}
-                        className="w-full bg-transparent text-sm outline-none"
-                      />
-                    </div>
-                  </div>
-                  <div className="space-y-1.5">
-                    <label className="text-xs font-semibold text-slate-700">Prénoms</label>
-                    <div className="flex items-center gap-2 rounded-xl border border-border bg-slate-50 p-2.5 focus-within:border-primary focus-within:bg-card transition-all">
-                      <User className="h-4 w-4 text-muted-foreground" />
-                      <input 
-                        type="text" 
-                        required
-                        placeholder="Jean"
-                        value={registerForm.prenoms}
-                        onChange={(e) => setRegisterForm({...registerForm, prenoms: e.target.value})}
-                        className="w-full bg-transparent text-sm outline-none"
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="space-y-1.5">
-                    <label className="text-xs font-semibold text-slate-700">Pseudo / Username</label>
-                    <div className="flex items-center gap-2 rounded-xl border border-border bg-slate-50 p-2.5 focus-within:border-primary focus-within:bg-card transition-all">
-                      <User className="h-4 w-4 text-muted-foreground" />
-                      <input 
-                        type="text" 
-                        required
-                        placeholder="jean_dupont"
-                        value={registerForm.username}
-                        onChange={(e) => setRegisterForm({...registerForm, username: e.target.value})}
-                        className="w-full bg-transparent text-sm outline-none"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="space-y-1.5">
-                    <label className="text-xs font-semibold text-slate-700">Email</label>
-                    <div className="flex items-center gap-2 rounded-xl border border-border bg-slate-50 p-2.5 focus-within:border-primary focus-within:bg-card transition-all">
-                      <Mail className="h-4 w-4 text-muted-foreground" />
-                      <input 
-                        type="email" 
-                        required
-                        placeholder="jean.dupont@email.com"
-                        value={registerForm.email}
-                        onChange={(e) => setRegisterForm({...registerForm, email: e.target.value})}
-                        className="w-full bg-transparent text-sm outline-none"
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                <div className="space-y-1.5">
-                  <label className="text-xs font-semibold text-slate-700">Numéro de téléphone</label>
-                  <div className="flex items-center gap-2 rounded-xl border border-border bg-slate-50 p-2.5 focus-within:border-primary focus-within:bg-card transition-all">
-                    <Phone className="h-4 w-4 text-muted-foreground" />
-                    <input 
-                      type="tel" 
-                      required
-                      placeholder="0700000000"
-                      value={registerForm.telephone}
-                      onChange={(e) => setRegisterForm({...registerForm, telephone: e.target.value})}
-                      className="w-full bg-transparent text-sm outline-none"
-                    />
-                  </div>
-                </div>
-
-                <button 
-                  type="submit" 
-                  disabled={isSubmitting}
-                  className="w-full h-11 mt-2 rounded-xl bg-primary text-sm font-semibold text-primary-foreground shadow-sm transition hover:bg-primary/90 flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
-                >
-                  {isSubmitting ? (
-                    <>
-                      <Loader className="h-4 w-4 animate-spin" />
-                      Inscription en cours...
-                    </>
-                  ) : (
-                    "S'inscrire et Acheter"
-                  )}
-                </button>
-
-                <p className="text-center text-xs text-muted-foreground mt-4">
-                  Déjà un compte ?{' '}
-                  <button type="button" onClick={() => setAuthMode('login')} className="text-primary font-bold hover:underline">
-                    Se connecter
-                  </button>
-                </p>
-              </form>
-            )}
-          </div>
-        </div>
-      )}
+      {/* MODAL D'AUTHENTIFICATION CLIENT UNIFIÉ */}
+      <ClientAuthModal
+        isOpen={isAuthModalOpen}
+        onClose={() => setIsAuthModalOpen(false)}
+        onSuccess={() => {
+          if (selectedOfferId) navigate(`/offre/${selectedOfferId}`)
+        }}
+      />
     </div>
   )
 }

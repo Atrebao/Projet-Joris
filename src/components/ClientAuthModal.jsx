@@ -44,6 +44,7 @@ export default function ClientAuthModal({ isOpen, onClose, onSuccess, initialMod
       if (data?.accessToken) {
         localStorage.setItem('client_token', data.accessToken)
         localStorage.setItem('client_user', JSON.stringify(data.client))
+        window.dispatchEvent(new Event('client-auth-change'))
         toast.success(`Ravi de vous revoir, ${data.client?.pseudo || 'Client'} ! 👋`)
         if (onSuccess) onSuccess(data.client)
         onClose()
@@ -58,19 +59,19 @@ export default function ClientAuthModal({ isOpen, onClose, onSuccess, initialMod
 
   const handleRegister = async (e) => {
     e.preventDefault()
-    if (!regPseudo.trim() || !regWhatsapp.trim() || !regPassword) {
-      toast.error('Le pseudo, le numéro WhatsApp et le mot de passe sont obligatoires')
+    if (!regPseudo.trim() || !regWhatsapp.trim() || !regTelephone.trim() || !regPassword) {
+      toast.error('Le nom d\'utilisateur (pseudo), le numéro WhatsApp, le numéro joignable et le mot de passe sont obligatoires')
       return
     }
 
     setLoading(true)
     try {
       const res = await clientsAPI.register({
-        nom: regNom.trim(),
-        prenoms: regPrenoms.trim(),
+        nom: regNom.trim() || undefined,
+        prenoms: regPrenoms.trim() || undefined,
         pseudo: regPseudo.trim(),
         numeroWhatsapp: regWhatsapp.trim().replace(/\s/g, ''),
-        telephone: regTelephone.trim() ? regTelephone.trim().replace(/\s/g, '') : regWhatsapp.trim().replace(/\s/g, ''),
+        telephone: regTelephone.trim().replace(/\s/g, ''),
         email: regEmail.trim() || undefined,
         password: regPassword,
       })
@@ -78,6 +79,7 @@ export default function ClientAuthModal({ isOpen, onClose, onSuccess, initialMod
       if (data?.accessToken) {
         localStorage.setItem('client_token', data.accessToken)
         localStorage.setItem('client_user', JSON.stringify(data.client))
+        window.dispatchEvent(new Event('client-auth-change'))
         toast.success(`Compte créé avec succès ! Bienvenue ${data.client?.pseudo} 🎉`)
         if (onSuccess) onSuccess(data.client)
         onClose()
@@ -270,45 +272,58 @@ export default function ClientAuthModal({ isOpen, onClose, onSuccess, initialMod
               </div>
             </div>
 
-            <div className="space-y-1">
-              <label className="text-[11px] font-bold text-foreground block">
-                Numéro WhatsApp <span className="text-rose-500">*</span>
-              </label>
-              <div className="relative">
-                <Phone className="w-3.5 h-3.5 text-emerald-500 absolute left-3 top-1/2 -translate-y-1/2" />
-                <input
-                  type="tel"
-                  required
-                  placeholder="ex: 0700000000"
-                  value={regWhatsapp}
-                  onChange={(e) => setRegWhatsapp(e.target.value)}
-                  className="w-full pl-9 pr-3 py-2 bg-background border border-border rounded-xl text-xs font-medium focus:ring-2 focus:ring-primary outline-none"
-                />
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="space-y-1">
+                <label className="text-[11px] font-bold text-foreground block">
+                  Numéro WhatsApp <span className="text-rose-500">*</span>
+                </label>
+                <div className="relative">
+                  <Phone className="w-3.5 h-3.5 text-emerald-500 absolute left-3 top-1/2 -translate-y-1/2" />
+                  <input
+                    type="tel"
+                    required
+                    placeholder="ex: 0700000000"
+                    value={regWhatsapp}
+                    onChange={(e) => setRegWhatsapp(e.target.value)}
+                    className="w-full pl-9 pr-3 py-2 bg-background border border-border rounded-xl text-xs font-medium focus:ring-2 focus:ring-primary outline-none"
+                  />
+                </div>
+                <p className="text-[9.5px] text-muted-foreground leading-tight">
+                  Pour la livraison de vos comptes par WhatsApp.
+                </p>
               </div>
-              <p className="text-[10px] text-muted-foreground">
-                Ce numéro sera utilisé pour la livraison instantanée de vos identifiants par WhatsApp.
-              </p>
+
+              <div className="space-y-1">
+                <label className="text-[11px] font-bold text-foreground block">
+                  Numéro Joignable (Appel) <span className="text-rose-500">*</span>
+                </label>
+                <div className="relative">
+                  <Phone className="w-3.5 h-3.5 text-primary absolute left-3 top-1/2 -translate-y-1/2" />
+                  <input
+                    type="tel"
+                    required
+                    placeholder="ex: 0500000000"
+                    value={regTelephone}
+                    onChange={(e) => setRegTelephone(e.target.value)}
+                    className="w-full pl-9 pr-3 py-2 bg-background border border-border rounded-xl text-xs font-medium focus:ring-2 focus:ring-primary outline-none"
+                  />
+                </div>
+                <p className="text-[9.5px] text-muted-foreground leading-tight">
+                  Numéro d'appel pour le suivi et le support.
+                </p>
+              </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1">
-                <label className="text-[11px] font-bold text-muted-foreground block">Email (Optionnel)</label>
+            <div className="space-y-1">
+              <label className="text-[11px] font-bold text-muted-foreground block">Email (Optionnel)</label>
+              <div className="relative">
+                <Mail className="w-3.5 h-3.5 text-muted-foreground absolute left-3 top-1/2 -translate-y-1/2" />
                 <input
                   type="email"
                   placeholder="jean@gmail.com"
                   value={regEmail}
                   onChange={(e) => setRegEmail(e.target.value)}
-                  className="w-full px-3 py-2 bg-background border border-border rounded-xl text-xs font-medium focus:ring-2 focus:ring-primary outline-none"
-                />
-              </div>
-              <div className="space-y-1">
-                <label className="text-[11px] font-bold text-muted-foreground block">N° Joignable (Optionnel)</label>
-                <input
-                  type="tel"
-                  placeholder="0500000000"
-                  value={regTelephone}
-                  onChange={(e) => setRegTelephone(e.target.value)}
-                  className="w-full px-3 py-2 bg-background border border-border rounded-xl text-xs font-medium focus:ring-2 focus:ring-primary outline-none"
+                  className="w-full pl-9 pr-3 py-2 bg-background border border-border rounded-xl text-xs font-medium focus:ring-2 focus:ring-primary outline-none"
                 />
               </div>
             </div>
