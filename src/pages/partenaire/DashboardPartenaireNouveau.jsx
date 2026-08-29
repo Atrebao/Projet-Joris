@@ -156,10 +156,14 @@ export default function DashboardPartenaireNouveau() {
       {/* Bloc KPI Financier Partenaire */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <KpiCard
-          label="Solde à percevoir (Livrées)"
+          label="Solde disponible"
           value={formatFCFA(balance?.soldeRestantAReverser ?? 0)}
           icon={Wallet}
-          trend={balance?.commissionActive === false ? '0% com.' : `${balance?.tauxCommission ?? 10}% com.`}
+          trend={
+            balance?.commissionActive !== false && Number(balance?.tauxCommission ?? 0) > 0
+              ? `${balance.tauxCommission}% com.`
+              : undefined
+          }
           accent="primary"
         />
         <KpiCard

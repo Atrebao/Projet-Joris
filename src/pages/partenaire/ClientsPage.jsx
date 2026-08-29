@@ -19,44 +19,92 @@ export default function ClientsPage() {
   const loadClients = async () => {
     setLoading(true)
     try {
-      const res = await usersAPI.getClientsWithSouscriptions({
-        search: recherche.trim() || undefined,
-        page,
-        limit: 10,
-        partenaireId: partenaireId ? Number(partenaireId) : undefined,
-      })
-      const data = res?.data
-      if (data && typeof data === 'object' && !Array.isArray(data)) {
-        const rawList = data.data || []
-        setClients(
-          rawList.map((c) => ({
+      let clientItems = []
+      let totalPagesCount = 1
+      let calculatedStats = { total: 0, actifs: 0, revenu: 0 }
+
+      try {
+        const res = await usersAPI.getClientsWithSouscriptions({
+          search: recherche.trim() || undefined,
+          page,
+          limit: 10,
+          partenaireId: partenaireId ? Number(partenaireId) : undefined,
+        })
+        const data = res?.data
+        const rawList = Array.isArray(data) ? data : (data?.data || [])
+
+        if (rawList.length > 0) {
+          clientItems = rawList.map((c) => ({
             id: c.id,
-            nom: c.nomPrenoms || `${c.nom || ''} ${c.prenoms || ''}`.trim() || 'Client',
+            nom: c.nomPrenoms || [c.prenoms, c.nom].filter(Boolean).join(' ').trim() || c.pseudo || 'Client',
+            pseudo: c.pseudo || '-',
             email: c.email || '-',
-            telephone: c.numero || c.telephone || '-',
-            nbAchats: c.nbAchats ?? (c.souscriptions ? c.souscriptions.length : 0),
-            totalDepense: c.totalDepense ?? (c.souscriptions ? c.souscriptions.reduce((sum, s) => sum + (s.montant || 0), 0) : 0),
+            telephone: c.numeroWhatsapp || c.telephone || c.numero || '-',
+            nbAchats: c.nbAchats ?? c.totalSouscriptions ?? (c.souscriptions ? c.souscriptions.length : 1),
+            totalDepense: c.totalDepense ?? (c.souscriptions ? c.souscriptions.reduce((sum, s) => sum + Number(s.montant || 0), 0) : 0),
             derniereCommande: c.derniereCommande || (c.dateCreation ? new Date(c.dateCreation).toISOString().split('T')[0] : ''),
-            statut: c.enabled !== false && c.isActive !== false ? 'ACTIF' : 'INACTIF',
+            statut: c.statut || (c.enabled !== false && c.isActive !== false ? 'ACTIF' : 'INACTIF'),
           }))
-        )
-        setTotalPages(data.totalPages || 1)
-        if (data.stats) setStats(data.stats)
-      } else {
-        const rawList = Array.isArray(data) ? data : []
-        setClients(
-          rawList.map((c) => ({
-            id: c.id,
-            nom: c.nomPrenoms || `${c.nom || ''} ${c.prenoms || ''}`.trim() || 'Client',
-            email: c.email || '-',
-            telephone: c.numero || c.telephone || '-',
-            nbAchats: c.nbAchats ?? (c.souscriptions ? c.souscriptions.length : 0),
-            totalDepense: c.totalDepense ?? (c.souscriptions ? c.souscriptions.reduce((sum, s) => sum + (s.montant || 0), 0) : 0),
-            derniereCommande: c.derniereCommande || (c.dateCreation ? new Date(c.dateCreation).toISOString().split('T')[0] : ''),
-            statut: c.enabled !== false && c.isActive !== false ? 'ACTIF' : 'INACTIF',
-          }))
-        )
+          totalPagesCount = data?.totalPages || 1
+          if (data?.stats) {
+            calculatedStats = data.stats
+          } else {
+            calculatedStats = {
+              total: data?.total || rawList.length,
+              actifs: rawList.filter((c) => c.isActive !== false).length,
+              revenu: clientItems.reduce((acc, c) => acc + (c.totalDepense || 0), 0),
+            }
+          }
+        }
+      } catch (err) {
+        console.warn('API getClientsWithSouscriptions fallback:', err)
       }
+
+      // Si la liste est vide mais qu'on a des souscriptions pour ce partenaire, agréger les clients depuis les souscriptions
+      if (clientItems.length === 0 && partenaireId) {
+        try {
+          const subsRes = await souscriptionsAPI.getAllSouscriptions({ partenaireId })
+          const subs = Array.isArray(subsRes?.data) ? subsRes.data : (subsRes?.data?.data || [])
+          const clientMap = new Map()
+
+          subs.forEach((s) => {
+            const clientObj = s.client
+            const phone = clientObj?.numeroWhatsapp || clientObj?.telephone || s.numeroClient || s.telephone || '-'
+            const email = clientObj?.email || s.emailClient || '-'
+            const key = clientObj?.id ? `id_${clientObj.id}` : `contact_${phone}_${email}`
+
+            if (!clientMap.has(key)) {
+              const name = clientObj?.nomPrenoms || [clientObj?.prenoms, clientObj?.nom].filter(Boolean).join(' ').trim() || clientObj?.pseudo || s.pseudo || 'Client'
+              clientMap.set(key, {
+                id: clientObj?.id || key,
+                nom: name,
+                pseudo: clientObj?.pseudo || '-',
+                email,
+                telephone: phone,
+                nbAchats: 0,
+                totalDepense: 0,
+                derniereCommande: s.dateCreation ? new Date(s.dateCreation).toISOString().split('T')[0] : '',
+                statut: 'ACTIF',
+              })
+            }
+
+            const existing = clientMap.get(key)
+            existing.nbAchats += 1
+            existing.totalDepense += Number(s.montant || s.montantTotal || 0)
+          })
+
+          clientItems = Array.from(clientMap.values())
+          calculatedStats = {
+            total: clientItems.length,
+            actifs: clientItems.length,
+            revenu: clientItems.reduce((sum, c) => sum + c.totalDepense, 0),
+          }
+        } catch {}
+      }
+
+      setClients(clientItems)
+      setTotalPages(totalPagesCount)
+      setStats(calculatedStats)
     } catch (error) {
       console.error('Erreur chargement clients:', error)
       toast.error('Impossible de charger les clients')
