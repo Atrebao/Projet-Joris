@@ -19,6 +19,7 @@ import {
   Send,
   Loader2,
   X,
+  Sparkles,
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { getPartenaireId, SERVICES_MARKETPLACE, getServiceMeta } from '../../Utils/Utils'
@@ -84,7 +85,7 @@ export default function AffectationsComptesPage() {
           if (Array.isArray(allSubsRes?.data)) {
             loadedSubs = allSubsRes.data
           }
-        } catch {}
+        } catch { }
       }
       setSouscriptions(loadedSubs)
     } catch (err) {
@@ -167,9 +168,9 @@ export default function AffectationsComptesPage() {
     return stocks.filter((s) => {
       const sOffreId = s.offrePartenaire?.id || s.offre?.id || s.offre_id
       if (curOffreId && String(sOffreId) !== String(curOffreId)) return false
-      // Profil libre
+      // Profil actif avec au moins une place libre
       const placesLibres = (s.capaciteMax || 1) - (s.placesOccupees || 0)
-      return s.isActive && !s.isUsed && placesLibres > 0
+      return s.isActive !== false && placesLibres > 0
     })
   }, [stocks, transferModal.souscription])
 
@@ -392,35 +393,39 @@ export default function AffectationsComptesPage() {
                 {/* Grille des Profils du Compte */}
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                   {account.profils.map((profil) => {
-                    // Trouver toutes les souscriptions liées à ce profil
-                    // Trouver toutes les souscriptions liées à ce profil
+                    // Trouver les souscriptions spécifiquement liées à ce profil (pas de matching global lâche)
                     const matchingSubs = souscriptions.filter((s) => {
+                      if (!s) return false
                       if (s.profilIdChoisi && Number(s.profilIdChoisi) === Number(profil.id)) return true
                       if (profil.souscription?.id && Number(s.id) === Number(profil.souscription.id)) return true
+                      // Si les identifiants correspondent ET que le nom du profil est explicitement mentionné
                       if (
+                        profil.nomProfil &&
                         s.login &&
-                        s.password &&
-                        s.login.trim().toLowerCase() === (profil.login || '').trim().toLowerCase() &&
-                        s.password === profil.password
+                        s.login.trim().toLowerCase() === (profil.login || '').trim().toLowerCase()
                       ) {
-                        if (s.nomProfilSouhaite && profil.nomProfil) {
-                          return s.nomProfilSouhaite.trim().toLowerCase() === profil.nomProfil.trim().toLowerCase()
-                        }
-                        return true
+                        if (s.instructions && s.instructions.includes(profil.nomProfil)) return true
+                        if (s.nomProfilSouhaite && s.nomProfilSouhaite.trim().toLowerCase() === profil.nomProfil.trim().toLowerCase()) return true
                       }
                       return false
                     })
-                    const activeSouscriptions = matchingSubs.length > 0 ? matchingSubs : (profil.souscription ? [profil.souscription] : [])
+                    const activeSouscriptions = matchingSubs
                     const isOccupied = activeSouscriptions.length > 0 || (profil.placesOccupees || 0) > 0
+
+                    const dureeMois = profil.dureeForfaitMois
+                    const dureeLabel = dureeMois
+                      ? dureeMois >= 12 && dureeMois % 12 === 0
+                        ? `${dureeMois / 12} An`
+                        : `${dureeMois} Mois`
+                      : null
 
                     return (
                       <div
                         key={profil.id}
-                        className={`p-4 rounded-2xl border transition-all ${
-                          isOccupied
+                        className={`p-4 rounded-2xl border transition-all ${isOccupied
                             ? 'bg-muted/30 border-border/80'
                             : 'bg-emerald-500/5 border-emerald-500/20'
-                        }`}
+                          }`}
                       >
                         {/* Header Profil */}
                         <div className="flex items-center justify-between gap-2 pb-2 border-b border-border/60">
@@ -435,17 +440,23 @@ export default function AffectationsComptesPage() {
                             )}
                           </div>
 
-                          <span
-                            className={`px-2 py-0.5 rounded-full text-[10px] font-black ${
-                              profil.typeAbonnement === 'PRIVE'
-                                ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400'
-                                : 'bg-primary/10 text-primary'
-                            }`}
-                          >
-                            {profil.typeAbonnement === 'PRIVE'
-                              ? `👑 Privé (${profil.nbAppareilsMax || 1} écran)`
-                              : `👥 Partagé (${activeSouscriptions.length || profil.placesOccupees || 0}/${profil.capaciteMax || 1})`}
-                          </span>
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            {dureeLabel && (
+                              <span className="px-1.5 py-0.5 rounded bg-blue-500/10 text-[9.5px] font-extrabold text-blue-600 dark:text-blue-400">
+                                ⏱️ {dureeLabel}
+                              </span>
+                            )}
+                            <span
+                              className={`px-2 py-0.5 rounded-full text-[10px] font-black ${profil.typeAbonnement === 'PRIVE'
+                                  ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400'
+                                  : 'bg-primary/10 text-primary'
+                                }`}
+                            >
+                              {profil.typeAbonnement === 'PRIVE'
+                                ? `👑 Privé (${profil.nbAppareilsMax || 1} écran)`
+                                : `👥 Partagé (${activeSouscriptions.length || profil.placesOccupees || 0}/${profil.capaciteMax || 1})`}
+                            </span>
+                          </div>
                         </div>
 
                         {/* Corps : Clients occupants OU Profil Libre */}
@@ -518,13 +529,12 @@ export default function AffectationsComptesPage() {
                                       <div className="pt-1 border-t border-border/40 flex items-center justify-between">
                                         <span className="text-[9.5px] text-muted-foreground">Temps restant :</span>
                                         <span
-                                          className={`text-[9.5px] font-black ${
-                                            remainingDays <= 3
+                                          className={`text-[9.5px] font-black ${remainingDays <= 3
                                               ? 'text-rose-500 animate-pulse'
                                               : remainingDays <= 7
-                                              ? 'text-amber-500'
-                                              : 'text-emerald-500'
-                                          }`}
+                                                ? 'text-amber-500'
+                                                : 'text-emerald-500'
+                                            }`}
                                         >
                                           {remainingDays > 0 ? `${remainingDays} jours restants` : 'Expiré aujourd\'hui'}
                                         </span>
