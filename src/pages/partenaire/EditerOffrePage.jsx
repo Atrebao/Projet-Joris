@@ -98,19 +98,29 @@ export default function EditerOffrePage() {
           const initialGrille = {}
           forfaits.forEach((f) => {
             const placeholders = getDurationPlaceholders(f.duree, f.periode)
-            const existing = (offre.forfaitOffres || []).find(
-              (fo) => String(fo.forfait?.id) === String(f.id) || String(fo.forfaitId) === String(f.id)
-            )
+            const existing = (offre.forfaitOffres || offre.forfaits || []).find((fo) => {
+              const foId = fo.forfait?.id || fo.forfaitId || fo.id
+              if (foId && String(foId) === String(f.id)) return true
+              if (
+                Number(fo.duree) === Number(f.duree) &&
+                String(fo.periode || 'MOIS').toUpperCase() === String(f.periode || 'MOIS').toUpperCase()
+              ) {
+                return true
+              }
+              return false
+            })
+
+            const hasExisting = Boolean(existing && (Number(existing.prixPartage) > 0 || Number(existing.prixPrive) > 0 || Number(existing.prixVente) > 0))
 
             initialGrille[f.id] = {
-              selected: Boolean(existing) || (offre.forfaitOffres || []).length === 0,
+              selected: hasExisting || (offre.forfaitOffres || []).length === 0,
               forfaitId: f.id,
               plan: f.plan,
               duree: f.duree,
               periode: f.periode,
-              prixPartage: existing?.prixPartage ? String(existing.prixPartage) : '',
+              prixPartage: existing?.prixPartage ? String(existing.prixPartage) : (hasExisting && existing?.prixVente ? String(existing.prixVente) : ''),
               isPartageActive: existing ? existing.isPartageActive !== false : true,
-              prixPrive: existing?.prixPrive ? String(existing.prixPrive) : '',
+              prixPrive: existing?.prixPrive ? String(existing.prixPrive) : (hasExisting && existing?.prixVente ? String(existing.prixVente) : ''),
               isPriveActive: existing ? existing.isPriveActive !== false : true,
               placeholderPartage: placeholders.partage,
               placeholderPrive: placeholders.prive,
@@ -149,13 +159,32 @@ export default function EditerOffrePage() {
   }
 
   const handleGrilleChange = (forfaitId, field, value) => {
-    setGrilleTarifs((prev) => ({
-      ...prev,
-      [forfaitId]: {
-        ...prev[forfaitId],
+    setGrilleTarifs((prev) => {
+      const current = prev[forfaitId] || {}
+      const updated = {
+        ...current,
         [field]: value,
-      },
-    }))
+      }
+      // Auto-activer le forfait si un prix est saisi
+      if (field === 'prixPartage' && Number(value) > 0) {
+        updated.selected = true
+        updated.isPartageActive = true
+      }
+      if (field === 'prixPrive' && Number(value) > 0) {
+        updated.selected = true
+        updated.isPriveActive = true
+      }
+      if (field === 'selected' && value === true) {
+        const placeholders = getDurationPlaceholders(current.duree, current.periode)
+        if (!updated.prixPartage && !updated.prixPrive) {
+          updated.prixPartage = String(placeholders.partage || 1500)
+        }
+      }
+      return {
+        ...prev,
+        [forfaitId]: updated,
+      }
+    })
   }
 
   const calculateNetGain = (prix) => {
@@ -172,7 +201,7 @@ export default function EditerOffrePage() {
     }
 
     const activeGrille = Object.values(grilleTarifs)
-      .filter((g) => g.selected && (g.isPartageActive || g.isPriveActive))
+      .filter((g) => (g.selected || Number(g.prixPartage) > 0 || Number(g.prixPrive) > 0) && (g.isPartageActive || g.isPriveActive))
       .map((g) => {
         const pPartage = g.isPartageActive ? Number(g.prixPartage || 0) : 0
         const pPrive = g.isPriveActive ? Number(g.prixPrive || 0) : 0
@@ -379,7 +408,7 @@ export default function EditerOffrePage() {
                               className="rounded border-input text-primary focus:ring-primary h-4 w-4 cursor-pointer"
                             />
                             <div>
-                              <span className={`font-extrabold block ${isSelected ? 'text-foreground' : 'text-muted-foreground'}`}>
+                              <span className={`font-extrabold block ${isSelected ? 'text-primary' : 'text-foreground'}`}>
                                 {f.plan}
                               </span>
                               <span className="text-[10px] text-muted-foreground">
@@ -395,22 +424,18 @@ export default function EditerOffrePage() {
                             <div className="flex items-center gap-2">
                               <input
                                 type="checkbox"
-                                disabled={!isSelected}
                                 checked={isSelected && g.isPartageActive}
                                 onChange={(e) => handleGrilleChange(f.id, 'isPartageActive', e.target.checked)}
-                                className="rounded text-primary focus:ring-primary h-3.5 w-3.5 cursor-pointer disabled:cursor-not-allowed"
+                                className="rounded text-primary focus:ring-primary h-3.5 w-3.5 cursor-pointer"
                                 title="Activer / Désactiver la vente en profil partagé"
                               />
                               <Input
                                 type="number"
                                 min="0"
-                                disabled={!isSelected || !g.isPartageActive}
                                 placeholder={`Ex: ${g.placeholderPartage || placeholders.partage}`}
                                 value={g.prixPartage}
                                 onChange={(e) => handleGrilleChange(f.id, 'prixPartage', e.target.value)}
-                                className={`h-8 text-xs font-bold font-mono w-32 transition ${
-                                  !isSelected || !g.isPartageActive ? 'bg-muted/40 text-muted-foreground cursor-not-allowed' : ''
-                                }`}
+                                className="h-8 text-xs font-bold font-mono w-32 transition bg-card"
                               />
                             </div>
                             {isCommissionActive && isSelected && g.isPartageActive && Number(g.prixPartage) > 0 && (
@@ -427,22 +452,18 @@ export default function EditerOffrePage() {
                             <div className="flex items-center gap-2">
                               <input
                                 type="checkbox"
-                                disabled={!isSelected}
                                 checked={isSelected && g.isPriveActive}
                                 onChange={(e) => handleGrilleChange(f.id, 'isPriveActive', e.target.checked)}
-                                className="rounded text-primary focus:ring-primary h-3.5 w-3.5 cursor-pointer disabled:cursor-not-allowed"
+                                className="rounded text-primary focus:ring-primary h-3.5 w-3.5 cursor-pointer"
                                 title="Activer / Désactiver la vente en profil privé"
                               />
                               <Input
                                 type="number"
                                 min="0"
-                                disabled={!isSelected || !g.isPriveActive}
                                 placeholder={`Ex: ${g.placeholderPrive || placeholders.prive}`}
                                 value={g.prixPrive}
                                 onChange={(e) => handleGrilleChange(f.id, 'prixPrive', e.target.value)}
-                                className={`h-8 text-xs font-bold font-mono w-32 transition ${
-                                  !isSelected || !g.isPriveActive ? 'bg-muted/40 text-muted-foreground cursor-not-allowed' : ''
-                                }`}
+                                className="h-8 text-xs font-bold font-mono w-32 transition bg-card"
                               />
                             </div>
                             {isCommissionActive && isSelected && g.isPriveActive && Number(g.prixPrive) > 0 && (
