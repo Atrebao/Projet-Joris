@@ -554,31 +554,23 @@ export default function DetailOffre() {
               )}
             </div>
 
-            {/* Bouton de Paiement ou Précommande */}
-            {isOutOfStock ? (
-              <div className="space-y-2 pt-2">
-                <div className="flex items-center gap-2 p-3 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-amber-600 dark:text-amber-400 text-xs font-bold">
-                  <AlertTriangle className="w-4 h-4 shrink-0" />
-                  <span>Stock actuellement épuisé sur cette durée.</span>
+            {/* Bouton de Paiement Unifié (Non-bloquant) */}
+            <div className="space-y-2 pt-2">
+              {isOutOfStock && (
+                <div className="flex items-center gap-2 p-3 rounded-2xl bg-blue-500/10 border border-blue-500/30 text-blue-600 dark:text-blue-400 text-xs font-semibold">
+                  <Sparkles className="w-4 h-4 shrink-0 text-blue-500" />
+                  <span>Livraison sur-mesure : vos accès seront créés et livrés automatiquement sur votre WhatsApp.</span>
                 </div>
-                <button
-                  type="button"
-                  onClick={() => setShowPrecommandeModal(true)}
-                  className="h-12 w-full rounded-2xl bg-amber-500 text-slate-950 font-black text-xs shadow-lg hover:bg-amber-400 transition cursor-pointer flex items-center justify-center gap-2"
-                >
-                  <Sparkles className="w-4 h-4" />
-                  Précommander & Être alerté par WhatsApp
-                </button>
-              </div>
-            ) : (
+              )}
+
               <button
                 type="submit"
                 disabled={submitting}
                 className="h-12 w-full rounded-2xl bg-primary text-white font-black text-xs shadow-lg shadow-primary/25 hover:opacity-90 transition disabled:opacity-50 cursor-pointer flex items-center justify-center gap-2"
               >
-                {submitting ? 'Traitement du paiement...' : `Payer ${formatPrice(total)}`}
+                {submitting ? 'Traitement du paiement...' : `Payer ${formatPrice(total)} & Recevoir mes accès`}
               </button>
-            )}
+            </div>
           </form>
         )}
       </div>

@@ -135,13 +135,20 @@ export default function NouvelleOffrePage() {
   }
 
   const handleGrilleChange = (forfaitId, field, value) => {
-    setGrilleTarifs((prev) => ({
-      ...prev,
-      [forfaitId]: {
-        ...prev[forfaitId],
+    setGrilleTarifs((prev) => {
+      const current = prev[forfaitId] || {}
+      const updated = {
+        ...current,
         [field]: value,
-      },
-    }))
+      }
+      if ((field === 'prixPartage' || field === 'prixPrive') && Number(value) > 0) {
+        updated.selected = true
+      }
+      return {
+        ...prev,
+        [forfaitId]: updated,
+      }
+    })
   }
 
   const calculateNetGain = (prix) => {
@@ -161,7 +168,7 @@ export default function NouvelleOffrePage() {
 
     // Récupérer les déclinaisons de tarifs activées
     const activeGrille = Object.values(grilleTarifs)
-      .filter((g) => g.selected && (g.isPartageActive || g.isPriveActive))
+      .filter((g) => (g.selected || Number(g.prixPartage) > 0 || Number(g.prixPrive) > 0) && (g.isPartageActive || g.isPriveActive))
       .map((g) => {
         const pPartage = g.isPartageActive ? Number(g.prixPartage || 0) : 0
         const pPrive = g.isPriveActive ? Number(g.prixPrive || 0) : 0

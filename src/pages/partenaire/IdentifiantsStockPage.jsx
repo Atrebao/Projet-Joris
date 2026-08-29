@@ -32,7 +32,7 @@ import {
   RotateCcw,
 } from 'lucide-react'
 import { getPartenaireId } from '../../Utils/Utils'
-import { offresAPI, identifiantsStockAPI } from '../../lib/api'
+import { offresAPI, identifiantsStockAPI, forfaitsAPI } from '../../lib/api'
 import {
   Badge,
   Button,
@@ -72,22 +72,23 @@ export default function IdentifiantsStockPage() {
   // Modal d'édition de profil
   const [editingItem, setEditingItem] = useState(null)
 
+  // Modal de confirmation de suppression moderne
+  const [deleteModal, setDeleteModal] = useState({
+    open: false,
+    item: null,
+    submitting: false,
+  })
+
   // Modes d'ajout : 'account' (Comptes & Profils) | 'single' (Unitaire) | 'bulk' (Masse)
   const [addMode, setAddMode] = useState('account')
 
-  // Formulaire Compte & Profils Multi-Durées Dynamique
+  // Formulaire Compte & Profils Multi-Durées Dynamique (initialisé dynamiquement selon l'offre)
   const [accountForm, setAccountForm] = useState({
     login: '',
     password: '',
     numeroCompte: 1,
     instructionsGenerales: '',
-    profils: [
-      { nomProfil: 'Profil 1', dureeForfaitMois: 1, capaciteMax: 1, nbAppareilsMax: 1, codePin: '', typeAbonnement: 'PARTAGE' },
-      { nomProfil: 'Profil 2', dureeForfaitMois: 1, capaciteMax: 1, nbAppareilsMax: 1, codePin: '', typeAbonnement: 'PARTAGE' },
-      { nomProfil: 'Profil 3', dureeForfaitMois: 3, capaciteMax: 1, nbAppareilsMax: 1, codePin: '', typeAbonnement: 'PARTAGE' },
-      { nomProfil: 'Profil 4', dureeForfaitMois: 3, capaciteMax: 1, nbAppareilsMax: 1, codePin: '', typeAbonnement: 'PARTAGE' },
-      { nomProfil: 'Profil 5', dureeForfaitMois: 1, capaciteMax: 1, nbAppareilsMax: 2, codePin: '', typeAbonnement: 'PRIVE' },
-    ],
+    profils: [],
   })
 
   const [singleForm, setSingleForm] = useState({ login: '', password: '', instructions: '', dureeForfaitMois: 1 })
@@ -138,32 +139,66 @@ export default function IdentifiantsStockPage() {
 
   const selectedOffre = offres.find((o) => String(o.id) === String(offreId))
 
-  // Forfaits réels liés à l'offre sélectionnée
+  // Forfaits réels configurés EXCLUSIVEMENT pour cette offre par le partenaire (100% dynamique et sans doublons)
   const offerForfaits = useMemo(() => {
-    if (!selectedOffre?.forfaits || selectedOffre.forfaits.length === 0) {
-      return [
-        { duree: 1, periode: 'MOIS', plan: '1 Mois' },
-        { duree: 3, periode: 'MOIS', plan: '3 Mois' },
-        { duree: 6, periode: 'MOIS', plan: '6 Mois' },
-        { duree: 12, periode: 'MOIS', plan: '12 Mois' },
-      ]
-    }
-    return selectedOffre.forfaits.map((f) => ({
-      duree: Number(f.duree || 1),
-      periode: f.periode || 'MOIS',
-      plan: f.plan || `${f.duree} ${f.periode || 'Mois'}`,
-    }))
+    if (!selectedOffre) return []
+    const list = selectedOffre.forfaits || selectedOffre.forfaitOffres || []
+
+    const mapped = list
+      .map((f) => {
+        const raw = f.forfait || f
+        const rawDuree = Number(raw.duree || 1)
+        const periode = String(raw.periode || 'MOIS').toUpperCase()
+        const isAnnee = periode.startsWith('AN')
+        // Si c'est en années et pas encore converti en mois (< 12 mois)
+        const duree = isAnnee && rawDuree < 12 ? rawDuree * 12 : rawDuree
+
+        let plan = raw.plan
+        if (!plan || plan.includes('undefined')) {
+          plan = duree >= 12 && duree % 12 === 0
+            ? `Forfait ${duree / 12} An${duree / 12 > 1 ? 's' : ''}`
+            : `Forfait ${duree} Mois`
+        }
+
+        return {
+          id: raw.id || duree,
+          duree,
+          periode: isAnnee ? 'ANNEE' : 'MOIS',
+          plan,
+        }
+      })
+      .filter(Boolean)
+
+    // Dédoublonnage strict par durée en mois (ex: 1 mois, 12 mois)
+    const unique = mapped.filter((f, idx, arr) => arr.findIndex((x) => Number(x.duree) === Number(f.duree)) === idx)
+    unique.sort((a, b) => a.duree - b.duree)
+
+    if (unique.length > 0) return unique
+
+    const fallbackDuree = Number(selectedOffre.duree || 1)
+    return [
+      {
+        id: selectedOffre.id || 0,
+        duree: fallbackDuree,
+        periode: 'MOIS',
+        plan: `Forfait ${fallbackDuree} Mois`,
+      },
+    ]
   }, [selectedOffre])
 
-  // Initialise les profils en fonction de l'offre choisie
+  // Initialise les profils en fonction de l'offre choisie et de ses forfaits réels configurés
   const initAccountFormForOffer = (offre) => {
     if (!offre) return
     const defaultCount = getDefaultProfilesCountForService(offre.nomService || offre.nom || '')
+    const list = offre.forfaits || offre.forfaitOffres || []
+    const firstForfait = list[0]?.forfait || list[0]
+    const defaultDuree = Number(firstForfait?.duree || offre.duree || 1)
 
     const initialProfils = []
     for (let i = 0; i < defaultCount; i++) {
       initialProfils.push({
         nomProfil: `Profil ${i + 1}`,
+        dureeForfaitMois: defaultDuree,
         capaciteMax: 1,
         nbAppareilsMax: 1,
         codePin: '',
@@ -174,6 +209,10 @@ export default function IdentifiantsStockPage() {
     setAccountForm((prev) => ({
       ...prev,
       profils: initialProfils,
+    }))
+    setSingleForm((prev) => ({
+      ...prev,
+      dureeForfaitMois: defaultDuree,
     }))
   }
 
@@ -212,15 +251,31 @@ export default function IdentifiantsStockPage() {
     toast.success(`${label} copié dans le presse-papier !`)
   }
 
-  const handleDelete = async (id) => {
-    if (!window.confirm('Êtes-vous sûr de vouloir retirer cet identifiant du stock ?')) return
+  const openDeleteModal = (item) => {
+    setDeleteModal({
+      open: true,
+      item,
+      submitting: false,
+    })
+  }
+
+  const confirmDeleteStock = async () => {
+    if (!deleteModal.item) return
+    const isOccupied = (deleteModal.item.placesOccupees || 0) > 0
+    if (isOccupied) {
+      toast.error("Impossible de supprimer un profil actif occupé par un client.")
+      return
+    }
+    setDeleteModal((prev) => ({ ...prev, submitting: true }))
     try {
-      await identifiantsStockAPI.delete(id)
-      toast.success('Identifiant supprimé')
-      loadStock(offreId)
+      await identifiantsStockAPI.delete(deleteModal.item.id)
+      toast.success('Profil supprimé du stock avec succès ! 🎉')
+      setDeleteModal({ open: false, item: null, submitting: false })
+      await loadStock(offreId)
     } catch (err) {
       console.error(err)
-      toast.error('Erreur lors de la suppression')
+      toast.error(err?.response?.data?.message || 'Erreur lors de la suppression')
+      setDeleteModal((prev) => ({ ...prev, submitting: false }))
     }
   }
 
@@ -866,9 +921,9 @@ export default function IdentifiantsStockPage() {
                           </button>
                           <button
                             type="button"
-                            onClick={() => handleDelete(item.id)}
-                            className="p-1.5 text-rose-500 hover:text-rose-700 rounded-lg hover:bg-rose-500/10"
-                            title="Supprimer du stock"
+                            onClick={() => openDeleteModal(item)}
+                            className="p-1.5 text-rose-500 hover:text-rose-700 rounded-lg hover:bg-rose-500/10 cursor-pointer transition"
+                            title="Supprimer ce profil du stock"
                           >
                             <Trash2 className="w-3.5 h-3.5" />
                           </button>
@@ -971,15 +1026,15 @@ export default function IdentifiantsStockPage() {
                 </div>
 
                 <div className="space-y-1">
-                  <label className="text-xs font-bold text-foreground block">Durée Forfait</label>
+                  <label className="text-xs font-bold text-foreground block">Forfait / Durée</label>
                   <select
-                    value={editingItem.dureeForfaitMois || 1}
+                    value={editingItem.dureeForfaitMois || offerForfaits[0]?.duree || 1}
                     onChange={(e) => setEditingItem({ ...editingItem, dureeForfaitMois: Number(e.target.value) })}
-                    className="w-full h-10 rounded-xl border border-input bg-card px-2.5 text-xs font-bold text-foreground outline-none"
+                    className="w-full h-10 rounded-xl border border-input bg-card px-2.5 text-xs font-bold text-foreground outline-none focus:ring-1 focus:ring-primary"
                   >
                     {offerForfaits.map((of, fIdx) => (
                       <option key={fIdx} value={of.duree}>
-                        {of.plan}
+                        📦 {of.plan} ({of.duree} Mois)
                       </option>
                     ))}
                   </select>
@@ -1080,6 +1135,77 @@ export default function IdentifiantsStockPage() {
                 </Button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de Confirmation de Suppression de Profil */}
+      {deleteModal.open && deleteModal.item && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in">
+          <div className="relative w-full max-w-md bg-card border border-border rounded-3xl shadow-2xl p-6 space-y-4">
+            {/* Icône & Titre */}
+            <div className="flex items-center gap-3">
+              <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 ${
+                (deleteModal.item.placesOccupees || 0) > 0 ? 'bg-amber-500/10 text-amber-500' : 'bg-rose-500/10 text-rose-500'
+              }`}>
+                <Trash2 className="w-6 h-6" />
+              </div>
+              <div>
+                <h3 className="text-base font-black text-foreground">
+                  {(deleteModal.item.placesOccupees || 0) > 0 ? 'Suppression Impossible' : 'Supprimer ce Profil ?'}
+                </h3>
+                <p className="text-xs text-muted-foreground">
+                  Compte #{deleteModal.item.numeroCompte} &bull; {deleteModal.item.nomProfil || `Profil #${deleteModal.item.id}`}
+                </p>
+              </div>
+            </div>
+
+            {/* Corps conditionnel : Occupé vs Libre */}
+            {(deleteModal.item.placesOccupees || 0) > 0 ? (
+              <div className="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-amber-800 dark:text-amber-300 text-xs space-y-2">
+                <p className="font-extrabold flex items-center gap-1.5">
+                  ⚠️ Profil Actuellement Occupé par un Client ({deleteModal.item.placesOccupees} place(s))
+                </p>
+                <p className="leading-relaxed text-[11.5px]">
+                  Ce profil est actuellement attribué à un ou plusieurs clients dont l'abonnement est actif. Pour protéger l'accès de vos clients, vous ne pouvez pas supprimer un profil en cours d'utilisation.
+                </p>
+                <p className="text-[11px] text-muted-foreground pt-1">
+                  💡 Conseil : Rendez-vous dans <strong>Affectations</strong> pour déplacer le client vers un autre profil avant de supprimer celui-ci.
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-2 text-xs text-muted-foreground">
+                <p>
+                  Êtes-vous sûr de vouloir supprimer définitivement le profil <strong>{deleteModal.item.nomProfil}</strong> (Login : <span className="font-mono text-foreground">{deleteModal.item.login}</span>) ?
+                </p>
+                <p className="text-rose-500 font-semibold text-[11px]">
+                  Cette action est irréversible et retirera ce profil du stock disponible.
+                </p>
+              </div>
+            )}
+
+            {/* Actions */}
+            <div className="flex gap-2 pt-2">
+              <Button
+                type="button"
+                variant="secondary"
+                onClick={() => setDeleteModal({ open: false, item: null, submitting: false })}
+                className="flex-1 text-xs"
+              >
+                {(deleteModal.item.placesOccupees || 0) > 0 ? 'Fermer' : 'Annuler'}
+              </Button>
+
+              {(deleteModal.item.placesOccupees || 0) === 0 && (
+                <button
+                  type="button"
+                  disabled={deleteModal.submitting}
+                  onClick={confirmDeleteStock}
+                  className="flex-1 h-10 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-black transition disabled:opacity-50 cursor-pointer flex items-center justify-center gap-1.5"
+                >
+                  {deleteModal.submitting ? 'Suppression...' : 'Supprimer définitivement'}
+                </button>
+              )}
+            </div>
           </div>
         </div>
       )}
