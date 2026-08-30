@@ -45,6 +45,18 @@ export default function AffectationsComptesPage() {
     submitting: false,
   })
 
+  // Modal de Configuration & Livraison Personnalisée (notamment Profils Privés)
+  const [deliverModal, setDeliverModal] = useState({
+    open: false,
+    souscription: null,
+    login: '',
+    password: '',
+    nomProfil: '',
+    codePin: '',
+    instructions: '',
+    submitting: false,
+  })
+
   const loadData = async () => {
     if (!partenaireId) return
     setLoading(true)
@@ -81,9 +93,11 @@ export default function AffectationsComptesPage() {
       // Fallback souscriptions si vide
       if (loadedSubs.length === 0) {
         try {
-          const allSubsRes = await souscriptionsAPI.getAllSouscriptions({ partenaireId, statutPaiement: 'SUCCES' })
+          const allSubsRes = await souscriptionsAPI.getByPartenaire(partenaireId)
           if (Array.isArray(allSubsRes?.data)) {
             loadedSubs = allSubsRes.data
+          } else if (Array.isArray(allSubsRes)) {
+            loadedSubs = allSubsRes
           }
         } catch { }
       }
@@ -152,22 +166,69 @@ export default function AffectationsComptesPage() {
     return Array.from(map.values())
   }, [filteredStocks])
 
-  // Commandes payées en attente d'affectation
+  // Commandes payées en attente d'affectation (séparation privé / partagé)
   const unassignedSubs = useMemo(() => {
     return souscriptions.filter((s) => {
       const isPaid = s.statutPaiement === 'SUCCES' || s.statut === 'SUCCES'
-      const isNotDelivered = !s.isLivred || !s.login || s.etatSouscription === 'EN_ATTENTE'
+      const isNotDelivered = !s.isLivred || !s.login || s.etatSouscription === 'EN_ATTENTE_DE_VALIDATION' || s.etatSouscription === 'EN_ATTENTE'
       return isPaid && isNotDelivered
     })
   }, [souscriptions])
+
+  // Synthèse du stock par Offre et par Durée pour détecter les ruptures
+  const stockSummaryByForfait = useMemo(() => {
+    const list = []
+    offres.forEach((o) => {
+      const offreStocks = stocks.filter((s) => Number(s.offrePartenaire?.id || s.offre?.id || s.offre_id) === Number(o.id))
+      const forfaits = o.forfaits || []
+      const dureeSet = new Set([1, 3, 6, 12])
+      forfaits.forEach((f) => {
+        if (f.dureeMois) dureeSet.add(Number(f.dureeMois))
+      })
+      offreStocks.forEach((s) => {
+        if (s.dureeForfaitMois) dureeSet.add(Number(s.dureeForfaitMois))
+      })
+
+      const durees = Array.from(dureeSet).sort((a, b) => a - b)
+      durees.forEach((duree) => {
+        const matchingStocks = offreStocks.filter((s) => Number(s.dureeForfaitMois || 1) === duree && s.isActive !== false)
+        const totalPlaces = matchingStocks.reduce((sum, s) => sum + Number(s.capaciteMax || 1), 0)
+        const placesOccupees = matchingStocks.reduce((sum, s) => sum + Number(s.placesOccupees || 0), 0)
+        const placesLibres = Math.max(0, totalPlaces - placesOccupees)
+
+        // Ne lister que les durées qui ont des forfaits ou des stocks
+        const hasForfait = forfaits.some((f) => Number(f.dureeMois || 1) === duree)
+        if (hasForfait || totalPlaces > 0) {
+          list.push({
+            offreId: o.id,
+            nomOffre: o.nomService || o.titreOffre || 'Abonnement',
+            duree,
+            dureeLabel: duree >= 12 && duree % 12 === 0 ? `${duree / 12} An` : `${duree} Mois`,
+            totalPlaces,
+            placesOccupees,
+            placesLibres,
+            isRupture: totalPlaces === 0 || placesLibres === 0,
+          })
+        }
+      })
+    })
+    return list
+  }, [offres, stocks])
+
+  const rupturesCount = stockSummaryByForfait.filter((s) => s.isRupture).length
 
   // Liste des profils libres pour le modal de transfert
   const availableTargetProfiles = useMemo(() => {
     if (!transferModal.souscription) return []
     const curOffreId = transferModal.souscription.offrePartenaire?.id || transferModal.souscription.offre?.id
+    const subDuree = Number(transferModal.souscription.duree || 1)
+
     return stocks.filter((s) => {
       const sOffreId = s.offrePartenaire?.id || s.offre?.id || s.offre_id
       if (curOffreId && String(sOffreId) !== String(curOffreId)) return false
+      // Correspondance de durée
+      const sDuree = Number(s.dureeForfaitMois || 1)
+      if (sDuree !== subDuree) return false
       // Profil actif avec au moins une place libre
       const placesLibres = (s.capaciteMax || 1) - (s.placesOccupees || 0)
       return s.isActive !== false && placesLibres > 0
@@ -198,13 +259,57 @@ export default function AffectationsComptesPage() {
         Number(transferModal.targetStockId),
         transferModal.notifyClient
       )
-      toast.success('Client affecté / déplacé avec succès vers son profil ! 🎉')
+      toast.success('Client déplacé avec succès vers son nouveau profil ! 🎉')
       setTransferModal({ open: false, souscription: null, targetStockId: '', notifyClient: true, submitting: false })
       await loadData()
     } catch (err) {
       console.error(err)
-      toast.error(err?.response?.data?.message || 'Erreur lors de l\'affectation du client')
+      toast.error(err?.response?.data?.message || 'Erreur lors du déplacement du client')
       setTransferModal((prev) => ({ ...prev, submitting: false }))
+    }
+  }
+
+  const openDeliverModal = (souscription) => {
+    setDeliverModal({
+      open: true,
+      souscription,
+      login: souscription.login || '',
+      password: souscription.password || '',
+      nomProfil: souscription.nomProfilSouhaite || '',
+      codePin: souscription.codePinSouhaite || '',
+      instructions: souscription.instructions || '',
+      submitting: false,
+    })
+  }
+
+  const handleExecuteDeliver = async (e) => {
+    e.preventDefault()
+    if (!deliverModal.login.trim() || !deliverModal.password.trim()) {
+      toast.error('Veuillez renseigner le login et le mot de passe.')
+      return
+    }
+
+    setDeliverModal((prev) => ({ ...prev, submitting: true }))
+    try {
+      const details = [
+        deliverModal.nomProfil.trim() ? `👤 Profil : *${deliverModal.nomProfil.trim()}*` : null,
+        deliverModal.codePin.trim() ? `🔒 Code PIN : *${deliverModal.codePin.trim()}*` : null,
+        deliverModal.instructions.trim() ? `📝 Note : ${deliverModal.instructions.trim()}` : null,
+      ].filter(Boolean).join('\n')
+
+      await souscriptionsAPI.livrer(Number(deliverModal.souscription.id), {
+        login: deliverModal.login.trim(),
+        password: deliverModal.password.trim(),
+        instructions: details || deliverModal.instructions.trim() || undefined,
+      })
+
+      toast.success('Commande livrée et identifiants envoyés par WhatsApp ! 🎉')
+      setDeliverModal({ open: false, souscription: null, login: '', password: '', nomProfil: '', codePin: '', instructions: '', submitting: false })
+      await loadData()
+    } catch (err) {
+      console.error(err)
+      toast.error(err?.response?.data?.message || 'Erreur lors de la livraison de la commande')
+      setDeliverModal((prev) => ({ ...prev, submitting: false }))
     }
   }
 
@@ -215,6 +320,19 @@ export default function AffectationsComptesPage() {
     return Math.ceil(diff / (1000 * 60 * 60 * 24))
   }
 
+  const formatPaymentDate = (dateVal) => {
+    if (!dateVal) return 'N/A'
+    const d = new Date(dateVal)
+    if (isNaN(d.getTime())) return 'N/A'
+    return d.toLocaleDateString('fr-FR', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    })
+  }
+
   if (loading) {
     return <LoadingState message="Chargement de la cartographie des comptes et profils clients..." />
   }
@@ -222,8 +340,8 @@ export default function AffectationsComptesPage() {
   return (
     <div className="space-y-6 max-w-7xl mx-auto">
       <PageHeader
-        title="Affectations & Déplacement des Clients"
-        description="Visualisez en temps réel qui est sur quel profil pour chaque compte maître, et déplacez vos clients d'un compte à un autre en 1 clic."
+        title="Affectations & Cartographie des Profils"
+        description="Visualisez en temps réel qui est sur quel profil pour chaque compte maître, configurez les profils privés et déplacez vos clients en 1 clic."
         action={
           <Button variant="outline" onClick={loadData} className="gap-2 text-xs font-semibold rounded-lg">
             <RefreshCw className="h-4 w-4" /> Rafraîchir
@@ -231,9 +349,59 @@ export default function AffectationsComptesPage() {
         }
       />
 
-      {/* 🚨 Commandes Payées en Attente d'Affectation */}
+      {/* 📊 Synthèse des Stocks par Forfait & Alertes Rupture */}
+      {stockSummaryByForfait.length > 0 && (
+        <Card className="p-4 rounded-2xl border border-border bg-card/60 shadow-xs space-y-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-black uppercase text-muted-foreground tracking-wider">
+                📊 Disponibilité des Stocks par Forfait
+              </span>
+              {rupturesCount > 0 && (
+                <span className="px-2 py-0.5 rounded-full bg-rose-500/10 text-rose-500 font-extrabold text-[10px]">
+                  ⚠️ {rupturesCount} forfait(s) en rupture
+                </span>
+              )}
+            </div>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => navigate('/partenaire/identifiants')}
+              className="text-[11px] font-bold h-7 gap-1"
+            >
+              + Gérer / Ajouter Stock
+            </Button>
+          </div>
+
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2.5">
+            {stockSummaryByForfait.map((item, idx) => (
+              <div
+                key={idx}
+                className={`p-2.5 rounded-xl border text-xs space-y-1 transition-all ${
+                  item.isRupture
+                    ? 'bg-rose-500/10 border-rose-500/30 text-rose-600 dark:text-rose-400'
+                    : item.placesLibres <= 2
+                    ? 'bg-amber-500/10 border-amber-500/30 text-amber-600 dark:text-amber-400'
+                    : 'bg-emerald-500/5 border-emerald-500/20 text-emerald-600 dark:text-emerald-400'
+                }`}
+              >
+                <div className="font-extrabold truncate text-[11px] text-foreground">{item.nomOffre}</div>
+                <div className="flex items-center justify-between text-[10.5px] font-black">
+                  <span>⏱️ {item.dureeLabel}</span>
+                  <span>{item.placesLibres} libre{item.placesLibres > 1 ? 's' : ''}</span>
+                </div>
+                <div className="text-[9.5px] font-medium opacity-80">
+                  {item.placesOccupees}/{item.totalPlaces} occupée(s)
+                </div>
+              </div>
+            ))}
+          </div>
+        </Card>
+      )}
+
+      {/* 🚨 Commandes Payées en Attente (Privées ou Rupture de Stock) */}
       {unassignedSubs.length > 0 && (
-        <Card className="p-5 border-2 border-amber-500/40 bg-amber-500/5 rounded-3xl space-y-3 shadow-xs">
+        <Card className="p-5 border-2 border-amber-500/40 bg-amber-500/5 rounded-3xl space-y-4 shadow-xs">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-amber-500/20 pb-3">
             <div className="flex items-center gap-2">
               <span className="flex h-3 w-3 relative">
@@ -241,11 +409,11 @@ export default function AffectationsComptesPage() {
                 <span className="relative inline-flex rounded-full h-3 w-3 bg-amber-500"></span>
               </span>
               <h2 className="text-sm font-extrabold text-foreground">
-                Commandes Payées en Attente d'Affectation ({unassignedSubs.length})
+                Commandes Payées en Attente de Traitement ({unassignedSubs.length})
               </h2>
             </div>
             <p className="text-xs text-muted-foreground">
-              Ces clients ont payé avec succès. Affectez-leur un profil existant ou créez-en un nouveau.
+              Configurez les profils privés sur-mesure ou affectez un profil partagé en stock.
             </p>
           </div>
 
@@ -258,38 +426,49 @@ export default function AffectationsComptesPage() {
 
               return (
                 <div key={sub.id} className="p-4 rounded-2xl border border-border bg-card shadow-xs flex flex-col justify-between space-y-3">
-                  <div>
+                  <div className="space-y-1.5">
                     <div className="flex items-center justify-between">
                       <span className="text-xs font-black text-foreground">{clientName}</span>
                       <span className={`px-2 py-0.5 rounded-full text-[10px] font-extrabold ${isPrive ? 'bg-amber-500/10 text-amber-600' : 'bg-blue-500/10 text-blue-600'}`}>
                         {isPrive ? '👑 Privé' : '👥 Partagé'}
                       </span>
                     </div>
-                    <p className="text-[11px] font-mono text-muted-foreground mt-0.5">📞 {phone}</p>
-                    <p className="text-xs font-bold text-primary mt-1.5">{offerName} - {sub.duree || 1} {sub.periode || 'MOIS'}</p>
-                    {sub.nomProfilSouhaite && (
-                      <p className="text-[11px] text-muted-foreground italic mt-0.5">
-                        Profil souhaité : <span className="font-semibold text-foreground">{sub.nomProfilSouhaite}</span>
-                      </p>
+                    <p className="text-[11px] font-mono text-muted-foreground">📱 WhatsApp : {phone}</p>
+                    <p className="text-xs font-bold text-primary">{offerName} - {sub.duree || 1} {sub.periode || 'MOIS'}</p>
+                    
+                    <div className="text-[10.5px] font-mono text-emerald-600 dark:text-emerald-400">
+                      💳 Payé le : {formatPaymentDate(sub.datePaiement || sub.dateCreation)}
+                    </div>
+
+                    {isPrive && (
+                      <div className="p-2.5 rounded-xl bg-amber-500/10 border border-amber-500/30 text-[11px] space-y-0.5">
+                        <div className="font-extrabold text-amber-700 dark:text-amber-300">⚙️ Demande Profil Privé :</div>
+                        <div>Nom : <span className="font-bold text-foreground">{sub.nomProfilSouhaite || 'Non précisé'}</span></div>
+                        {sub.codePinSouhaite && (
+                          <div>Code PIN : <span className="font-bold font-mono text-foreground">{sub.codePinSouhaite}</span></div>
+                        )}
+                      </div>
                     )}
                   </div>
 
                   <div className="flex items-center gap-2 pt-2 border-t border-border">
-                    <Button
-                      size="sm"
-                      onClick={() => openTransferModal(sub)}
-                      className="flex-1 text-[11px] font-black h-8 gap-1.5 bg-primary text-primary-foreground hover:bg-primary/90"
-                    >
-                      <Sparkles className="w-3.5 h-3.5" /> Affecter un Profil
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => navigate('/partenaire/identifiants')}
-                      className="text-[11px] font-bold h-8"
-                    >
-                      + Créer Stock
-                    </Button>
+                    {isPrive ? (
+                      <Button
+                        size="sm"
+                        onClick={() => openDeliverModal(sub)}
+                        className="flex-1 text-[11px] font-black h-8 gap-1.5 bg-amber-600 hover:bg-amber-700 text-white"
+                      >
+                        <Sparkles className="w-3.5 h-3.5" /> Configurer & Livrer
+                      </Button>
+                    ) : (
+                      <Button
+                        size="sm"
+                        onClick={() => openTransferModal(sub)}
+                        className="flex-1 text-[11px] font-black h-8 gap-1.5 bg-primary text-primary-foreground hover:bg-primary/90"
+                      >
+                        <Sparkles className="w-3.5 h-3.5" /> Affecter un Profil
+                      </Button>
+                    )}
                   </div>
                 </div>
               )
@@ -393,20 +572,11 @@ export default function AffectationsComptesPage() {
                 {/* Grille des Profils du Compte */}
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                   {account.profils.map((profil) => {
-                    // Trouver les souscriptions spécifiquement liées à ce profil (pas de matching global lâche)
+                    // Trouver strictement les souscriptions liées à ce profil précis
                     const matchingSubs = souscriptions.filter((s) => {
                       if (!s) return false
                       if (s.profilIdChoisi && Number(s.profilIdChoisi) === Number(profil.id)) return true
                       if (profil.souscription?.id && Number(s.id) === Number(profil.souscription.id)) return true
-                      // Si les identifiants correspondent ET que le nom du profil est explicitement mentionné
-                      if (
-                        profil.nomProfil &&
-                        s.login &&
-                        s.login.trim().toLowerCase() === (profil.login || '').trim().toLowerCase()
-                      ) {
-                        if (s.instructions && s.instructions.includes(profil.nomProfil)) return true
-                        if (s.nomProfilSouhaite && s.nomProfilSouhaite.trim().toLowerCase() === profil.nomProfil.trim().toLowerCase()) return true
-                      }
                       return false
                     })
                     const activeSouscriptions = matchingSubs
@@ -500,15 +670,23 @@ export default function AffectationsComptesPage() {
                                       <span className="font-bold text-foreground">{sousc.password || account.password}</span>
                                     </div>
                                     <div className="flex items-center justify-between text-xs">
-                                      <span className="text-muted-foreground font-sans text-[10px]">Profil assigné :</span>
+                                      <span className="text-muted-foreground font-sans text-[10px]">Profil :</span>
                                       <span className="font-bold text-primary">
                                         {profil.nomProfil || 'Principal'} {profil.codePin ? `(PIN: ${profil.codePin})` : ''}
                                       </span>
                                     </div>
                                   </div>
 
-                                  {/* Dates Début & Fin */}
+                                  {/* Dates Début, Fin & Paiement */}
                                   <div className="p-2 rounded-xl bg-muted/20 border border-border/40 text-[10.5px] space-y-1">
+                                    <div className="flex items-center justify-between text-muted-foreground">
+                                      <span className="flex items-center gap-1 font-bold text-emerald-600 dark:text-emerald-400">
+                                        💳 Paiement :
+                                      </span>
+                                      <span className="font-bold text-foreground">
+                                        {formatPaymentDate(sousc.datePaiement || sousc.dateCreation)}
+                                      </span>
+                                    </div>
                                     <div className="flex items-center justify-between text-muted-foreground">
                                       <span className="flex items-center gap-1">
                                         <Calendar className="w-3 h-3" /> Début :
@@ -611,7 +789,7 @@ export default function AffectationsComptesPage() {
                   )
                 </p>
                 <p className="text-[11px] text-primary font-bold">
-                  Offre : {transferModal.souscription?.offrePartenaire?.titreOffre || 'Abonnement'}
+                  Offre : {transferModal.souscription?.offrePartenaire?.titreOffre || 'Abonnement'} - {transferModal.souscription?.duree || 1} {transferModal.souscription?.periode || 'MOIS'}
                 </p>
               </div>
 
@@ -622,7 +800,7 @@ export default function AffectationsComptesPage() {
                 </label>
                 {availableTargetProfiles.length === 0 ? (
                   <div className="p-4 rounded-xl border border-dashed border-rose-500/30 bg-rose-500/5 text-xs text-rose-500 font-bold text-center">
-                    Aucun autre profil libre trouvé pour cette offre. Veuillez d'abord ajouter un profil disponible dans Stock & Identifiants.
+                    Aucun profil libre trouvé pour cette offre et cette durée ({transferModal.souscription?.duree || 1} mois). Veuillez d'abord ajouter un profil disponible dans Stock & Identifiants.
                   </div>
                 ) : (
                   <select
@@ -634,7 +812,7 @@ export default function AffectationsComptesPage() {
                     <option value="">-- Sélectionnez un profil disponible --</option>
                     {availableTargetProfiles.map((tp) => (
                       <option key={tp.id} value={tp.id}>
-                        Compte #{tp.numeroCompte} ({tp.login}) ➔ {tp.nomProfil || `Profil #${tp.id}`} [{tp.typeAbonnement === 'PRIVE' ? '👑 Privé' : '👥 Partagé'}]
+                        Compte #{tp.numeroCompte} ({tp.login}) ➔ {tp.nomProfil || `Profil #${tp.id}`} [{tp.dureeForfaitMois || 1} Mois] [{tp.typeAbonnement === 'PRIVE' ? '👑 Privé' : '👥 Partagé'}]
                       </option>
                     ))}
                   </select>
@@ -676,6 +854,117 @@ export default function AffectationsComptesPage() {
                 >
                   {transferModal.submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <ArrowRightLeft className="w-4 h-4" />}
                   {transferModal.submitting ? 'Déplacement en cours...' : 'Confirmer le Déplacement'}
+                </Button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de Configuration & Livraison Manuelle / Privée */}
+      {deliverModal.open && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
+          <div className="bg-card border border-border w-full max-w-lg rounded-3xl shadow-2xl p-6 space-y-5 animate-in fade-in zoom-in-95">
+            <div className="flex items-center justify-between border-b border-border pb-3">
+              <div className="flex items-center gap-2 text-amber-600 dark:text-amber-400 font-black text-base">
+                <Sparkles className="w-5 h-5" />
+                Configurer & Livrer la Commande
+              </div>
+              <button
+                type="button"
+                onClick={() => setDeliverModal({ open: false, souscription: null, login: '', password: '', nomProfil: '', codePin: '', instructions: '', submitting: false })}
+                className="text-muted-foreground hover:text-foreground p-1 rounded-lg"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleExecuteDeliver} className="space-y-4">
+              <div className="p-3.5 rounded-2xl bg-muted/40 border border-border space-y-1 text-xs">
+                <div className="font-bold text-foreground">
+                  Client : <span className="text-primary">{deliverModal.souscription?.client?.pseudo || deliverModal.souscription?.client?.nom || 'Client'}</span>
+                </div>
+                <div className="text-muted-foreground font-mono">
+                  📱 WhatsApp : {deliverModal.souscription?.client?.numeroWhatsapp || deliverModal.souscription?.telephone || 'N/A'}
+                </div>
+                <div className="text-muted-foreground">
+                  Offre : <span className="font-bold text-foreground">{deliverModal.souscription?.offrePartenaire?.titreOffre || 'Abonnement'}</span> ({deliverModal.souscription?.duree || 1} {deliverModal.souscription?.periode || 'MOIS'})
+                </div>
+                {deliverModal.souscription?.typeAbonnement === 'PRIVE' && (
+                  <div className="pt-1 text-[11px] text-amber-600 font-semibold">
+                    👑 Profil Privé demandé : {deliverModal.souscription?.nomProfilSouhaite || 'Non renseigné'} {deliverModal.souscription?.codePinSouhaite ? `(PIN: ${deliverModal.souscription?.codePinSouhaite})` : ''}
+                  </div>
+                )}
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-foreground block">Email / Identifiant du Compte *</label>
+                  <Input
+                    required
+                    placeholder="ex: compte@streaming.com"
+                    value={deliverModal.login}
+                    onChange={(e) => setDeliverModal((prev) => ({ ...prev, login: e.target.value }))}
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-foreground block">Mot de passe du Compte *</label>
+                  <Input
+                    required
+                    placeholder="ex: SecretPass123"
+                    value={deliverModal.password}
+                    onChange={(e) => setDeliverModal((prev) => ({ ...prev, password: e.target.value }))}
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-foreground block">Nom du Profil assigné</label>
+                  <Input
+                    placeholder="ex: Alex VIP"
+                    value={deliverModal.nomProfil}
+                    onChange={(e) => setDeliverModal((prev) => ({ ...prev, nomProfil: e.target.value }))}
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-foreground block">Code PIN / Sécurité (optionnel)</label>
+                  <Input
+                    placeholder="ex: 1234"
+                    maxLength={20}
+                    value={deliverModal.codePin}
+                    onChange={(e) => setDeliverModal((prev) => ({ ...prev, codePin: e.target.value }))}
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-xs font-bold text-foreground block">Instructions complémentaires (optionnel)</label>
+                <textarea
+                  rows={2}
+                  placeholder="ex: Ne pas modifier le mot de passe du compte maître..."
+                  value={deliverModal.instructions}
+                  onChange={(e) => setDeliverModal((prev) => ({ ...prev, instructions: e.target.value }))}
+                  className="w-full rounded-xl border border-input bg-card p-2.5 text-xs font-medium outline-none"
+                />
+              </div>
+
+              <div className="flex items-center justify-end gap-3 pt-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setDeliverModal({ open: false, souscription: null, login: '', password: '', nomProfil: '', codePin: '', instructions: '', submitting: false })}
+                  disabled={deliverModal.submitting}
+                >
+                  Annuler
+                </Button>
+                <Button
+                  type="submit"
+                  disabled={deliverModal.submitting}
+                  className="gap-2 font-bold bg-emerald-600 hover:bg-emerald-700 text-white"
+                >
+                  {deliverModal.submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+                  {deliverModal.submitting ? 'Livraison en cours...' : 'Livrer & Envoyer sur WhatsApp'}
                 </Button>
               </div>
             </form>
