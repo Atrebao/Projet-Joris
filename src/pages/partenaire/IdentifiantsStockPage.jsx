@@ -705,10 +705,10 @@ export default function IdentifiantsStockPage() {
                           )}
                         </div>
                         <div>
-                          <label className="text-[10px] font-bold text-muted-foreground block">Code PIN (optionnel)</label>
+                          <label className="text-[10px] font-bold text-muted-foreground block">Code PIN / Sécurité (optionnel)</label>
                           <Input
-                            placeholder="ex: 1234"
-                            maxLength={6}
+                            placeholder="ex: 1234 ou code secret"
+                            maxLength={20}
                             value={p.codePin}
                             onChange={(e) => handleProfilFieldChange(idx, 'codePin', e.target.value)}
                             className="h-8 text-xs font-bold"
@@ -1002,10 +1002,10 @@ export default function IdentifiantsStockPage() {
                 </div>
 
                 <div className="space-y-1">
-                  <label className="text-xs font-bold text-foreground block">Code PIN</label>
+                  <label className="text-xs font-bold text-foreground block">Code PIN / Sécurité (optionnel)</label>
                   <Input
-                    placeholder="ex: 1234"
-                    maxLength={6}
+                    placeholder="ex: 1234 ou code secret"
+                    maxLength={20}
                     value={editingItem.codePin || ''}
                     onChange={(e) => setEditingItem({ ...editingItem, codePin: e.target.value })}
                   />

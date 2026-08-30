@@ -61,10 +61,11 @@ export default function ClientsPage() {
       }
 
       // Si la liste est vide mais qu'on a des souscriptions pour ce partenaire, agréger les clients depuis les souscriptions
-      if (clientItems.length === 0 && partenaireId) {
+      if (clientItems.length === 0 && (partenaireId || getPartenaireId())) {
+        const pId = Number(partenaireId || getPartenaireId() || 1)
         try {
-          const subsRes = await souscriptionsAPI.getAllSouscriptions({ partenaireId })
-          const subs = Array.isArray(subsRes?.data) ? subsRes.data : (subsRes?.data?.data || [])
+          const subsRes = await souscriptionsAPI.getByPartenaire(pId)
+          const subs = Array.isArray(subsRes?.data) ? subsRes.data : (Array.isArray(subsRes) ? subsRes : (subsRes?.data?.data || []))
           const clientMap = new Map()
 
           subs.forEach((s) => {

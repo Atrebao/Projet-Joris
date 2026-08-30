@@ -438,13 +438,13 @@ export default function DetailOffre() {
                       </div>
                     </div>
                     <div className="space-y-1">
-                      <label className="text-[10px] font-bold text-foreground block">Code PIN souhaité (4 chiffres)</label>
+                      <label className="text-[10px] font-bold text-foreground block">Code PIN / Sécurité souhaité (optionnel)</label>
                       <div className="relative">
                         <Lock className="w-3 h-3 text-muted-foreground absolute left-2.5 top-1/2 -translate-y-1/2" />
                         <input
                           type="text"
-                          maxLength={4}
-                          placeholder="ex: 4920"
+                          maxLength={20}
+                          placeholder="ex: 4920 ou code secret"
                           value={codePinSouhaite}
                           onChange={(e) => setCodePinSouhaite(e.target.value)}
                           className="w-full pl-8 pr-2 py-1.5 bg-card border border-border rounded-xl text-xs font-medium outline-none"

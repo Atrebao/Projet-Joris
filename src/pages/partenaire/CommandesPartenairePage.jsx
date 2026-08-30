@@ -342,6 +342,9 @@ export default function CommandesPartenairePage() {
                             <p className="text-[10px] text-muted-foreground">
                               {cmd.duree || 1} {cmd.periode || 'mois'} · Réf: {cmd.reference?.slice(-6) || cmd.id}
                             </p>
+                            <p className="text-[9.5px] font-mono text-emerald-600 dark:text-emerald-400 font-semibold">
+                              💳 {cmd.datePaiement || cmd.dateCreation ? new Date(cmd.datePaiement || cmd.dateCreation).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '-'}
+                            </p>
                           </div>
                         </div>
                       </td>
