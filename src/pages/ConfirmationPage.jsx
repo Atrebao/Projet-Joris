@@ -1,6 +1,6 @@
-﻿import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
-import { CheckCircle, Home, FileText, Loader2,Clock } from 'lucide-react'
+import { CheckCircle, XCircle, Home, FileText, Loader2, Clock } from 'lucide-react'
 import { souscriptionsAPI } from '../lib/api'
 
 export default function ConfirmationPage() {
@@ -139,9 +139,9 @@ export default function ConfirmationPage() {
           ) : paymentStatus === 'SUCCES' ? (
             <CheckCircle className="h-10 w-10 text-emerald-600" />
           ) : paymentStatus === 'ECHEC' ? (
-            <XCircle className="h-10 w-10 text-destructive" /> // Pensez à importer XCircle ou réutilisez votre icône
+            <XCircle className="h-10 w-10 text-destructive" />
           ) : (
-            <Clock className="h-10 w-10 text-amber-600" /> // Pensez à importer Clock ou réutilisez votre icône
+            <Clock className="h-10 w-10 text-amber-600" />
           )}
         </div>
 
