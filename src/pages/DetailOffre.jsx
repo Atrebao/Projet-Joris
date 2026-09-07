@@ -214,9 +214,13 @@ export default function DetailOffre() {
       // Extraction de l'URL de redirection Wave
       const redirectUrl =
         data?.redirectUrl ||
+        data?.billmapResponse?.qr_Url ||
+        data?.billmapResponse?.qrUrl ||
         data?.billmapResponse?.wave_launch_url ||
         data?.billmapResponse?.url ||
         data?.billmapResponse?.redirectUrl ||
+        data?.billmapResponse?.data?.qr_Url ||
+        data?.billmapResponse?.data?.qrUrl ||
         data?.billmapResponse?.data?.wave_launch_url ||
         null
 

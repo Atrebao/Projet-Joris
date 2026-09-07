@@ -1,4 +1,4 @@
-﻿import { useState, useEffect } from 'react'
+import { useState, useEffect } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import {
   CreditCard,
@@ -198,7 +198,16 @@ export default function PaiementNouveau() {
       })
 
       const reference = data?.reference
-      const redirectUrl = data?.redirectUrl
+      const redirectUrl =
+        data?.redirectUrl ||
+        data?.billmapResponse?.qr_Url ||
+        data?.billmapResponse?.qrUrl ||
+        data?.billmapResponse?.wave_launch_url ||
+        data?.billmapResponse?.url ||
+        data?.billmapResponse?.redirectUrl ||
+        data?.billmapResponse?.data?.qr_Url ||
+        data?.billmapResponse?.data?.wave_launch_url ||
+        null
 
       localStorage.setItem(
         'pendingPayment',
