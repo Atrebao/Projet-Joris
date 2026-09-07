@@ -1,6 +1,8 @@
 import axios from 'axios'
 
-export const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000'
+//export const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000'
+export const API_URL = import.meta.env.VITE_API_URL || 'https://projet-joris-api.onrender.com/'
+
 
 export const api = axios.create({
   baseURL: API_URL,
@@ -81,13 +83,13 @@ const toNumber = (value, fallback = 0) => {
 const normalizeOffre = (offre = {}) => {
   const forfaitsFromRelations = Array.isArray(offre.forfaitOffres)
     ? offre.forfaitOffres
-        .map((fo) => fo?.forfait)
-        .filter(Boolean)
-        .map((f) => ({
-          ...f,
-          id: f.id,
-          duree: toNumber(f.duree, 1),
-        }))
+      .map((fo) => fo?.forfait)
+      .filter(Boolean)
+      .map((f) => ({
+        ...f,
+        id: f.id,
+        duree: toNumber(f.duree, 1),
+      }))
     : []
 
   const fallbackForfait = {
@@ -138,12 +140,12 @@ const normalizeSouscription = (souscription = {}) => {
   const client = souscription.client || souscription.user || null
   const userAlias = client
     ? {
-        id: client.id,
-        nom: client.nom,
-        prenoms: client.prenoms,
-        email: client.email,
-        numero: client.telephone || client.numero,
-      }
+      id: client.id,
+      nom: client.nom,
+      prenoms: client.prenoms,
+      email: client.email,
+      numero: client.telephone || client.numero,
+    }
     : undefined
 
   return {
